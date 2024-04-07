@@ -26,6 +26,7 @@ struct AnimationInstance {
     animation_id: AnimationId,
     iterator: AnimationIterator,
     current_frame_duration: u32,
+    current_stage_index: usize,
     accumulated_time: u32,
 
     /// Marks when the animation has ended to emit end events only once
@@ -108,9 +109,9 @@ impl SpritesheetAnimator {
                     }
                 }
 
-                let first_frame_duration = maybe_first_frame
-                    .map(|frame| frame.duration)
-                    .unwrap_or(u32::MAX);
+                let (first_frame_duration, first_stage_index) = maybe_first_frame
+                    .map(|frame| (frame.duration, frame.stage_index))
+                    .unwrap_or((u32::MAX, usize::MAX));
 
                 self.animation_instances.insert(
                     entity,
@@ -118,6 +119,7 @@ impl SpritesheetAnimator {
                         animation_id: entity_animation.animation_id,
                         iterator,
                         current_frame_duration: first_frame_duration,
+                        current_stage_index: first_stage_index,
                         accumulated_time: 0,
                         ended: false,
                     },
@@ -151,9 +153,10 @@ impl SpritesheetAnimator {
 
                     entity_atlas.index = next_frame.atlas_index;
 
-                    // Store this frame's duration to continue iterating when enough time has passed
+                    // Store this frame's data
 
                     animation_instance.current_frame_duration = next_frame.duration;
+                    animation_instance.current_stage_index = next_frame.stage_index;
 
                     // Emit the events for this frame
 
@@ -168,22 +171,15 @@ impl SpritesheetAnimator {
                     // Emit all the end events if the animation just ended
 
                     if !animation_instance.ended {
-                        let last_stage_index = library
-                            .animations()
-                            .get(&animation_instance.animation_id)
-                            .map(|animation| animation.stages().len().saturating_sub(1))
-                            // If there are no stages in the animation, just use the max value
-                            .unwrap_or(usize::MAX);
-
                         event_writer.send(AnimationEvent::ClipCycleEnd {
                             entity,
-                            stage_index: last_stage_index,
+                            stage_index: animation_instance.current_stage_index,
                             animation_id: animation_instance.animation_id,
                         });
 
                         event_writer.send(AnimationEvent::ClipEnd {
                             entity,
-                            stage_index: last_stage_index,
+                            stage_index: animation_instance.current_stage_index,
                             animation_id: animation_instance.animation_id,
                         });
 
