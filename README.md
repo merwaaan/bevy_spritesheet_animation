@@ -1,26 +1,24 @@
-<!---
-[![Crates.io](https://img.shields.io/crates/v/bevy_spritesheet_animation.svg)](https://crates.io/crates/bevy_spritesheet_animation)
+[![Crates.io](https://img.shields.io/crates/v/bevy_spritesheet_animation)](https://crates.io/crates/bevy_spritesheet_animation)
 [![Docs](https://docs.rs/bevy_spritesheet_animation/badge.svg)](https://docs.rs/bevy_spritesheet_animation)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
--->
 
 bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for animating sprites that are backed by spritesheets.
 
-![An animated character walking from the left to the right and shooting their gun](example.gif)
+![An animated character walking from the left to the right and shooting their gun](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/example.gif)
 
 # Features
 
-- A single Bevy [component](https://docs.rs/) to add to your entities to play animations.
-- Tunable parameters: [duration](), [repetitions](), [direction](), [easing]().
-- [Composable animations](examples/composition.rs) from multiple clips.
-- [Events](examples/events.rs) to react to animations ending or reaching specific points.
-- A [convenient API](https://docs.rs/) to select frames in spritesheets.
+- A single Bevy [component](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/component/struct.SpritesheetAnimation.html) to add to your entities to play animations.
+- Tunable parameters: [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html), [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html).
+- [Composable animations](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html) from multiple clips.
+- [Events](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/events/enum.AnimationEvent.html) to react to animations ending or reaching specific points.
+- A [convenient API](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/spritesheet/struct.Spritesheet.html) to select frames in spritesheets.
 
 # Quick start
 
-1. Add the [SpritesheetAnimationPlugin](https://docs.rs/) to your app
-2. Use the [SpritesheetLibrary](https://docs.rs/) resource to create new clips and animations
-3. Add a [SpritesheetAnimation](https://docs.rs/) component to your entity
+1. Add the [SpritesheetAnimationPlugin](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/plugin/struct.SpritesheetAnimationPlugin.html) to your app
+2. Use the [SpritesheetLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.SpritesheetLibrary.html) resource to create new clips and animations
+3. Add a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/component/struct.SpritesheetAnimation.html) component to your entity
 
 ```rust
 fn main() {
@@ -96,7 +94,7 @@ An animation clip is a reusable sequence of frames.
 
 It is the most basic building block for creating animations.
 
-Use the [SpritesheetLibrary](https://docs.rs) resource to create and configure a new clip.
+Use the [SpritesheetLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.SpritesheetLibrary.html) resource to create and configure a new clip.
 
 The clip can then be referenced in any number of animations.
 
