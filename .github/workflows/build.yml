@@ -15,7 +15,6 @@ jobs:
       # Bevy has some additional dependencies on Linux
       # https://github.com/bevyengine/bevy/blob/9788b386c7846c99978ab5c1a33698ec5a471d84/.github/workflows/ci.yml
       - name: Install alsa and udev
-        if: contains(matrix.platform, 'ubuntu')
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
 
       - name: Build
