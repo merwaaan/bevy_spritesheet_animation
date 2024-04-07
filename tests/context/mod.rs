@@ -185,7 +185,7 @@ impl Context {
         builder(&mut sprite_animation);
     }
 
-    pub fn stage_cycle_end(&self, stage_index: usize, animation_id: AnimationId) -> AnimationEvent {
+    pub fn clip_cycle_end(&self, stage_index: usize, animation_id: AnimationId) -> AnimationEvent {
         AnimationEvent::ClipCycleEnd {
             entity: self.sprite,
             stage_index,
@@ -193,7 +193,7 @@ impl Context {
         }
     }
 
-    pub fn stage_end(&self, stage_index: usize, animation_id: AnimationId) -> AnimationEvent {
+    pub fn clip_end(&self, stage_index: usize, animation_id: AnimationId) -> AnimationEvent {
         AnimationEvent::ClipEnd {
             entity: self.sprite,
             stage_index,

@@ -148,8 +148,8 @@ fn animation_timing_per_frame() {
     ctx.check(
         0,
         &[
-            ctx.stage_cycle_end(0, animation_id),
-            ctx.stage_end(0, animation_id),
+            ctx.clip_cycle_end(0, animation_id),
+            ctx.clip_end(0, animation_id),
         ],
     );
 
@@ -157,7 +157,7 @@ fn animation_timing_per_frame() {
     ctx.check(1, &[]);
 
     ctx.run(600); // 2200
-    ctx.check(0, &[ctx.stage_cycle_end(1, animation_id)]);
+    ctx.check(0, &[ctx.clip_cycle_end(1, animation_id)]);
 
     ctx.run(400); // 2600
     ctx.check(1, &[]);
@@ -219,8 +219,8 @@ fn animation_timing_per_cycle() {
     ctx.check(
         0,
         &[
-            ctx.stage_cycle_end(0, animation_id),
-            ctx.stage_end(0, animation_id),
+            ctx.clip_cycle_end(0, animation_id),
+            ctx.clip_end(0, animation_id),
         ],
     );
 
@@ -238,7 +238,7 @@ fn animation_timing_per_cycle() {
     // stage 1, frame 0 (repeated): 5555 to 7777
 
     ctx.run(20); // 5570
-    ctx.check(0, &[ctx.stage_cycle_end(1, animation_id)]);
+    ctx.check(0, &[ctx.clip_cycle_end(1, animation_id)]);
 
     ctx.run(2200); // 7770
     ctx.check(0, &[]);
@@ -257,8 +257,8 @@ fn animation_timing_per_cycle() {
     ctx.check(
         0,
         &[
-            ctx.stage_cycle_end(1, animation_id),
-            ctx.stage_end(1, animation_id),
+            ctx.clip_cycle_end(1, animation_id),
+            ctx.clip_end(1, animation_id),
             ctx.anim_cycle_end(animation_id),
         ],
     );
