@@ -3,13 +3,11 @@ pub mod context;
 use bevy_spritesheet_animation::prelude::*;
 use context::*;
 
-// Clip
-
 #[test]
 fn clip_without_frames() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|_clip| {});
+    let clip_id = ctx.library().new_clip(|_| {});
 
     let animation_id = ctx.library().new_animation(|animation| {
         animation.add_stage(clip_id.into());
@@ -19,69 +17,21 @@ fn clip_without_frames() {
 
     for _ in 0..100 {
         ctx.run(100);
-        ctx.check(0, &[]);
+        ctx.check(0, []);
     }
 }
-
-#[test]
-fn clip_with_zero_duration() {
-    let mut ctx = Context::new();
-
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([4, 5, 6])
-            .set_default_duration(AnimationDuration::PerFrame(0));
-    });
-
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation.add_stage(clip_id.into());
-    });
-
-    ctx.add_animation_to_sprite(animation_id);
-
-    for _ in 0..100 {
-        ctx.run(100);
-        ctx.check(0, &[]);
-    }
-}
-
-// Stage
-
-#[test]
-fn stage_with_zero_duration() {
-    let mut ctx = Context::new();
-
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([4, 5, 6]);
-    });
-
-    let animation_id = ctx.library().new_animation(|animation| {
-        let mut stage = AnimationStage::from_clip(clip_id);
-        stage.set_duration(AnimationDuration::PerFrame(0));
-
-        animation.add_stage(stage);
-    });
-
-    ctx.add_animation_to_sprite(animation_id);
-
-    for _ in 0..100 {
-        ctx.run(100);
-        ctx.check(0, &[]);
-    }
-}
-
-// Animation
 
 #[test]
 fn animation_without_stages() {
     let mut ctx = Context::new();
 
-    let animation_id = ctx.library().new_animation(|_animation| {});
+    let animation_id = ctx.library().new_animation(|_| {});
 
     ctx.add_animation_to_sprite(animation_id);
 
     for _ in 0..100 {
         ctx.run(100);
-        ctx.check(0, &[]);
+        ctx.check(0, []);
     }
 }
 
@@ -89,7 +39,7 @@ fn animation_without_stages() {
 fn animation_with_some_empty_clips() {
     let mut ctx = Context::new();
 
-    let empty_clip_id = ctx.library().new_clip(|_clip| {});
+    let empty_clip_id = ctx.library().new_clip(|_| {});
 
     let ok_clip_id = ctx.library().new_clip(|clip| {
         clip.push_frame_indices([9, 8]);
@@ -108,42 +58,65 @@ fn animation_with_some_empty_clips() {
     ctx.add_animation_to_sprite(animation_id);
 
     ctx.run(100);
-    ctx.check(9, &[]);
+    ctx.check(9, []);
 
     ctx.run(100); // 0.2
-    ctx.check(8, &[]);
+    ctx.check(8, []);
 
     ctx.run(100); // 0.3
     ctx.check(
         9,
-        &[
+        [
             ctx.clip_cycle_end(1, animation_id),
             ctx.clip_end(1, animation_id),
         ],
     );
 
     ctx.run(100); // 0.4
-    ctx.check(8, &[]);
+    ctx.check(8, []);
 }
 
 #[test]
-fn animation_with_zero_duration() {
+fn animation_assigned_while_paused() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([4, 5, 6]);
+    let clip1_id = ctx.library().new_clip(|clip| {
+        clip.push_frame_indices([4, 5]);
     });
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(clip_id.into())
-            .set_duration(AnimationDuration::PerCycle(0));
+    let animation1_id = ctx.library().new_animation(|animation| {
+        animation.add_stage(clip1_id.into());
     });
 
-    ctx.add_animation_to_sprite(animation_id);
+    let clip2_id = ctx.library().new_clip(|clip| {
+        clip.push_frame_indices([7, 8]);
+    });
+
+    let animation2_id = ctx.library().new_animation(|animation| {
+        animation.add_stage(clip2_id.into());
+    });
+
+    // Start paused, the first frame should be assigned anyway
+
+    ctx.add_animation_to_sprite(animation1_id);
+
+    ctx.update_sprite_animation(|anim| {
+        anim.playing = false;
+    });
 
     for _ in 0..100 {
         ctx.run(100);
-        ctx.check(0, &[]);
+        ctx.check(4, []);
+    }
+
+    // Stay paused and change the animation, the first frame of the new animation should be assigned anyway
+
+    ctx.update_sprite_animation(|anim| {
+        anim.animation_id = animation2_id;
+    });
+
+    for _ in 0..100 {
+        ctx.run(100);
+        ctx.check(7, []);
     }
 }

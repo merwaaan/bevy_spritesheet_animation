@@ -141,7 +141,11 @@ impl Context {
         self.app.update();
     }
 
-    pub fn check(&mut self, expected_atlas_index: usize, expected_events: &[AnimationEvent]) {
+    pub fn check<I: IntoIterator<Item = AnimationEvent>>(
+        &mut self,
+        expected_atlas_index: usize,
+        expected_events: I,
+    ) {
         println!("check");
         // Check the current atlas index of the sprite
 
@@ -163,7 +167,7 @@ impl Context {
             events.insert(*event);
         }
 
-        assert_eq!(events, HashSet::from_iter(expected_events.iter().cloned()));
+        assert_eq!(events, HashSet::from_iter(expected_events));
     }
 
     fn get_sprite_atlas(&self, entity: Entity) -> TextureAtlas {
@@ -183,6 +187,20 @@ impl Context {
             .unwrap();
 
         builder(&mut sprite_animation);
+    }
+
+    pub fn marker_hit(
+        &self,
+        marker_id: AnimationMarkerId,
+        stage_index: usize,
+        animation_id: AnimationId,
+    ) -> AnimationEvent {
+        AnimationEvent::MarkerHit {
+            entity: self.sprite,
+            marker_id,
+            animation_id,
+            stage_index,
+        }
     }
 
     pub fn clip_cycle_end(&self, stage_index: usize, animation_id: AnimationId) -> AnimationEvent {
