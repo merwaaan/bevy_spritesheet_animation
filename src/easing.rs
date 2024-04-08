@@ -90,8 +90,8 @@ impl Easing {
             },
             Easing::Out(variety) => match variety {
                 EasingVariety::Quadratic => 1.0 - (1.0 - x).powi(2),
-                EasingVariety::Cubic => 1.0 - (1.0 - x).powi(5),
-                EasingVariety::Quartic => 1.0 - (1.0 - x).powi(5),
+                EasingVariety::Cubic => 1.0 - (1.0 - x).powi(3),
+                EasingVariety::Quartic => 1.0 - (1.0 - x).powi(4),
                 EasingVariety::Quintic => 1.0 - (1.0 - x).powi(5),
                 EasingVariety::Exponential => {
                     if x == 1.0 {
