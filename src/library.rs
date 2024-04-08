@@ -146,8 +146,13 @@ impl SpritesheetLibrary {
     ) -> Result<(), LibraryError> {
         let name = name.into();
 
-        if self.clip_name_lookup.contains_key(&name) {
-            Err(LibraryError::NameAlreadyTaken)
+        if let Some(named_clip_id) = self.clip_name_lookup.get(&name) {
+            // The clip already has this name: no-op
+            if *named_clip_id == clip_id {
+                Ok(())
+            } else {
+                Err(LibraryError::NameAlreadyTaken)
+            }
         } else {
             self.clip_name_lookup.insert(name, clip_id);
             Ok(())
@@ -272,8 +277,13 @@ impl SpritesheetLibrary {
     ) -> Result<(), LibraryError> {
         let name = name.into();
 
-        if self.animation_name_lookup.contains_key(&name) {
-            Err(LibraryError::NameAlreadyTaken)
+        if let Some(named_animation_id) = self.animation_name_lookup.get(&name) {
+            // The animation already has this name: no-op
+            if *named_animation_id == animation_id {
+                Ok(())
+            } else {
+                Err(LibraryError::NameAlreadyTaken)
+            }
         } else {
             self.animation_name_lookup.insert(name, animation_id);
             Ok(())
@@ -368,8 +378,13 @@ impl SpritesheetLibrary {
     ) -> Result<(), LibraryError> {
         let name = name.into();
 
-        if self.marker_name_lookup.contains_key(&name) {
-            Err(LibraryError::NameAlreadyTaken)
+        if let Some(named_marker_id) = self.marker_name_lookup.get(&name) {
+            // The marker already has this name: no-op
+            if *named_marker_id == marker_id {
+                Ok(())
+            } else {
+                Err(LibraryError::NameAlreadyTaken)
+            }
         } else {
             self.marker_name_lookup.insert(name, marker_id);
             Ok(())
