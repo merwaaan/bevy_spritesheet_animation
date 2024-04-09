@@ -21,28 +21,6 @@ impl Context {
 
         let mut app = App::new();
 
-        // #[cfg(not(windows))]
-        // app.add_plugins(DefaultPlugins.build().disable::<LogPlugin>());
-
-        // #[cfg(windows)]
-        // app.add_plugins(
-        //     DefaultPlugins
-        //         .build()
-        //         // Headless mode
-        //         .disable::<WinitPlugin>()
-        //         .disable::<LogPlugin>()
-        //         .set(RenderPlugin {
-        //             render_creation: WgpuSettings {
-        //                 backends: None,
-        //                 ..default()
-        //             }
-        //             .into(),
-        //             ..default()
-        //         }),
-        // );
-
-        //app.add_plugins(MinimalPlugins);
-
         app.add_plugins(
             DefaultPlugins
                 .build()
@@ -56,14 +34,11 @@ impl Context {
                     .into(),
                     ..default()
                 }),
-        );
-
+        )
         // Add our plugin
-
-        app.add_plugins(SpritesheetAnimationPlugin);
-
+        .add_plugins(SpritesheetAnimationPlugin)
         // Insert a manual update strategy to control time
-        app.insert_resource(TimeUpdateStrategy::ManualInstant(Instant::now()));
+        .insert_resource(TimeUpdateStrategy::ManualInstant(Instant::now()));
 
         // Update the app once so that Time's delta is not zero in the tests
 

@@ -45,13 +45,13 @@ impl Iterator for AnimationIterator {
 
         let frames = if let Some(frames_pong) = &self.cache.frames_pong {
             if self.current_animation_cycle_index % 2 == 0 {
-                &self.cache.frames_ping
+                &self.cache.frames
             } else {
                 // PingPong + odd cycles
                 frames_pong
             }
         } else {
-            &self.cache.frames_ping
+            &self.cache.frames
         };
 
         // Fetch the current frame
@@ -83,7 +83,7 @@ impl Iterator for AnimationIterator {
 
             // Go back to the start of the cycle if we reached the end
 
-            if self.current_frame_index >= self.cache.frames_ping.len() {
+            if self.current_frame_index >= self.cache.frames.len() {
                 self.current_animation_cycle_index += 1;
 
                 // Mark that an animation cycle just ended so that the appropriate events are emitted on the next frame

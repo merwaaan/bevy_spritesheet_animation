@@ -101,80 +101,90 @@ fn animation_backwards() {
 }
 
 #[test]
-// fn animation_backwards_stage_backwards() {
-//     let mut ctx = Context::new();
+fn animation_backwards_stage_backwards() {
+    let mut ctx = Context::new();
 
-//     let clip_id = ctx.library().new_clip(|clip| {
-//         clip.push_frame_indices([0, 1, 2])
-//             .set_default_direction(AnimationDirection::PingPong); // should be ignored
-//     });
+    let clip_id = ctx.library().new_clip(|clip| {
+        clip.push_frame_indices([0, 1, 2]);
+    });
 
-//     let animation_id = ctx.library().new_animation(|animation| {
-//         let mut stage = AnimationStage::from_clip(clip_id);
-//         stage.set_direction(AnimationDirection::Backwards);
+    let animation_id = ctx.library().new_animation(|animation| {
+        let mut stage = AnimationStage::from_clip(clip_id);
+        stage.set_direction(AnimationDirection::Backwards);
 
-//         // Backward stage sandwiched between two forward stages
+        // Backward stage sandwiched between two forward stages
 
-//         animation
-//             .add_stage(clip_id.into())
-//             .add_stage(stage)
-//             .add_stage(clip_id.into())
-//             .set_direction(AnimationDirection::Backwards)
-//             .set_duration(AnimationDuration::PerFrame(100))
-//             .set_repeat(AnimationRepeat::Cycles(2));
-//     });
+        animation
+            .add_stage(clip_id.into())
+            .add_stage(stage)
+            .add_stage(clip_id.into())
+            .set_direction(AnimationDirection::Backwards)
+            .set_duration(AnimationDuration::PerFrame(100))
+            .set_repeat(AnimationRepeat::Loop);
+    });
 
-//     ctx.add_animation_to_sprite(animation_id);
+    ctx.add_animation_to_sprite(animation_id);
 
-//     // Stage 3 (played backwards)
+    // Stage 3 (played backwards)
 
-//     ctx.run(50);
-//     ctx.check(2, []);
+    ctx.run(50);
+    ctx.check(2, []);
 
-//     ctx.run(100);
-//     ctx.check(1, []);
+    ctx.run(100);
+    ctx.check(1, []);
 
-//     ctx.run(100);
-//     ctx.check(0, []);
+    ctx.run(100);
+    ctx.check(0, []);
 
-//     // Stage 2 (played backwards but was backwards so now forwards!)
+    // Stage 2 (played backwards but was backwards so now forwards!)
 
-//     ctx.run(100);
-//     ctx.check(
-//         0,
-//         [
-//             ctx.clip_cycle_end(0, animation_id),
-//             ctx.clip_end(0, animation_id),
-//             ctx.anim_cycle_end(animation_id),
-//         ],
-//     );
+    ctx.run(100);
+    ctx.check(
+        0,
+        [
+            ctx.clip_cycle_end(2, animation_id),
+            ctx.clip_end(2, animation_id),
+        ],
+    );
 
-//     ctx.run(100);
-//     ctx.check(1, []);
+    ctx.run(100);
+    ctx.check(1, []);
 
-//     ctx.run(100);
-//     ctx.check(2, []);
+    ctx.run(100);
+    ctx.check(2, []);
 
-//     // stage 1 (played backwards)
+    // stage 1 (played backwards)
 
-//     ctx.run(50);
-//     ctx.check(
-//         2,
-//         [
-//             ctx.clip_cycle_end(0, animation_id),
-//             ctx.clip_end(0, animation_id),
-//             ctx.anim_cycle_end(animation_id),
-//         ],
-//     );
+    ctx.run(100);
+    ctx.check(
+        2,
+        [
+            ctx.clip_cycle_end(1, animation_id),
+            ctx.clip_end(1, animation_id),
+        ],
+    );
 
-//     ctx.run(100);
-//     ctx.check(1, []);
+    ctx.run(100);
+    ctx.check(1, []);
 
-//     ctx.run(100);
-//     ctx.check(0, []);
-// }
+    ctx.run(100);
+    ctx.check(0, []);
+
+    // Loop
+
+    ctx.run(100);
+    ctx.check(
+        2,
+        [
+            ctx.clip_cycle_end(0, animation_id),
+            ctx.clip_end(0, animation_id),
+            ctx.anim_cycle_end(animation_id),
+        ],
+    );
+}
 
 // PingPong
+
 #[test]
 fn stage_pingpong() {
     let mut ctx = Context::new();
