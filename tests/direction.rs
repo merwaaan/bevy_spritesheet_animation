@@ -248,58 +248,65 @@ fn stage_pingpong() {
     );
 }
 
-// #[test]
-// fn animation_pingpong() {
-//     let mut ctx = Context::new();
+#[test]
+fn animation_pingpong() {
+    let mut ctx = Context::new();
 
-//     let clip_id = ctx.library().new_clip(|clip| {
-//         clip.push_frame_indices([0, 1, 2]);
-//     });
+    let clip_id = ctx.library().new_clip(|clip| {
+        clip.push_frame_indices([0, 1, 2]);
+    });
 
-//     let animation_id = ctx.library().new_animation(|animation| {
-//         animation
-//             .add_stage(clip_id.into())
-//             .set_direction(AnimationDirection::PingPong)
-//             .set_duration(AnimationDuration::PerFrame(100))
-//             .set_repeat(AnimationRepeat::Loop);
-//     });
+    let animation_id = ctx.library().new_animation(|animation| {
+        animation
+            .add_stage(clip_id.into())
+            .set_direction(AnimationDirection::PingPong)
+            .set_duration(AnimationDuration::PerFrame(100))
+            .set_repeat(AnimationRepeat::Loop);
+    });
 
-//     ctx.add_animation_to_sprite(animation_id);
+    ctx.add_animation_to_sprite(animation_id);
 
-//     // Ping
+    // Ping
 
-//     ctx.run(50);
-//     ctx.check(0, []);
+    ctx.run(50);
+    ctx.check(0, []);
 
-//     ctx.run(100);
-//     ctx.check(1, []);
+    ctx.run(100);
+    ctx.check(1, []);
 
-//     ctx.run(100);
-//     ctx.check(2, []);
+    ctx.run(100);
+    ctx.check(2, []);
 
-//     // Pong
+    // Pong
 
-//     ctx.run(100);
-//     ctx.check(1, [ctx.clip_cycle_end(0, animation_id)]);
+    ctx.run(100);
+    ctx.check(
+        1,
+        [
+            ctx.clip_cycle_end(0, animation_id),
+            ctx.clip_end(0, animation_id),
+            ctx.anim_cycle_end(animation_id),
+        ],
+    );
 
-//     ctx.run(100);
-//     ctx.check(0, []);
+    ctx.run(100);
+    ctx.check(0, []);
 
-//     // Ping again
+    // Ping again
 
-//     ctx.run(100);
-//     ctx.check(
-//         1,
-//         [
-//             ctx.clip_cycle_end(0, animation_id),
-//             ctx.clip_end(0, animation_id),
-//             ctx.anim_cycle_end(animation_id),
-//         ],
-//     );
+    ctx.run(100);
+    ctx.check(
+        1,
+        [
+            ctx.clip_cycle_end(0, animation_id),
+            ctx.clip_end(0, animation_id),
+            ctx.anim_cycle_end(animation_id),
+        ],
+    );
 
-//     ctx.run(100);
-//     ctx.check(2, []);
-// }
+    ctx.run(100);
+    ctx.check(2, []);
+}
 
 // #[test]
 // fn animation_pingpong_stage_pingpong() {
@@ -321,9 +328,8 @@ fn stage_pingpong() {
 
 //     ctx.add_animation_to_sprite(animation_id);
 
-//     panic!();
-
-//     // Ping
+//     // Animation ping
+//     // Stage ping
 
 //     ctx.run(50);
 //     ctx.check(0, []);
@@ -334,7 +340,7 @@ fn stage_pingpong() {
 //     ctx.run(100);
 //     ctx.check(2, []);
 
-//     // Pong
+//     // Stage pong
 
 //     ctx.run(100);
 //     ctx.check(1, [ctx.clip_cycle_end(0, animation_id)]);
@@ -342,7 +348,8 @@ fn stage_pingpong() {
 //     ctx.run(100);
 //     ctx.check(0, []);
 
-//     // Ping again
+//     // Animation pong
+//     // Stage pong
 
 //     ctx.run(100);
 //     ctx.check(
@@ -356,49 +363,8 @@ fn stage_pingpong() {
 
 //     ctx.run(100);
 //     ctx.check(2, []);
-// }
 
-// #[test]
-// fn animation_pingpong_stage_backwards() {
-//     let mut ctx = Context::new();
-
-//     let clip_id = ctx.library().new_clip(|clip| {
-//         clip.push_frame_indices([0, 1, 2])
-//             .set_default_direction(AnimationDirection::Backwards);
-//     });
-
-//     let animation_id = ctx.library().new_animation(|animation| {
-//         animation
-//             .add_stage(clip_id.into())
-//             .set_direction(AnimationDirection::PingPong)
-//             .set_duration(AnimationDuration::PerFrame(100))
-//             .set_repeat(AnimationRepeat::Loop);
-//     });
-
-//     ctx.add_animation_to_sprite(animation_id);
-
-//     panic!();
-
-//     // Ping
-
-//     ctx.run(50);
-//     ctx.check(0, []);
-
-//     ctx.run(100);
-//     ctx.check(1, []);
-
-//     ctx.run(100);
-//     ctx.check(2, []);
-
-//     // Pong
-
-//     ctx.run(100);
-//     ctx.check(1, [ctx.clip_cycle_end(0, animation_id)]);
-
-//     ctx.run(100);
-//     ctx.check(0, []);
-
-//     // Ping again
+//     // Stage ping
 
 //     ctx.run(100);
 //     ctx.check(
@@ -411,62 +377,121 @@ fn stage_pingpong() {
 //     );
 
 //     ctx.run(100);
-//     ctx.check(2, []);
+//     ctx.check(0, []);
 // }
 
-// #[test]
-// fn animation_backwards_stage_pingpong() {
-//     let mut ctx = Context::new();
+#[test]
+fn animation_pingpong_stage_backwards() {
+    let mut ctx = Context::new();
 
-//     let clip_id = ctx.library().new_clip(|clip| {
-//         clip.push_frame_indices([0, 1, 2])
-//             .set_default_direction(AnimationDirection::PingPong)
-//             .set_default_repeat(2); // Needed for the ping-pong or we would only get pongs
-//     });
+    let clip_id = ctx.library().new_clip(|clip| {
+        clip.push_frame_indices([0, 1, 2])
+            .set_default_direction(AnimationDirection::Backwards);
+    });
 
-//     let animation_id = ctx.library().new_animation(|animation| {
-//         animation
-//             .add_stage(clip_id.into())
-//             .set_direction(AnimationDirection::Backwards)
-//             .set_duration(AnimationDuration::PerFrame(100))
-//             .set_repeat(AnimationRepeat::Loop);
-//     });
+    let animation_id = ctx.library().new_animation(|animation| {
+        animation
+            .add_stage(clip_id.into())
+            .set_direction(AnimationDirection::PingPong)
+            .set_duration(AnimationDuration::PerFrame(100))
+            .set_repeat(AnimationRepeat::Loop);
+    });
 
-//     ctx.add_animation_to_sprite(animation_id);
+    ctx.add_animation_to_sprite(animation_id);
 
-//     panic!();
+    // Ping
 
-//     // Ping
+    ctx.run(50);
+    ctx.check(2, []);
 
-//     ctx.run(50);
-//     ctx.check(0, []);
+    ctx.run(100);
+    ctx.check(1, []);
 
-//     ctx.run(100);
-//     ctx.check(1, []);
+    ctx.run(100);
+    ctx.check(0, []);
 
-//     ctx.run(100);
-//     ctx.check(2, []);
+    // Pong
 
-//     // Pong
+    ctx.run(100);
+    ctx.check(
+        1,
+        [
+            ctx.clip_cycle_end(0, animation_id),
+            ctx.clip_end(0, animation_id),
+            ctx.anim_cycle_end(animation_id),
+        ],
+    );
 
-//     ctx.run(100);
-//     ctx.check(1, [ctx.clip_cycle_end(0, animation_id)]);
+    ctx.run(100);
+    ctx.check(2, []);
 
-//     ctx.run(100);
-//     ctx.check(0, []);
+    // Ping again
 
-//     // Ping again
+    ctx.run(100);
+    ctx.check(
+        1,
+        [
+            ctx.clip_cycle_end(0, animation_id),
+            ctx.clip_end(0, animation_id),
+            ctx.anim_cycle_end(animation_id),
+        ],
+    );
 
-//     ctx.run(100);
-//     ctx.check(
-//         1,
-//         [
-//             ctx.clip_cycle_end(0, animation_id),
-//             ctx.clip_end(0, animation_id),
-//             ctx.anim_cycle_end(animation_id),
-//         ],
-//     );
+    ctx.run(100);
+    ctx.check(0, []);
+}
 
-//     ctx.run(100);
-//     ctx.check(2, []);
-// }
+#[test]
+fn animation_backwards_stage_pingpong() {
+    let mut ctx = Context::new();
+
+    let clip_id = ctx.library().new_clip(|clip| {
+        clip.push_frame_indices([0, 1, 2])
+            .set_default_direction(AnimationDirection::PingPong)
+            .set_default_repeat(2); // Needed for the ping-pong or we would only get pongs
+    });
+
+    let animation_id = ctx.library().new_animation(|animation| {
+        animation
+            .add_stage(clip_id.into())
+            .set_direction(AnimationDirection::Backwards)
+            .set_duration(AnimationDuration::PerFrame(100))
+            .set_repeat(AnimationRepeat::Loop);
+    });
+
+    ctx.add_animation_to_sprite(animation_id);
+
+    // Pong
+
+    ctx.run(50);
+    ctx.check(0, []);
+
+    ctx.run(100);
+    ctx.check(1, []);
+
+    // Ping
+
+    ctx.run(100);
+    ctx.check(2, [ctx.clip_cycle_end(0, animation_id)]);
+
+    ctx.run(100);
+    ctx.check(1, []);
+
+    ctx.run(100);
+    ctx.check(0, []);
+
+    // Pong again
+
+    ctx.run(100);
+    ctx.check(
+        0,
+        [
+            ctx.clip_cycle_end(0, animation_id),
+            ctx.clip_end(0, animation_id),
+            ctx.anim_cycle_end(animation_id),
+        ],
+    );
+
+    ctx.run(100);
+    ctx.check(1, []);
+}
