@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use itertools::Itertools;
 
 use crate::{
@@ -47,7 +49,7 @@ pub(super) struct AnimationFrame {
 /// to re-evaluate its parameters.
 pub(super) struct AnimationCache {
     /// All the frames
-    pub frames_ping: Vec<AnimationFrame>,
+    pub frames: Vec<AnimationFrame>,
 
     /// Frames for odd cycles when the direction is PingPong, None for other directions
     pub frames_pong: Option<Vec<AnimationFrame>>,
@@ -55,15 +57,22 @@ pub(super) struct AnimationCache {
     // The total number of cycles to play.
     // None if infinite.
     pub cycle_count: Option<u32>,
+
+    // The direction of the animation to handle a special case for PingPong
+    pub animation_direction: AnimationDirection,
 }
 
 impl AnimationCache {
     pub fn new(animation_id: AnimationId, library: &SpritesheetLibrary) -> AnimationCache {
+        // Retrieve the animation
+
         let animation = library
             .animations()
             .get(&animation_id)
             // In practice, this cannot fail as the library is the sole creator of animation/animation IDs
             .unwrap();
+
+        let animation_direction = animation.direction().unwrap_or_default();
 
         // If the animation repeats 0 times, just create an empty cache that will play no frames
 
@@ -71,9 +80,10 @@ impl AnimationCache {
 
         if matches!(animation_repeat, AnimationRepeat::Cycles(0)) {
             return Self {
-                frames_ping: Vec::new(),
+                frames: Vec::new(),
                 frames_pong: None,
                 cycle_count: None,
+                animation_direction,
             };
         }
 
@@ -153,7 +163,7 @@ impl AnimationCache {
 
         // Filter out stages with 0 frames / durations of 0
         //
-        // Doing so at this stage will simplify what follows as well as the playback code as we won't have to handle those special cases
+        // Doing so at this point will simplify what follows as well as the playback code as we won't have to handle those special cases
 
         let stages_data = stages_data.filter(
             |(_, stage_clip, _, _, _, _, stage_duration_with_repetitions_ms)| {
@@ -174,18 +184,25 @@ impl AnimationCache {
 
         if animation_cycle_duration_ms == 0 {
             return Self {
-                frames_ping: Vec::new(),
+                frames: Vec::new(),
                 frames_pong: None,
                 cycle_count: None,
+                animation_direction,
             };
         }
 
-        // Generate all the frames that make up one cycle of the animation
+        // Generate all the frames that make up one full cycle of the animation
+        //
+        // Level 1: stages
+        // Level 2: cycles
+        // Level 3: frames
+        //
+        // This nested structure is not ideal to work with but it's convenient as it preserves the clip boundaries
+        // that we need to inject events at the appropriate frames
 
-        let mut frames_ping: Vec<AnimationFrame> = Vec::new();
+        let mut all_cycles: Vec<Vec<Vec<AnimationFrame>>> = Vec::new();
 
-        // Track when the previous "valid" stage so that we can reference it in the end events added at the start of the following stages
-        let mut previous_valid_stage_index: Option<usize> = None;
+        let mut all_cycles_pong = None;
 
         for (
             stage_index,
@@ -193,13 +210,11 @@ impl AnimationCache {
             stage_duration,
             stage_repeat,
             stage_direction,
-            stage_easing,
+            _stage_easing,
             stage_duration_with_repetitions_ms,
-        ) in stages_data
+        ) in stages_data.clone()
         {
-            let mut current_stage_frames: Vec<AnimationFrame> = Vec::new();
-
-            // Adjust the actual duration of the stage if the animation specifies its own duration
+            // Adjust the actual duration of the current stage if the animation specifies its own duration
 
             let stage_corrected_duration = match animation.duration() {
                 // No duration is defined for the animation: keep the stage's duration
@@ -232,9 +247,9 @@ impl AnimationCache {
                 }
             };
 
-            // Generate all the frames for a single cycle of the stage
+            // Generate all the frames for a single cycle of the current stage
 
-            let one_cycle_frames = stage_clip.frame_indices().iter().enumerate().map(
+            let one_cycle = stage_clip.frame_indices().iter().enumerate().map(
                 move |(frame_index, atlas_index)| {
                     // Convert this frame's markers into events to emit when reaching it
 
@@ -262,109 +277,164 @@ impl AnimationCache {
                 },
             );
 
-            // Repeat and reverse the cycle into frames for all the cycles of the stage
+            // Repeat/reverse the cycle for all the cycles of the current stage
+
+            let mut stage_cycles = Vec::new();
 
             for cycle_index in 0..stage_repeat {
-                let mut current_cycle_frames = match stage_direction {
-                    AnimationDirection::Forwards => one_cycle_frames.clone().collect_vec(),
-                    AnimationDirection::Backwards => one_cycle_frames.clone().rev().collect_vec(),
+                stage_cycles.push(match stage_direction {
+                    AnimationDirection::Forwards => one_cycle.clone().collect_vec(),
+                    AnimationDirection::Backwards => one_cycle.clone().rev().collect_vec(),
                     AnimationDirection::PingPong => {
                         // First cycle: use all the frames
                         if cycle_index == 0 {
-                            one_cycle_frames.clone().collect_vec()
+                            one_cycle.clone().collect_vec()
                         }
                         // Following odd cycles, use all the frames but the first one, and reversed
                         else if cycle_index % 2 == 1 {
-                            one_cycle_frames.clone().rev().skip(1).collect_vec()
+                            one_cycle.clone().rev().skip(1).collect_vec()
                         }
                         // Even cycles: use all the frames but the first one
                         else {
-                            one_cycle_frames.clone().skip(1).collect_vec()
+                            one_cycle.clone().skip(1).collect_vec()
                         }
                     }
-                };
-
-                // Inject a ClipCycleEnd event on the first frame of each cycle after the first one
-
-                if cycle_index > 0 {
-                    if let Some(cycle_first_frame) = current_cycle_frames.get_mut(0) {
-                        cycle_first_frame
-                            .events
-                            .push(AnimationFrameEvent::ClipCycleEnd {
-                                stage_index,
-                                animation_id,
-                            });
-                    }
-                }
-
-                current_stage_frames.extend(current_cycle_frames);
+                });
             }
 
-            // Inject end events on the first frame of each stage after the first one
-            //
-            // Because we'll return None at the end of the animation, the parent Animator
-            // will be responsible for generating this event for the last animation cycle
-
-            if let Some(previous_stage_index) = previous_valid_stage_index {
-                if let Some(stage_first_frame) = current_stage_frames.get_mut(0) {
-                    // The last ClipCycleEnd event
-
-                    stage_first_frame
-                        .events
-                        .push(AnimationFrameEvent::ClipCycleEnd {
-                            stage_index: previous_stage_index,
-                            animation_id,
-                        });
-
-                    // The ClipEnd event
-
-                    stage_first_frame.events.push(AnimationFrameEvent::ClipEnd {
-                        stage_index: previous_stage_index,
-                        animation_id,
-                    });
-                }
-            }
-
-            previous_valid_stage_index = Some(stage_index);
-
-            // Apply easing on the stage
-
-            apply_easing(&mut current_stage_frames, &stage_easing);
-
-            // Push the stage's frames to the animation's frames
-
-            frames_ping.extend(current_stage_frames);
+            all_cycles.push(stage_cycles);
         }
 
-        // Apply easing on the whole animation
-
-        let animation_easing = animation.easing().unwrap_or(Easing::default());
-
-        apply_easing(&mut frames_ping, &animation_easing);
-
-        // Filter out frames with a duration of 0 that could have ended here because of floating-point errors.
+        // Filter out empty stages/cycles/frames
         //
         // Removing them does not change the nature of the animation and simplifies the playback code since
         // we won't have to consider this special case.
+        //
+        // This must be done before attaching events or we might lose some of them!
 
-        frames_ping.retain(|frame| frame.duration > 0);
+        for stage in &mut all_cycles {
+            for cycle in &mut *stage {
+                cycle.retain(|frame| frame.duration > 0);
+            }
 
-        // Apply the direction on the whole animation
+            stage.retain(|cycle| cycle.len() > 0);
+        }
 
-        let animation_direction = animation.direction().unwrap_or_default();
+        all_cycles.retain(|stage| stage.len() > 0);
 
-        let mut frames_pong = None;
+        // Order/reverse the cycles to match the animation direction if needed
+
+        let reverse = |all_cycles: &mut Vec<Vec<Vec<AnimationFrame>>>| {
+            for stage in &mut *all_cycles {
+                for cycle in &mut *stage {
+                    cycle.reverse();
+                }
+
+                stage.reverse();
+            }
+
+            all_cycles.reverse();
+        };
 
         match animation_direction {
-            // Backward: reverse the frames
-            AnimationDirection::Backwards => frames_ping.reverse(),
+            // Backwards: reverse all the frames
+            AnimationDirection::Backwards => reverse(&mut all_cycles),
 
-            // PingPong: copy and reverse the frames in a second cache to be played on odd cycles
+            // PingPong: reverse all the frame in the alternate "pong" collection
             AnimationDirection::PingPong => {
-                frames_pong = Some(frames_ping.iter().cloned().rev().collect_vec())
+                all_cycles_pong = Some(all_cycles.clone());
+                reverse(all_cycles_pong.as_mut().unwrap())
             }
+
+            // Forwards: nothing to do
             _ => (),
         }
+
+        // Merge the nested frames into a single sequence
+
+        let merge_cycles = |cycles: &mut Vec<Vec<Vec<AnimationFrame>>>| {
+            let mut all_frames = Vec::new();
+
+            // Inject events at clip/clip cycle boundaries
+
+            let mut previous_stage_stage_index = None;
+            let mut previous_cycle_stage_index = None;
+
+            for stage in &mut *cycles {
+                for cycle in &mut *stage {
+                    // Inject a ClipCycleEnd event on the first frame of each cycle after the first one
+
+                    if let Some(stage_index) = previous_cycle_stage_index {
+                        // At this point, we can safely access [0] as empty cycles have been filtered out
+                        // TODO ???
+
+                        cycle[0].events.push(AnimationFrameEvent::ClipCycleEnd {
+                            stage_index,
+                            animation_id,
+                        });
+                    }
+
+                    previous_cycle_stage_index = Some(cycle[0].stage_index);
+                }
+
+                // Inject a ClipEnd event on the first frame of each stage after the first one
+                //
+                // Because we'll return None at the end of the animation, the parent Animator
+                // will be responsible for generating ClipCycleEnd/ClipEnd for the last animation cycle
+
+                if let Some(stage_index) = previous_stage_stage_index {
+                    stage[0][0].events.push(AnimationFrameEvent::ClipEnd {
+                        stage_index,
+                        animation_id,
+                    });
+                }
+
+                previous_stage_stage_index = Some(stage[0][0].stage_index);
+            }
+
+            // Build a (stage index, easing) record
+
+            let stages_easing: HashMap<usize, Easing> = HashMap::from_iter(
+                stages_data
+                    .clone()
+                    .map(|(stage_index, _, _, _, _, stage_easing, _)| (stage_index, stage_easing)),
+            );
+
+            // Merge the nested frames into a single sequence
+
+            for stage in cycles {
+                let mut stage_frames = Vec::new();
+
+                for cycle in stage {
+                    stage_frames.extend(cycle.clone());
+                }
+
+                // Apply easing on the stage
+
+                let stage_index = stage_frames[0].stage_index;
+                let easing = stages_easing[&stage_index];
+
+                apply_easing(&mut stage_frames, easing);
+
+                all_frames.extend(stage_frames.clone());
+            }
+
+            // Apply easing on the whole animation
+
+            let animation_easing = animation.easing().unwrap_or(Easing::default());
+
+            apply_easing(&mut all_frames, animation_easing);
+
+            all_frames
+        };
+
+        let all_frames = merge_cycles(&mut all_cycles);
+
+        let all_frames_pong = if let Some(cycles) = &mut all_cycles_pong {
+            Some(merge_cycles(cycles))
+        } else {
+            None
+        };
 
         // Compute the total number of stages (taking repetitions into account)
 
@@ -375,15 +445,18 @@ impl AnimationCache {
             AnimationRepeat::Cycles(n) => Some(n),
         };
 
+        // Done!
+
         Self {
-            frames_ping,
-            frames_pong,
+            frames: all_frames,
+            frames_pong: all_frames_pong,
             cycle_count,
+            animation_direction,
         }
     }
 }
 
-fn apply_easing(frames: &mut Vec<AnimationFrame>, easing: &Easing) {
+fn apply_easing(frames: &mut Vec<AnimationFrame>, easing: Easing) {
     // Linear easing: exit early, there's nothing to do
 
     if matches!(easing, Easing::Linear) {

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::animation::AnimationId;
+use crate::animation::{AnimationDirection, AnimationId};
 
 use super::cache::{AnimationCache, AnimationFrame, AnimationFrameEvent};
 
@@ -90,13 +90,22 @@ impl Iterator for AnimationIterator {
 
                 self.animation_cycle_just_ended = Some(frame.stage_index);
 
+                // Reset the frame counter
+
                 if self
                     .cache
                     .cycle_count
                     .map(|cycle_count| self.current_animation_cycle_index < cycle_count as usize)
                     .unwrap_or(true)
                 {
-                    self.current_frame_index = 0;
+                    // PingPong: skip the first frame
+
+                    self.current_frame_index =
+                        if matches!(self.cache.animation_direction, AnimationDirection::PingPong) {
+                            1
+                        } else {
+                            0
+                        };
                 }
             }
 
