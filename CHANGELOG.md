@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0 - 2024-04-10
+
+### Fixed
+
+- Fix some direction combinations emitting events on the wrong frames
+
 ## 0.1.0-beta.1 - 2024-04-08
 
 ### Fixed
