@@ -80,7 +80,7 @@ fn setup(
             ..default()
         },
         // Add a SpritesheetAnimation component that references our newly created animation
-        SpritesheetAnimation::from(animation_id),
+        SpritesheetAnimation::from_id(animation_id),
     ));
 
     commands.spawn(Camera2dBundle::default());
@@ -179,7 +179,7 @@ fn spawn_enemies(mut commands: Commands, mut library: ResMut<SpritesheetLibrary>
 
         commands.spawn((
             SpriteSheetBundle { /* .... */ },
-            SpritesheetAnimation::from(animation_id),
+            SpritesheetAnimation::from_id(animation_id),
         ));
     }
 }
@@ -222,7 +222,7 @@ fn spawn_enemies(mut commands: Commands, library: Res<SpritesheetLibrary>) {
         for _ in 0..100 {
             commands.spawn((
                 SpriteSheetBundle { /* .... */ },
-                SpritesheetAnimation::from(animation_id),
+                SpritesheetAnimation::from_id(animation_id),
             ));
         }
     }
