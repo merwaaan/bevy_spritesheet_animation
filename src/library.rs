@@ -100,7 +100,7 @@ impl SpritesheetLibrary {
     ///
     /// let stage = AnimationStage::from_clip(clip_id);
     /// ```
-    pub fn new_clip<F: Fn(&mut AnimationClip)>(&mut self, builder: F) -> AnimationClipId {
+    pub fn new_clip<F: FnMut(&mut AnimationClip)>(&mut self, mut builder: F) -> AnimationClipId {
         let id = AnimationClipId {
             value: self.clips.len(),
         };
@@ -231,7 +231,7 @@ impl SpritesheetLibrary {
     ///     ));
     /// }
     /// ```
-    pub fn new_animation<F: Fn(&mut Animation)>(&mut self, builder: F) -> AnimationId {
+    pub fn new_animation<F: FnMut(&mut Animation)>(&mut self, mut builder: F) -> AnimationId {
         let id = AnimationId {
             value: self.animations.len(),
         };

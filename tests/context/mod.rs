@@ -154,7 +154,10 @@ impl Context {
             .clone()
     }
 
-    pub fn update_sprite_animation<F: Fn(&mut SpritesheetAnimation) -> ()>(&mut self, builder: F) {
+    pub fn update_sprite_animation<F: FnMut(&mut SpritesheetAnimation) -> ()>(
+        &mut self,
+        mut builder: F,
+    ) {
         let mut sprite_animation = self
             .app
             .world

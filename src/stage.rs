@@ -99,7 +99,7 @@ impl AnimationStage {
     ///         }));
     /// });
     /// ```
-    pub fn new_with<F: Fn(&mut Self)>(clip_id: AnimationClipId, builder: F) -> Self {
+    pub fn new_with<F: FnMut(&mut Self)>(clip_id: AnimationClipId, mut builder: F) -> Self {
         let mut stage = AnimationStage::from_clip(clip_id);
 
         builder(&mut stage);
