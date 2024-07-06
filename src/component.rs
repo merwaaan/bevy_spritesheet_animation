@@ -59,6 +59,9 @@ pub struct SpritesheetAnimation {
 
     /// A speed multiplier for the animation, defaults to 1
     pub speed_factor: f32,
+
+    /// Marks the animation to be reset by the animator on the next update
+    pub(crate) reset_requested: bool,
 }
 
 impl SpritesheetAnimation {
@@ -72,6 +75,12 @@ impl SpritesheetAnimation {
             animation_id,
             playing: true,
             speed_factor: 1.0,
+            reset_requested: false,
         }
+    }
+
+    /// Resets the animation to its initial state.
+    pub fn reset(&mut self) {
+        self.reset_requested = true;
     }
 }

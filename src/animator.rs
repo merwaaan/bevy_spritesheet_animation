@@ -59,7 +59,7 @@ impl SpritesheetAnimator {
         time: &ActualTime,
         library: &SpritesheetLibrary,
         event_writer: &mut EventWriter<AnimationEvent>,
-        query: &mut Query<(Entity, &SpritesheetAnimation, &mut TextureAtlas)>,
+        query: &mut Query<(Entity, &mut SpritesheetAnimation, &mut TextureAtlas)>,
     ) {
         // Clear outdated animation instances associated to entities that do not have the component anymore
 
@@ -68,17 +68,27 @@ impl SpritesheetAnimator {
 
         // Run animations for all the entities
 
-        for (entity, entity_animation, mut entity_atlas) in query.iter_mut() {
-            // Create a new animation instance if the entity is new OR it switched animation
+        for (entity, mut entity_animation, mut entity_atlas) in query.iter_mut() {
+            // Create a new animation instance if:
+            // - the entity is new OR
+            // - it switched animation OR
+            // - a reset has been requested
 
             let needs_new_animation_instance = match self.animation_instances.get(&entity) {
                 // The entity has an animation instance already but it switched animation
-                Some(instance) => instance.animation_id != entity_animation.animation_id,
+                Some(instance) => {
+                    instance.animation_id != entity_animation.animation_id
+                        || entity_animation.reset_requested
+                }
                 // The entity has no animation instance yet
                 None => true,
             };
 
             if needs_new_animation_instance {
+                // Clear any reset request
+
+                entity_animation.reset_requested = false;
+
                 // Retrieve the cached animation data (create it if needed)
 
                 let cache = self

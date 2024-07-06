@@ -11,6 +11,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(SpritesheetAnimationPlugin)
         .add_systems(Startup, setup)
+        .add_systems(Update, reset_on_keypress)
         .run();
 }
 
@@ -64,8 +65,8 @@ fn setup(
         anim.add_stage(idle_clip_id.into())
             .add_stage(run_clip_id.into())
             .add_stage(shoot_clip_id.into())
-            // Let's repeat it 10 times and then stop
-            .set_repeat(AnimationRepeat::Cycles(10));
+            // Let's repeat it some times and then stop
+            .set_repeat(AnimationRepeat::Cycles(2));
     });
 
     // Spawn a sprite that uses the animation
@@ -81,4 +82,15 @@ fn setup(
         },
         SpritesheetAnimation::from_id(anim_id),
     ));
+}
+
+fn reset_on_keypress(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut sprites: Query<&mut SpritesheetAnimation>,
+) {
+    if keyboard.get_just_pressed().len() > 0 {
+        for mut animation in &mut sprites {
+            animation.reset();
+        }
+    }
 }
