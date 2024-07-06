@@ -28,7 +28,7 @@ fn setup(
     let texture = assets.load("character.png");
 
     let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-        Vec2::new(96.0, 96.0),
+        UVec2::new(96, 96),
         8,
         8,
         None,
@@ -72,12 +72,12 @@ fn setup(
     // Spawn a sprite that uses the animation
 
     commands.spawn((
-        SpriteSheetBundle {
+        SpriteBundle {
             texture,
-            atlas: TextureAtlas {
-                layout,
-                ..default()
-            },
+            ..default()
+        },
+        TextureAtlas {
+            layout,
             ..default()
         },
         SpritesheetAnimation::from_id(anim_id),

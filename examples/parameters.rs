@@ -31,7 +31,7 @@ fn setup(
     let texture = assets.load("ball.png");
 
     let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-        Vec2::new(100.0, 20.0),
+        UVec2::new(100, 20),
         1,
         30,
         None,
@@ -102,13 +102,13 @@ fn setup(
 
         commands
             .spawn((
-                SpriteSheetBundle {
+                SpriteBundle {
                     texture: texture.clone(),
-                    atlas: TextureAtlas {
-                        layout: layout.clone(),
-                        ..default()
-                    },
                     transform: Transform::from_translation(grid_position(6, 6, index as u32)),
+                    ..default()
+                },
+                TextureAtlas {
+                    layout: layout.clone(),
                     ..default()
                 },
                 SpritesheetAnimation::from_id(animation_id),

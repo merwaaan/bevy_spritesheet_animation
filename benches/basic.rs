@@ -11,24 +11,27 @@ fn basic(c: &mut Criterion) {
                 .add_plugins(SpritesheetAnimationPlugin)
                 .finish();
 
-            let assets = app.world.get_resource::<AssetServer>().unwrap();
+            let assets = app.world().get_resource::<AssetServer>().unwrap();
 
             let texture = assets.load("character.png");
 
             let mut atlas_layouts = app
-                .world
+                .world_mut()
                 .get_resource_mut::<Assets<TextureAtlasLayout>>()
                 .unwrap();
 
             let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-                Vec2::new(96.0, 96.0),
+                UVec2::new(96, 96),
                 8,
                 8,
                 None,
                 None,
             ));
 
-            let mut library = app.world.get_resource_mut::<SpritesheetLibrary>().unwrap();
+            let mut library = app
+                .world_mut()
+                .get_resource_mut::<SpritesheetLibrary>()
+                .unwrap();
 
             let clip_id = library.new_clip(|clip| {
                 clip.push_frame_indices([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -39,13 +42,13 @@ fn basic(c: &mut Criterion) {
             });
 
             for _ in 0..1000 {
-                app.world.spawn((
-                    SpriteSheetBundle {
+                app.world_mut().spawn((
+                    SpriteBundle {
                         texture: texture.clone(),
-                        atlas: TextureAtlas {
-                            layout: layout.clone(),
-                            ..default()
-                        },
+                        ..default()
+                    },
+                    TextureAtlas {
+                        layout: layout.clone(),
                         ..default()
                     },
                     SpritesheetAnimation::from_id(animation_id),
