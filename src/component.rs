@@ -31,7 +31,7 @@ use crate::animation::AnimationId;
 ///
 ///     // ... omitted: load a texture and an atlas layout ...
 ///     # let texture = assets.load("fake");
-///     # let layout = layouts.add(TextureAtlasLayout::new_empty(Vec2::ONE));
+///     # let layout = layouts.add(TextureAtlasLayout::new_empty(UVec2::ONE));
 ///
 ///     commands.spawn((
 ///         SpriteSheetBundle {
