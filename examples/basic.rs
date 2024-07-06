@@ -61,7 +61,7 @@ fn spawn_sprite(
     let texture = assets.load("character.png");
 
     let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-        Vec2::new(96.0, 96.0),
+        UVec2::new(96, 96),
         8,
         8,
         None,
@@ -76,12 +76,12 @@ fn spawn_sprite(
         // Spawn a sprite with Bevy's built-in SpriteSheetBundle
 
         commands.spawn((
-            SpriteSheetBundle {
+            SpriteBundle {
                 texture,
-                atlas: TextureAtlas {
-                    layout,
-                    ..default()
-                },
+                ..default()
+            },
+            TextureAtlas {
+                layout,
                 ..default()
             },
             //  Add a SpritesheetAnimation component that references our animation

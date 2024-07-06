@@ -8,7 +8,11 @@ use context::*;
 fn library_available_as_a_resource() {
     let ctx = Context::new();
 
-    assert!(ctx.app.world.get_resource::<SpritesheetLibrary>().is_some());
+    assert!(ctx
+        .app
+        .world()
+        .get_resource::<SpritesheetLibrary>()
+        .is_some());
 }
 
 #[test]
@@ -17,7 +21,7 @@ fn animation_events_available_as_a_resource() {
 
     assert!(ctx
         .app
-        .world
+        .world()
         .get_resource::<Events<AnimationEvent>>()
         .is_some());
 }

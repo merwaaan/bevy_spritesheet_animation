@@ -60,7 +60,7 @@
 //!     let texture = assets.load("character.png");
 //!
 //!     let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-//!         Vec2::new(96.0, 96.0),
+//!         UVec2::new(96, 96),
 //!         8,
 //!         8,
 //!         None,

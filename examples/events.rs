@@ -17,6 +17,7 @@
 pub mod common;
 
 use bevy::{
+    color::palettes::css::{DEEP_PINK, GRAY, YELLOW},
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
@@ -48,7 +49,7 @@ fn setup(
     let texture = assets.load("character.png");
 
     let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-        Vec2::new(96.0, 96.0),
+        UVec2::new(96, 96),
         8,
         8,
         None,
@@ -99,12 +100,12 @@ fn setup(
     // Spawn a sprite using the animation
 
     commands.spawn((
-        SpriteSheetBundle {
+        SpriteBundle {
             texture,
-            atlas: TextureAtlas {
-                layout,
-                ..default()
-            },
+            ..default()
+        },
+        TextureAtlas {
+            layout,
             ..default()
         },
         SpritesheetAnimation::from_id(animation_id),
@@ -221,9 +222,9 @@ fn show_triggered_events(
 
     for (mut color, event_type) in &mut squares {
         if triggered_events.contains(event_type) {
-            color.0 = Color::PINK;
+            color.0 = Color::from(DEEP_PINK);
         } else {
-            color.0 = Color::GRAY;
+            color.0 = Color::from(GRAY);
         }
     }
 }
@@ -259,7 +260,7 @@ fn spawn_visual_effects(
                     commands.spawn((
                         MaterialMesh2dBundle {
                             mesh: Mesh2dHandle(meshes.add(Circle { radius: 3.0 })),
-                            material: materials.add(Color::YELLOW),
+                            material: materials.add(Color::from(YELLOW)),
                             transform: Transform::from_xyz(20.0, 15.0, 0.0),
                             ..default()
                         },
@@ -314,11 +315,11 @@ fn animate_footsteps(
         if let Some(material) = materials.get_mut(material_handle) {
             material
                 .color
-                .set_a(material.color.a() - time.delta_seconds() * 4.0);
+                .set_alpha(material.color.alpha() - time.delta_seconds() * 4.0);
 
             // Despawn when transparent
 
-            if material.color.a() <= 0.0 {
+            if material.color.alpha() <= 0.0 {
                 commands.entity(entity).despawn();
             }
         }

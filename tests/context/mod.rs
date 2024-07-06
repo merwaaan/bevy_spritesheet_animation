@@ -40,23 +40,28 @@ impl Context {
         // Insert a manual update strategy to control time
         .insert_resource(TimeUpdateStrategy::ManualInstant(Instant::now()));
 
-        // Update the app once so that Time's delta is not zero in the tests
+        // Increase the max delta for each frame
+        app.world_mut()
+            .get_resource_mut::<Time<Virtual>>()
+            .unwrap()
+            .set_max_delta(Duration::from_millis(10000));
 
+        // Update the app once so that Time's delta is not zero in the tests
         app.update();
 
         // Add a sprite
 
-        let assets = app.world.get_resource::<AssetServer>().unwrap();
+        let assets = app.world().get_resource::<AssetServer>().unwrap();
 
         let texture = assets.load("character.png");
 
         let mut atlas_layouts = app
-            .world
+            .world_mut()
             .get_resource_mut::<Assets<TextureAtlasLayout>>()
             .unwrap();
 
         let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-            Vec2::new(96.0, 96.0),
+            UVec2::new(96, 96),
             8,
             8,
             None,
@@ -64,15 +69,17 @@ impl Context {
         ));
 
         let sprite = app
-            .world
-            .spawn(SpriteSheetBundle {
-                texture,
-                atlas: TextureAtlas {
+            .world_mut()
+            .spawn((
+                SpriteBundle {
+                    texture,
+                    ..default()
+                },
+                TextureAtlas {
                     layout,
                     ..default()
                 },
-                ..default()
-            })
+            ))
             .id();
 
         Self { app, sprite }
@@ -80,14 +87,14 @@ impl Context {
 
     pub fn library(&mut self) -> Mut<'_, SpritesheetLibrary> {
         self.app
-            .world
+            .world_mut()
             .get_resource_mut::<SpritesheetLibrary>()
             .unwrap()
     }
 
     pub fn add_animation_to_sprite(&mut self, animation_id: AnimationId) {
         self.app
-            .world
+            .world_mut()
             .entity_mut(self.sprite)
             .insert(SpritesheetAnimation::from_id(animation_id));
     }
@@ -97,7 +104,7 @@ impl Context {
 
         let mut events_resources = self
             .app
-            .world
+            .world_mut()
             .get_resource_mut::<Events<AnimationEvent>>()
             .unwrap();
 
@@ -105,7 +112,10 @@ impl Context {
 
         // Move time forwards
 
-        let mut time_strategy = self.app.world.get_resource_mut::<TimeUpdateStrategy>();
+        let mut time_strategy = self
+            .app
+            .world_mut()
+            .get_resource_mut::<TimeUpdateStrategy>();
 
         if let Some(TimeUpdateStrategy::ManualInstant(ref mut last_instant)) =
             time_strategy.as_deref_mut()
@@ -132,7 +142,7 @@ impl Context {
 
         let events_resources = self
             .app
-            .world
+            .world_mut()
             .get_resource_mut::<Events<AnimationEvent>>()
             .unwrap();
 
@@ -147,7 +157,7 @@ impl Context {
 
     fn get_sprite_atlas(&self, entity: Entity) -> TextureAtlas {
         self.app
-            .world
+            .world()
             .entity(entity)
             .get::<TextureAtlas>()
             .unwrap()
@@ -157,7 +167,7 @@ impl Context {
     pub fn update_sprite_animation<F: Fn(&mut SpritesheetAnimation) -> ()>(&mut self, builder: F) {
         let mut sprite_animation = self
             .app
-            .world
+            .world_mut()
             .get_mut::<SpritesheetAnimation>(self.sprite)
             .unwrap();
 

@@ -30,7 +30,7 @@ fn setup(
     let texture = assets.load("character.png");
 
     let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-        Vec2::new(96.0, 96.0),
+        UVec2::new(96, 96),
         8,
         8,
         None,
@@ -91,13 +91,13 @@ fn setup(
         let animation = animation_ids.choose(&mut rng).unwrap();
 
         commands.spawn((
-            SpriteSheetBundle {
+            SpriteBundle {
                 texture: texture.clone(),
-                atlas: TextureAtlas {
-                    layout: layout.clone(),
-                    ..default()
-                },
                 transform: Transform::from_translation(random_position()),
+                ..default()
+            },
+            TextureAtlas {
+                layout: layout.clone(),
                 ..default()
             },
             SpritesheetAnimation::from_id(*animation),
