@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 - 2024-07-06
+
+### Added
+
+- Support Bevy 0.14.0
+- Add a reset() method on the SpritesheetAnimation component
+
+### Fixed
+
+- Switch new_clip/new_animation closures to FnMut to allow mutations
+
 ## 0.1.0 - 2024-04-10
 
 ### Fixed
