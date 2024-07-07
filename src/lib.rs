@@ -86,7 +86,7 @@
 
 pub mod animation;
 pub mod clip;
-pub mod component;
+pub mod components;
 pub mod easing;
 pub mod events;
 pub mod library;
@@ -103,7 +103,7 @@ pub mod prelude {
             Animation, AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat,
         },
         clip::{AnimationClip, AnimationClipId},
-        component::SpritesheetAnimation,
+        components::spritesheet_animation::SpritesheetAnimation,
         easing::{Easing, EasingVariety},
         events::{AnimationEvent, AnimationMarkerId},
         library::SpritesheetLibrary,

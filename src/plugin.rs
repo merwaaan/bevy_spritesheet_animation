@@ -1,8 +1,10 @@
 use bevy::app::{App, Plugin, PostUpdate};
 
 use crate::{
-    animator::SpritesheetAnimator, events::AnimationEvent, library::SpritesheetLibrary,
-    systems::play_animations,
+    animator::SpritesheetAnimator,
+    events::AnimationEvent,
+    library::SpritesheetLibrary,
+    systems::{sprite3d, spritesheet_animation::play_animations},
 };
 
 /// The spritesheet animation plugin to add to Bevy apps.
@@ -43,9 +45,20 @@ pub struct SpritesheetAnimationPlugin;
 
 impl Plugin for SpritesheetAnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(SpritesheetLibrary::new())
+        app
+            // The spritesheet library, for creating clips, animations and markers
+            .insert_resource(SpritesheetLibrary::new())
+            // The animator responsible for running animations
             .insert_resource(SpritesheetAnimator::new())
+            // Atlas UVs for 3D sprites
+            .insert_resource(sprite3d::AtlasUvs::default())
+            // Animations events
             .add_event::<AnimationEvent>()
-            .add_systems(PostUpdate, play_animations);
+            // Main animation system
+            .add_systems(PostUpdate, play_animations)
+            // 3D sprite systems
+            .add_systems(PostUpdate, sprite3d::setup_rendering)
+            .add_systems(PostUpdate, sprite3d::sync_sprites_with_component)
+            .add_systems(PostUpdate, sprite3d::sync_sprites_with_atlas);
     }
 }
