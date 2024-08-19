@@ -43,7 +43,7 @@ impl fmt::Display for AnimationClipId {
 /// let clip_id = library.new_clip(|clip| {
 ///     clip
 ///         // Use all the frames in row 4
-///         .push_frame_indices(spritesheet.row(4))
+///         .push_frame_indices(spritesheet.row(3))
 ///         // Set a default duration for this clip
 ///         .set_default_duration(AnimationDuration::PerCycle(500));
 /// });

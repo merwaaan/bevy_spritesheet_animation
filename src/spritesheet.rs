@@ -280,7 +280,7 @@ impl Spritesheet {
     /// let clip_id = library.new_clip(|clip| {
     ///     clip.push_frame_indices(spritesheet.column(1));
     ///
-    ///     // This clip will play frames C → F
+    ///     // This clip will play frames B → E
     ///
     ///     assert_eq!(clip.frame_indices(), vec![1, 4]);
     /// });
