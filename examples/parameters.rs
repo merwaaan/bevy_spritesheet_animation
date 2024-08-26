@@ -104,7 +104,7 @@ fn setup(
             .spawn((
                 SpriteBundle {
                     texture: texture.clone(),
-                    transform: Transform::from_translation(grid_position(6, 6, index as u32)),
+                    transform: Transform::from_translation(grid_position(6, 6, index)),
                     ..default()
                 },
                 TextureAtlas {

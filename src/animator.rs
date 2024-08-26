@@ -12,8 +12,9 @@ use bevy::{
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    animation::AnimationId, component::SpritesheetAnimation, events::AnimationEvent,
-    library::SpritesheetLibrary, systems::ActualTime,
+    animation::AnimationId, components::spritesheet_animation::SpritesheetAnimation,
+    events::AnimationEvent, library::SpritesheetLibrary,
+    systems::spritesheet_animation::ActualTime,
 };
 
 use self::{

@@ -219,13 +219,13 @@ impl SpritesheetLibrary {
     ///     // ... Load a texture and create an atlas layout for the sprite ...
     ///
     ///     commands.spawn((
-    ///         SpriteSheetBundle {
+    ///         SpriteBundle {
     ///             texture: texture.clone(),
-    ///             atlas: TextureAtlas {
-    ///                 layout: layout.clone(),
-    ///                 ..default()
-    ///             },
     ///             ..default()
+    ///         },
+    ///         TextureAtlas {
+    ///             layout: layout.clone(),
+    ///            ..default()
     ///         },
     ///         SpritesheetAnimation::from_id(animation_id)
     ///     ));

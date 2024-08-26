@@ -34,12 +34,12 @@ use crate::animation::AnimationId;
 ///     # let layout = layouts.add(TextureAtlasLayout::new_empty(UVec2::ONE));
 ///
 ///     commands.spawn((
-///         SpriteSheetBundle {
+///         SpriteBundle {
 ///             texture: texture.clone(),
-///             atlas: TextureAtlas {
-///                 layout: layout.clone(),
-///                 ..default()
-///             },
+///             ..default()
+///         },
+///         TextureAtlas {
+///             layout: layout.clone(),
 ///             ..default()
 ///         },
 ///         SpritesheetAnimation::from_id(animation_id),

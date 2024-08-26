@@ -366,7 +366,6 @@ impl AnimationCache {
 
                     if let Some(stage_index) = previous_cycle_stage_index {
                         // At this point, we can safely access [0] as empty cycles have been filtered out
-                        // TODO ???
 
                         cycle[0].events.push(AnimationFrameEvent::ClipCycleEnd {
                             stage_index,

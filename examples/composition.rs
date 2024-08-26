@@ -61,7 +61,7 @@ fn setup(
             .set_default_repeat(1);
     });
 
-    let anim_id = library.new_animation(|anim| {
+    let animation_id = library.new_animation(|anim| {
         anim.add_stage(idle_clip_id.into())
             .add_stage(run_clip_id.into())
             .add_stage(shoot_clip_id.into())
@@ -80,7 +80,7 @@ fn setup(
             layout,
             ..default()
         },
-        SpritesheetAnimation::from_id(anim_id),
+        SpritesheetAnimation::from_id(animation_id),
     ));
 }
 

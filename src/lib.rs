@@ -2,6 +2,7 @@
 //!
 //!# Features
 //!
+//! - Animate 2D and [3D sprites](crate::prelude::Sprite3DBundle)! 🎉
 //! - A single Bevy [component](crate::prelude::SpritesheetAnimation) to add to your entities to play animations.
 //! - Tunable parameters: [duration](crate::prelude::AnimationDuration), [repetitions](crate::prelude::AnimationRepeat), [direction](crate::prelude::AnimationDirection), [easing](crate::prelude::Easing).
 //! - [Composable animations](crate::prelude::Animation) from multiple clips.
@@ -55,7 +56,7 @@
 //!         // See the `composition` example for more details.
 //!     });
 //!
-//!     // Spawn a sprite using Bevy's built-in SpriteSheetBundle
+//!     // Spawn a sprite using Bevy's built-in SpriteBundle
 //!
 //!     let texture = assets.load("character.png");
 //!
@@ -68,12 +69,12 @@
 //!     ));
 //!
 //!     commands.spawn((
-//!         SpriteSheetBundle {
+//!         SpriteBundle {
 //!             texture,
-//!             atlas: TextureAtlas {
-//!                 layout,
-//!                 ..default()
-//!             },
+//!             ..default()
+//!         },
+//!         TextureAtlas {
+//!             layout,
 //!             ..default()
 //!         },
 //!         // Add a SpritesheetAnimation component that references our newly created animation
@@ -86,7 +87,7 @@
 
 pub mod animation;
 pub mod clip;
-pub mod component;
+pub mod components;
 pub mod easing;
 pub mod events;
 pub mod library;
@@ -103,7 +104,10 @@ pub mod prelude {
             Animation, AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat,
         },
         clip::{AnimationClip, AnimationClipId},
-        component::SpritesheetAnimation,
+        components::{
+            sprite3d::{Sprite3D, Sprite3DBuilder, Sprite3DBundle},
+            spritesheet_animation::SpritesheetAnimation,
+        },
         easing::{Easing, EasingVariety},
         events::{AnimationEvent, AnimationMarkerId},
         library::SpritesheetLibrary,

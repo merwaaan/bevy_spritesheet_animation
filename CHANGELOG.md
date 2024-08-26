@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 - 2024-08-26
+
+### Added
+
+- Add support for 3D sprites
+
 ## 0.2.0 - 2024-07-06
 
 ### Added

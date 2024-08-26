@@ -12,7 +12,7 @@ fn main() {
         // Add the plugin to enable animations.
         // This makes the SpritesheetLibrary resource available to your systems.
         .add_plugins(SpritesheetAnimationPlugin)
-        .add_systems(Startup, (setup, spawn_sprite))
+        .add_systems(Startup, (setup, spawn_sprite.after(setup)))
         .run();
 }
 
@@ -73,7 +73,7 @@ fn spawn_sprite(
     let animation_id = library.animation_with_name("walk");
 
     if let Some(id) = animation_id {
-        // Spawn a sprite with Bevy's built-in SpriteSheetBundle
+        // Spawn a sprite with Bevy's built-in SpriteBundle
 
         commands.spawn((
             SpriteBundle {

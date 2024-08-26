@@ -9,6 +9,7 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for anima
 
 # Features
 
+- Animate 2D and [3D sprites](#3d-sprites)! 🎉
 - A single Bevy [component](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/component/struct.SpritesheetAnimation.html) to add to your entities to play animations.
 - Tunable parameters: [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html), [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html).
 - [Composable animations](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html) from multiple clips.
@@ -58,7 +59,7 @@ fn setup(
         // See the `composition` example for more details.
     });
 
-    // Spawn a sprite using Bevy's built-in SpriteSheetBundle
+    // Spawn a sprite using Bevy's built-in SpriteBundle
 
     let texture = assets.load("character.png");
 
@@ -71,12 +72,12 @@ fn setup(
     ));
 
     commands.spawn((
-        SpriteSheetBundle {
+        SpriteBundle {
             texture,
-            atlas: TextureAtlas {
-                layout,
-                ..default()
-            },
+            ..default()
+        },
+        TextureAtlas {
+            layout,
             ..default()
         },
         // Add a SpritesheetAnimation component that references our newly created animation
@@ -178,7 +179,7 @@ fn spawn_enemies(mut commands: Commands, mut library: ResMut<SpritesheetLibrary>
         let animation_id = library.new_animation(|animation| { /* ... */ });
 
         commands.spawn((
-            SpriteSheetBundle { /* .... */ },
+            SpriteBundle { /* .... */ },
             SpritesheetAnimation::from_id(animation_id),
         ));
     }
@@ -206,8 +207,8 @@ fn create_animation(mut library: ResMut<SpritesheetLibrary>) {
     //
     // #[derive(Resource)]
     // struct GameAnimations {
-    //     enemy_running: Option<AnimationId>,
-    //     enemy_firing: Option<AnimationId>,
+    //     enemy_running: AnimationId,
+    //     enemy_firing: AnimationId,
     //     ... and so on ...
     // }
 
@@ -221,11 +222,36 @@ fn spawn_enemies(mut commands: Commands, library: Res<SpritesheetLibrary>) {
     if let Some(animation_id) = libray.animation_with_name("enemy running") {
         for _ in 0..100 {
             commands.spawn((
-                SpriteSheetBundle { /* .... */ },
+                SpriteBundle { /* .... */ },
                 SpritesheetAnimation::from_id(animation_id),
             ));
         }
     }
+}
+```
+
+## 3D sprites
+
+![A dozen of 3D sprites moving in 3D space](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/example3d.gif)
+
+This crate also makes it easy to integrate 3D sprites into your games, which is not supported by Bevy out of the box.
+
+[Sprite3DBundle](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3DBundle.html) contains all the necesary components to enable 3D sprites. Use [Sprite3DBuilder](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3DBuilder.html) to easily create one of those.
+
+Animating a 3D sprite is the same as animating 2D sprites: simply attach a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/component/struct.SpritesheetAnimation.html) component to your entity.
+
+```rust
+fn spawn_character(mut commands: Commands, mut library: ResMut<SpritesheetLibrary>) {
+
+    let animation_id = library.new_animation(|animation| { /* ... */ });
+
+    commands.spawn((
+        Sprite3DBuilder::from_image(texture.clone())
+            .with_atlas(atlas_layout_handle)
+            .with_anchor(Anchor::BottomRight)
+            .build(),
+        SpritesheetAnimation::from_id(animation_id)
+    ));
 }
 ```
 
@@ -235,12 +261,13 @@ For more examples, browse the [examples/](examples) directory.
 
 | Example                                | Description                                                              |
 | -------------------------------------- | ------------------------------------------------------------------------ |
-| [basic](examples/basic.rs)             | Minimal example showing how to create an animated sprite                 |
-| [composition](examples/composition.rs) | Advanced example showing how to create an animation with multiple stages |
-| [parameters](examples/parameters.rs)   | Shows the effect of each parameter                                       |
+| [basic](examples/basic.rs)             | Shows how to create an animated sprite                                   |
+| [3d](examples/3d.rs)                   | Shows how to create 3D sprites                                           |
+| [composition](examples/composition.rs) | Shows how to create an animation with multiple stages                    |
+| [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                             |
 | [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations    |
 | [events](examples/events.rs)           | Shows how to react to animations reaching points of interest with events |
-| [stress](examples/stress.rs)           | A stress test with thousands of animated sprites                         |
+| [stress](examples/stress.rs)           | Stress test with thousands of animated sprites                           |
 
 # Compatibility
 
