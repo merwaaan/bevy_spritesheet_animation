@@ -1,4 +1,7 @@
-use bevy::app::{App, Plugin, PostUpdate};
+use bevy::{
+    app::{App, Plugin, PostUpdate},
+    prelude::{IntoSystemConfigs, SystemSet},
+};
 
 use crate::{
     animator::SpritesheetAnimator,
@@ -43,6 +46,14 @@ use crate::{
 /// ```
 pub struct SpritesheetAnimationPlugin;
 
+/// Label for systems that update the animation state.
+#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
+pub struct AnimationSystem;
+
+/// Label for systems that update the sprite state.
+#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
+pub struct Sprite3dSystem;
+
 impl Plugin for SpritesheetAnimationPlugin {
     fn build(&self, app: &mut App) {
         app
@@ -59,11 +70,15 @@ impl Plugin for SpritesheetAnimationPlugin {
                 PostUpdate,
                 (
                     // Main animation system
-                    spritesheet_animation::play_animations,
+                    spritesheet_animation::play_animations.in_set(AnimationSystem),
                     // 3D sprite systems
-                    sprite3d::setup_rendering,
-                    sprite3d::sync_sprites_with_component,
-                    sprite3d::sync_sprites_with_atlas,
+                    (
+                        sprite3d::setup_rendering,
+                        sprite3d::sync_sprites_with_component,
+                        sprite3d::sync_sprites_with_atlas,
+                    )
+                        .in_set(Sprite3dSystem)
+                        .after(AnimationSystem),
                 ),
             );
     }
