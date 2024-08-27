@@ -2,7 +2,7 @@
 //!
 //!# Features
 //!
-//! - Animate 2D and [3D sprites](crate::prelude::Sprite3DBundle)! 🎉
+//! - Animate 2D and [3D sprites](crate::prelude::Sprite3dBundle)! 🎉
 //! - A single Bevy [component](crate::prelude::SpritesheetAnimation) to add to your entities to play animations.
 //! - Tunable parameters: [duration](crate::prelude::AnimationDuration), [repetitions](crate::prelude::AnimationRepeat), [direction](crate::prelude::AnimationDirection), [easing](crate::prelude::Easing).
 //! - [Composable animations](crate::prelude::Animation) from multiple clips.
@@ -105,7 +105,7 @@ pub mod prelude {
         },
         clip::{AnimationClip, AnimationClipId},
         components::{
-            sprite3d::{Sprite3D, Sprite3DBuilder, Sprite3DBundle},
+            sprite3d::{Sprite3d, Sprite3dBuilder, Sprite3dBundle},
             spritesheet_animation::SpritesheetAnimation,
         },
         easing::{Easing, EasingVariety},

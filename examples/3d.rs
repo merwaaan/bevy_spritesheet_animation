@@ -54,20 +54,20 @@ fn setup(
     // Orbiting sprites with various parameters
 
     let sprite_builders = [
-        Sprite3DBuilder::from_image(texture.clone()),
-        Sprite3DBuilder::from_image(texture.clone()).with_flip(true, false),
-        Sprite3DBuilder::from_image(texture.clone()).with_flip(false, true),
-        Sprite3DBuilder::from_image(texture.clone()).with_flip(true, true),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomLeft),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomCenter),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomRight),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::CenterLeft),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::Center),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::CenterRight),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::TopLeft),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::TopCenter),
-        Sprite3DBuilder::from_image(texture.clone()).with_anchor(Anchor::TopRight),
-        Sprite3DBuilder::from_image(texture.clone()).with_custom_size(Vec2::new(100.0, 400.0)),
+        Sprite3dBuilder::from_image(texture.clone()),
+        Sprite3dBuilder::from_image(texture.clone()).with_flip(true, false),
+        Sprite3dBuilder::from_image(texture.clone()).with_flip(false, true),
+        Sprite3dBuilder::from_image(texture.clone()).with_flip(true, true),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomLeft),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomCenter),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomRight),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::CenterLeft),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::Center),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::CenterRight),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::TopLeft),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::TopCenter),
+        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::TopRight),
+        Sprite3dBuilder::from_image(texture.clone()).with_custom_size(Vec2::new(100.0, 400.0)),
     ];
 
     for (i, builder) in sprite_builders.iter().enumerate() {
@@ -86,7 +86,7 @@ fn setup(
     // Non-animated sprite in the center
 
     commands.spawn(
-        Sprite3DBuilder::from_image(texture.clone())
+        Sprite3dBuilder::from_image(texture.clone())
             .with_atlas(atlas_layout_handle.clone())
             .with_color(Color::linear_rgb(1.0, 0.0, 0.0))
             .build(),
@@ -103,7 +103,7 @@ fn setup(
     ));
 }
 
-fn update_on_keypress(keyboard: Res<ButtonInput<KeyCode>>, mut sprites: Query<&mut Sprite3D>) {
+fn update_on_keypress(keyboard: Res<ButtonInput<KeyCode>>, mut sprites: Query<&mut Sprite3d>) {
     let mut rng = rand::thread_rng();
 
     for mut sprite in &mut sprites {
@@ -174,7 +174,7 @@ fn orbit(time: Res<Time>, mut query: Query<(&Orbit, &mut Transform)>) {
     }
 }
 
-fn draw_gizmos(mut gizmos: Gizmos, sprites: Query<&Transform, With<Sprite3D>>) {
+fn draw_gizmos(mut gizmos: Gizmos, sprites: Query<&Transform, With<Sprite3d>>) {
     for &transform in &sprites {
         gizmos.axes(transform, 100.0);
     }

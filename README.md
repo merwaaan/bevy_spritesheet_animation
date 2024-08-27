@@ -236,7 +236,7 @@ fn spawn_enemies(mut commands: Commands, library: Res<SpritesheetLibrary>) {
 
 This crate also makes it easy to integrate 3D sprites into your games, which is not supported by Bevy out of the box.
 
-[Sprite3DBundle](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3DBundle.html) contains all the necesary components to enable 3D sprites. Use [Sprite3DBuilder](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3DBuilder.html) to easily create one of those.
+[Sprite3dBundle](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3dBundle.html) contains all the necesary components to enable 3D sprites. Use [Sprite3dBuilder](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3dBuilder.html) to easily create one of those.
 
 Animating a 3D sprite is the same as animating 2D sprites: simply attach a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/component/struct.SpritesheetAnimation.html) component to your entity.
 
@@ -246,7 +246,7 @@ fn spawn_character(mut commands: Commands, mut library: ResMut<SpritesheetLibrar
     let animation_id = library.new_animation(|animation| { /* ... */ });
 
     commands.spawn((
-        Sprite3DBuilder::from_image(texture.clone())
+        Sprite3dBuilder::from_image(texture.clone())
             .with_atlas(atlas_layout_handle)
             .with_anchor(Anchor::BottomRight)
             .build(),

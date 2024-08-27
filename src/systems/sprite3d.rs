@@ -19,7 +19,7 @@ use bevy::{
     sprite::{TextureAtlas, TextureAtlasLayout},
 };
 
-use crate::components::sprite3d::Sprite3D;
+use crate::components::sprite3d::Sprite3d;
 
 pub(crate) type QuadUvs = Vec<[f32; 2]>;
 
@@ -40,7 +40,7 @@ pub(crate) fn setup_rendering(
     sprites: Query<
         (
             Entity,
-            &Sprite3D,
+            &Sprite3d,
             &TextureAtlas,
             &Handle<Image>,
             Option<&Handle<Mesh>>,
@@ -104,13 +104,13 @@ pub(crate) fn sync_sprites_with_component(
     mut materials: ResMut<Assets<StandardMaterial>>,
     sprites: Query<
         (
-            &Sprite3D,
+            &Sprite3d,
             &TextureAtlas,
             &Handle<Image>,
             &Handle<Mesh>,
             &Handle<StandardMaterial>,
         ),
-        Changed<Sprite3D>,
+        Changed<Sprite3d>,
     >,
 ) {
     for (sprite, atlas, image_handle, mesh_handle, material_handle) in &sprites {
@@ -140,7 +140,7 @@ pub(crate) fn sync_sprites_with_component(
 pub(crate) fn sync_sprites_with_atlas(
     atlases_uvs: Res<TextureAtlasLayoutUvs>,
     mut meshes: ResMut<Assets<Mesh>>,
-    sprites: Query<(&Sprite3D, &TextureAtlas, &mut Handle<Mesh>), Changed<TextureAtlas>>,
+    sprites: Query<(&Sprite3d, &TextureAtlas, &mut Handle<Mesh>), Changed<TextureAtlas>>,
 ) {
     for (sprite, atlas, mesh_handle) in &sprites {
         if let Some(mesh) = meshes.get_mut(mesh_handle.id()) {
@@ -169,7 +169,7 @@ fn create_uvs_from_atlas_layout(atlas: &TextureAtlasLayout) -> Vec<QuadUvs> {
         .collect()
 }
 
-fn update_mesh_vertices(mesh: &mut Mesh, sprite: &Sprite3D, texture: &Image) {
+fn update_mesh_vertices(mesh: &mut Mesh, sprite: &Sprite3d, texture: &Image) {
     let size = match sprite.custom_size {
         Some(size) => size,
         None => texture.size_f32(),
@@ -206,7 +206,7 @@ fn update_mesh_vertices(mesh: &mut Mesh, sprite: &Sprite3D, texture: &Image) {
     );
 }
 
-fn update_mesh_uvs(mesh: &mut Mesh, sprite: &Sprite3D, maybe_uvs: Option<&QuadUvs>) {
+fn update_mesh_uvs(mesh: &mut Mesh, sprite: &Sprite3d, maybe_uvs: Option<&QuadUvs>) {
     static DEFAULT_UVS: [[f32; 2]; 4] = [[0.0, 1.0], [1.0, 1.0], [0.0, 0.0], [1.0, 0.0]];
 
     let mut uvs = match maybe_uvs {

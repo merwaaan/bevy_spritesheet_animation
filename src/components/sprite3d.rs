@@ -15,9 +15,9 @@ use bevy::{
 ///
 /// This contains similar fields as Bevy's [Sprite](bevy::sprite::Sprite).
 ///
-/// This is commonly used as a component within [Sprite3DBundle].
+/// This is commonly used as a component within [Sprite3dBundle].
 #[derive(Component)]
-pub struct Sprite3D {
+pub struct Sprite3d {
     /// A color to tint the sprite with.
     ///
     /// The default color is white, which does not tint the sprite.
@@ -38,9 +38,9 @@ pub struct Sprite3D {
     pub anchor: Anchor,
 }
 
-impl Default for Sprite3D {
+impl Default for Sprite3d {
     fn default() -> Self {
-        Sprite3D {
+        Sprite3d {
             color: Color::WHITE,
             flip_x: false,
             flip_y: false,
@@ -54,8 +54,8 @@ impl Default for Sprite3D {
 ///
 /// This contains similar fields as Bevy's [Sprite](bevy::sprite::SpriteBundle).
 #[derive(Bundle, Default)]
-pub struct Sprite3DBundle {
-    pub sprite: Sprite3D,
+pub struct Sprite3dBundle {
+    pub sprite: Sprite3d,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub texture: Handle<Image>,
@@ -65,7 +65,7 @@ pub struct Sprite3DBundle {
     pub view_visibility: ViewVisibility,
 }
 
-/// A builder to easily instantiate [Sprite3DBundle]s
+/// A builder to easily instantiate [Sprite3dBundle]s
 ///
 /// # Note
 ///
@@ -82,7 +82,7 @@ pub struct Sprite3DBundle {
 /// # use bevy_spritesheet_animation::prelude::*;
 /// # fn f(mut commands: Commands, texture: Handle<Image>, atlas_layout: Handle<TextureAtlasLayout>) {
 /// commands.spawn(
-///     Sprite3DBuilder::from_image(texture.clone())
+///     Sprite3dBuilder::from_image(texture.clone())
 ///         .with_atlas(atlas_layout)
 ///         .with_anchor(Anchor::BottomRight)
 ///         .build()
@@ -90,7 +90,7 @@ pub struct Sprite3DBundle {
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct Sprite3DBuilder {
+pub struct Sprite3dBuilder {
     sprite_color: Color,
     sprite_flip_x: bool,
     sprite_flip_y: bool,
@@ -103,7 +103,7 @@ pub struct Sprite3DBuilder {
     transform: Option<Transform>,
 }
 
-impl Sprite3DBuilder {
+impl Sprite3dBuilder {
     pub fn from_image(texture: Handle<Image>) -> Self {
         Self {
             texture,
@@ -157,9 +157,9 @@ impl Sprite3DBuilder {
         self
     }
 
-    pub fn build(self) -> Sprite3DBundle {
-        Sprite3DBundle {
-            sprite: Sprite3D {
+    pub fn build(self) -> Sprite3dBundle {
+        Sprite3dBundle {
+            sprite: Sprite3d {
                 color: self.sprite_color,
                 flip_x: self.sprite_flip_x,
                 flip_y: self.sprite_flip_y,
