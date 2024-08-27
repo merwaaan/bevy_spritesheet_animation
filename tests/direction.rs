@@ -21,7 +21,7 @@ fn stage_backwards() {
         animation
             .add_stage(stage)
             .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Cycles(2));
+            .set_repeat(AnimationRepeat::Times(2));
     });
 
     ctx.add_animation_to_sprite(animation_id);
@@ -69,7 +69,7 @@ fn animation_backwards() {
             .add_stage(stage)
             .set_direction(AnimationDirection::Backwards)
             .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Cycles(2));
+            .set_repeat(AnimationRepeat::Times(2));
     });
 
     ctx.add_animation_to_sprite(animation_id);

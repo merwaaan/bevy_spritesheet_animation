@@ -51,12 +51,12 @@ pub(super) struct AnimationCache {
     /// All the frames
     pub frames: Vec<AnimationFrame>,
 
-    /// Frames for odd cycles when the direction is PingPong, None for other directions
+    /// Frames for odd repetitions when the direction is PingPong, None for other directions
     pub frames_pong: Option<Vec<AnimationFrame>>,
 
-    // The total number of cycles to play.
+    // The total number of repetitions to play.
     // None if infinite.
-    pub cycle_count: Option<u32>,
+    pub repetitions: Option<u32>,
 
     // The direction of the animation to handle a special case for PingPong
     pub animation_direction: AnimationDirection,
@@ -78,11 +78,11 @@ impl AnimationCache {
 
         let animation_repeat = animation.repeat().unwrap_or_default();
 
-        if matches!(animation_repeat, AnimationRepeat::Cycles(0)) {
+        if matches!(animation_repeat, AnimationRepeat::Times(0)) {
             return Self {
                 frames: Vec::new(),
                 frames_pong: None,
-                cycle_count: None,
+                repetitions: None,
                 animation_direction,
             };
         }
@@ -186,7 +186,7 @@ impl AnimationCache {
             return Self {
                 frames: Vec::new(),
                 frames_pong: None,
-                cycle_count: None,
+                repetitions: None,
                 animation_direction,
             };
         }
@@ -194,15 +194,15 @@ impl AnimationCache {
         // Generate all the frames that make up one full cycle of the animation
         //
         // Level 1: stages
-        // Level 2: cycles
+        // Level 2: repetitions
         // Level 3: frames
         //
         // This nested structure is not ideal to work with but it's convenient as it preserves the clip boundaries
         // that we need to inject events at the appropriate frames
 
-        let mut all_cycles: Vec<Vec<Vec<AnimationFrame>>> = Vec::new();
+        let mut all_repetitions: Vec<Vec<Vec<AnimationFrame>>> = Vec::new();
 
-        let mut all_cycles_pong = None;
+        let mut all_repetitions_pong = None;
 
         for (
             stage_index,
@@ -277,12 +277,12 @@ impl AnimationCache {
                 },
             );
 
-            // Repeat/reverse the cycle for all the cycles of the current stage
+            // Repeat/reverse the cycle for all the repetitions of the current stage
 
-            let mut stage_cycles = Vec::new();
+            let mut stage_repetitions = Vec::new();
 
             for cycle_index in 0..stage_repeat {
-                stage_cycles.push(match stage_direction {
+                stage_repetitions.push(match stage_direction {
                     AnimationDirection::Forwards => one_cycle.clone().collect_vec(),
                     AnimationDirection::Backwards => one_cycle.clone().rev().collect_vec(),
                     AnimationDirection::PingPong => {
@@ -290,11 +290,11 @@ impl AnimationCache {
                         if cycle_index == 0 {
                             one_cycle.clone().collect_vec()
                         }
-                        // Following odd cycles, use all the frames but the first one, and reversed
+                        // Following odd repetitions, use all the frames but the first one, and reversed
                         else if cycle_index % 2 == 1 {
                             one_cycle.clone().rev().skip(1).collect_vec()
                         }
-                        // Even cycles: use all the frames but the first one
+                        // Even repetitions: use all the frames but the first one
                         else {
                             one_cycle.clone().skip(1).collect_vec()
                         }
@@ -302,17 +302,17 @@ impl AnimationCache {
                 });
             }
 
-            all_cycles.push(stage_cycles);
+            all_repetitions.push(stage_repetitions);
         }
 
-        // Filter out empty stages/cycles/frames
+        // Filter out empty stages/repetitions/frames
         //
         // Removing them does not change the nature of the animation and simplifies the playback code since
         // we won't have to consider this special case.
         //
         // This must be done before attaching events or we might lose some of them!
 
-        for stage in &mut all_cycles {
+        for stage in &mut all_repetitions {
             for cycle in &mut *stage {
                 cycle.retain(|frame| frame.duration > 0);
             }
@@ -320,12 +320,12 @@ impl AnimationCache {
             stage.retain(|cycle| cycle.len() > 0);
         }
 
-        all_cycles.retain(|stage| stage.len() > 0);
+        all_repetitions.retain(|stage| stage.len() > 0);
 
-        // Order/reverse the cycles to match the animation direction if needed
+        // Order/reverse the repetitions to match the animation direction if needed
 
-        let reverse = |all_cycles: &mut Vec<Vec<Vec<AnimationFrame>>>| {
-            for stage in &mut *all_cycles {
+        let reverse = |all_repetitions: &mut Vec<Vec<Vec<AnimationFrame>>>| {
+            for stage in &mut *all_repetitions {
                 for cycle in &mut *stage {
                     cycle.reverse();
                 }
@@ -333,17 +333,17 @@ impl AnimationCache {
                 stage.reverse();
             }
 
-            all_cycles.reverse();
+            all_repetitions.reverse();
         };
 
         match animation_direction {
             // Backwards: reverse all the frames
-            AnimationDirection::Backwards => reverse(&mut all_cycles),
+            AnimationDirection::Backwards => reverse(&mut all_repetitions),
 
             // PingPong: reverse all the frame in the alternate "pong" collection
             AnimationDirection::PingPong => {
-                all_cycles_pong = Some(all_cycles.clone());
-                reverse(all_cycles_pong.as_mut().unwrap())
+                all_repetitions_pong = Some(all_repetitions.clone());
+                reverse(all_repetitions_pong.as_mut().unwrap())
             }
 
             // Forwards: nothing to do
@@ -352,7 +352,7 @@ impl AnimationCache {
 
         // Merge the nested frames into a single sequence
 
-        let merge_cycles = |cycles: &mut Vec<Vec<Vec<AnimationFrame>>>| {
+        let merge_repetitions = |repetitions: &mut Vec<Vec<Vec<AnimationFrame>>>| {
             let mut all_frames = Vec::new();
 
             // Inject events at clip/clip cycle boundaries
@@ -360,12 +360,12 @@ impl AnimationCache {
             let mut previous_stage_stage_index = None;
             let mut previous_cycle_stage_index = None;
 
-            for stage in &mut *cycles {
+            for stage in &mut *repetitions {
                 for cycle in &mut *stage {
                     // Inject a ClipCycleEnd event on the first frame of each cycle after the first one
 
                     if let Some(stage_index) = previous_cycle_stage_index {
-                        // At this point, we can safely access [0] as empty cycles have been filtered out
+                        // At this point, we can safely access [0] as empty repetitions have been filtered out
 
                         cycle[0].events.push(AnimationFrameEvent::ClipCycleEnd {
                             stage_index,
@@ -401,7 +401,7 @@ impl AnimationCache {
 
             // Merge the nested frames into a single sequence
 
-            for stage in cycles {
+            for stage in repetitions {
                 let mut stage_frames = Vec::new();
 
                 for cycle in stage {
@@ -427,10 +427,10 @@ impl AnimationCache {
             all_frames
         };
 
-        let all_frames = merge_cycles(&mut all_cycles);
+        let all_frames = merge_repetitions(&mut all_repetitions);
 
-        let all_frames_pong = if let Some(cycles) = &mut all_cycles_pong {
-            Some(merge_cycles(cycles))
+        let all_frames_pong = if let Some(repetitions) = &mut all_repetitions_pong {
+            Some(merge_repetitions(repetitions))
         } else {
             None
         };
@@ -441,7 +441,7 @@ impl AnimationCache {
 
         let cycle_count = match animation_repeat {
             AnimationRepeat::Loop => None,
-            AnimationRepeat::Cycles(n) => Some(n),
+            AnimationRepeat::Times(n) => Some(n),
         };
 
         // Done!
@@ -449,7 +449,7 @@ impl AnimationCache {
         Self {
             frames: all_frames,
             frames_pong: all_frames_pong,
-            cycle_count,
+            repetitions: cycle_count,
             animation_direction,
         }
     }

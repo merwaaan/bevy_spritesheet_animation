@@ -40,7 +40,7 @@ pub enum AnimationRepeat {
     /// Loops indefinitely
     Loop,
     /// Repeats a fixed number of times
-    Cycles(u32),
+    Times(u32),
 }
 
 impl Default for AnimationRepeat {
@@ -97,7 +97,7 @@ impl Default for AnimationDirection {
 ///     animation
 ///         .add_stage(stage1)
 ///         .add_stage(stage2)
-///         .set_repeat(AnimationRepeat::Cycles(5));
+///         .set_repeat(AnimationRepeat::Times(5));
 /// });
 /// ```
 #[derive(Debug, Clone)]

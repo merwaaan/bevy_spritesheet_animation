@@ -5,6 +5,7 @@
 ### Changed
 
 - Rename structs related to 3D sprites with lowercase "3d" to better match Bevy
+- Rename AnimationRepeat::Cycles to AnimationRepeat::Times
 
 ## 0.3.0 - 2024-08-26
 

@@ -47,7 +47,7 @@ impl Iterator for AnimationIterator {
             if self.current_animation_cycle_index % 2 == 0 {
                 &self.cache.frames
             } else {
-                // PingPong + odd cycles
+                // PingPong + odd repetitions
                 frames_pong
             }
         } else {
@@ -94,7 +94,7 @@ impl Iterator for AnimationIterator {
 
                 if self
                     .cache
-                    .cycle_count
+                    .repetitions
                     .map(|cycle_count| self.current_animation_cycle_index < cycle_count as usize)
                     .unwrap_or(true)
                 {

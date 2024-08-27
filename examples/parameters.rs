@@ -55,8 +55,8 @@ fn setup(
         (Some(AnimationDuration::PerCycle(2000)), None, None, None),
         (Some(AnimationDuration::PerCycle(100)), None, None, None),
         // Repeat
-        (None, Some(AnimationRepeat::Cycles(10)), None, None),
-        (None, Some(AnimationRepeat::Cycles(100)), None, None),
+        (None, Some(AnimationRepeat::Times(10)), None, None),
+        (None, Some(AnimationRepeat::Times(100)), None, None),
         (None, Some(AnimationRepeat::Loop), None, None),
         // Direction
         (None, None, Some(AnimationDirection::Forwards), None),

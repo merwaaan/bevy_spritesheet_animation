@@ -15,7 +15,7 @@ fn clip_zero() {
         animation
             .add_stage(clip_id.into())
             .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Cycles(1));
+            .set_repeat(AnimationRepeat::Times(1));
     });
 
     ctx.add_animation_to_sprite(animation_id);
@@ -38,7 +38,7 @@ fn clip_once() {
         animation
             .add_stage(clip_id.into())
             .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Cycles(1));
+            .set_repeat(AnimationRepeat::Times(1));
     });
 
     ctx.add_animation_to_sprite(animation_id);
@@ -80,12 +80,12 @@ fn clip_many() {
         animation
             .add_stage(clip_id.into())
             .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Cycles(1));
+            .set_repeat(AnimationRepeat::Times(1));
     });
 
     ctx.add_animation_to_sprite(animation_id);
 
-    // 9 cycles
+    // 9 repetitions
 
     ctx.run(50);
     ctx.check(0, []);
@@ -144,7 +144,7 @@ fn some_clips_repeated_zero_times() {
             .add_stage(zero_clip_id.into())
             .add_stage(zero_clip_id.into())
             .set_duration(AnimationDuration::PerFrame(110))
-            .set_repeat(AnimationRepeat::Cycles(1));
+            .set_repeat(AnimationRepeat::Times(1));
     });
 
     ctx.add_animation_to_sprite(animation_id);
@@ -193,7 +193,7 @@ fn animation_zero() {
 
         animation
             .add_stage(stage)
-            .set_repeat(AnimationRepeat::Cycles(0));
+            .set_repeat(AnimationRepeat::Times(0));
     });
 
     ctx.add_animation_to_sprite(animation_id);
@@ -216,7 +216,7 @@ fn animation_once() {
         animation
             .add_stage(clip_id.into())
             .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Cycles(1));
+            .set_repeat(AnimationRepeat::Times(1));
     });
 
     ctx.add_animation_to_sprite(animation_id);
@@ -258,12 +258,12 @@ fn animation_many() {
         animation
             .add_stage(clip_id.into())
             .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Cycles(10));
+            .set_repeat(AnimationRepeat::Times(10));
     });
 
     ctx.add_animation_to_sprite(animation_id);
 
-    // 9 cycles
+    // 9 repetitions
 
     ctx.run(50);
     ctx.check(0, []);

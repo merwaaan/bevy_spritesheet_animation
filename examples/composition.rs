@@ -66,7 +66,7 @@ fn setup(
             .add_stage(run_clip_id.into())
             .add_stage(shoot_clip_id.into())
             // Let's repeat it some times and then stop
-            .set_repeat(AnimationRepeat::Cycles(2));
+            .set_repeat(AnimationRepeat::Times(2));
     });
 
     // Spawn a sprite that uses the animation
