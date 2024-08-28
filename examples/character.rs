@@ -1,7 +1,6 @@
-// This example illustrates how to create controllable character with multiple animations.
+// This example shows how to create controllable character with multiple animations.
 //
-// - We'll create a few animations for our character in a setup system (idle, run, shoot)
-//
+// - We'll create a few animations for our character (idle, run, shoot) in a setup system
 // - We'll move the character with the keyboard and switch to the appropriate animation in another system
 
 #[path = "./common/mod.rs"]
@@ -22,12 +21,52 @@ fn main() {
 fn setup(
     mut commands: Commands,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<SpritesheetLibrary>,
+    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
 ) {
     commands.spawn(Camera2dBundle::default());
 
-    // Load assets for the sprite
+    // Create the animations
+
+    let spritesheet = Spritesheet::new(8, 8);
+
+    // Idle
+
+    let idle_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 0, 5));
+
+    let idle_clip_id = library.register_clip(idle_clip);
+
+    let idle_animation = Animation::from_clip(idle_clip_id);
+
+    let idle_animation_id = library.register_animation(idle_animation);
+
+    library.name_animation(idle_animation_id, "idle").unwrap();
+
+    // Run
+
+    let run_clip = Clip::from_frames(spritesheet.row(3));
+
+    let run_clip_id = library.register_clip(run_clip);
+
+    let run_animation = Animation::from_clip(run_clip_id);
+
+    let run_animation_id = library.register_animation(run_animation);
+
+    library.name_animation(run_animation_id, "run").unwrap();
+
+    // Shoot
+
+    let shoot_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 5, 5));
+
+    let shoot_clip_id = library.register_clip(shoot_clip);
+
+    let shoot_animation = Animation::from_clip(shoot_clip_id);
+
+    let shoot_animation_id = library.register_animation(shoot_animation);
+
+    library.name_animation(shoot_animation_id, "shoot").unwrap();
+
+    // Spawn the character
 
     let texture = assets.load("character.png");
 
@@ -39,52 +78,6 @@ fn setup(
         None,
     ));
 
-    // Create different animations
-
-    // Idle
-
-    let idle_clip_id = library.new_clip(|clip| {
-        clip.push_frame_indices(Spritesheet::new(8, 8).horizontal_strip(0, 0, 5));
-    });
-
-    let idle_anim_id = library.new_animation(|animation| {
-        animation
-            .add_stage(idle_clip_id.into())
-            .set_repeat(AnimationRepeat::Loop);
-    });
-
-    library.name_animation(idle_anim_id, "idle").unwrap();
-
-    // Run
-
-    let run_clip_id = library.new_clip(|clip| {
-        clip.push_frame_indices(Spritesheet::new(8, 8).row(3));
-    });
-
-    let run_anim_id = library.new_animation(|animation| {
-        animation
-            .add_stage(run_clip_id.into())
-            .set_repeat(AnimationRepeat::Loop);
-    });
-
-    library.name_animation(run_anim_id, "run").unwrap();
-
-    // Shoot
-
-    let shoot_clip_id = library.new_clip(|clip| {
-        clip.push_frame_indices(Spritesheet::new(8, 8).horizontal_strip(0, 5, 5));
-    });
-
-    let shoot_anim_id = library.new_animation(|animation| {
-        animation
-            .add_stage(shoot_clip_id.into())
-            .set_repeat(AnimationRepeat::Loop);
-    });
-
-    library.name_animation(shoot_anim_id, "shoot").unwrap();
-
-    // Spawn the character
-
     commands.spawn((
         SpriteBundle {
             texture,
@@ -94,7 +87,7 @@ fn setup(
             layout,
             ..default()
         },
-        SpritesheetAnimation::from_id(idle_anim_id),
+        SpritesheetAnimation::from_id(idle_animation_id),
     ));
 }
 
@@ -106,7 +99,7 @@ fn control_character(
     mut commands: Commands,
     time: Res<Time>,
     keyboard: Res<ButtonInput<KeyCode>>,
-    library: Res<SpritesheetLibrary>,
+    library: Res<AnimationLibrary>,
     mut events: EventReader<AnimationEvent>,
     mut characters: Query<(
         Entity,
@@ -182,7 +175,7 @@ fn control_character(
 
     for event in events.read() {
         match event {
-            AnimationEvent::AnimationCycleEnd {
+            AnimationEvent::AnimationRepetitionEnd {
                 entity,
                 animation_id,
             } => {

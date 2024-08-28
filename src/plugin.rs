@@ -6,13 +6,13 @@ use bevy::{
 use crate::{
     animator::SpritesheetAnimator,
     events::AnimationEvent,
-    library::SpritesheetLibrary,
+    library::AnimationLibrary,
     systems::{sprite3d, spritesheet_animation},
 };
 
 /// The spritesheet animation plugin to add to Bevy apps.
 ///
-/// This plugin injects the systems required for running animations and inserts the [SpritesheetLibrary] resource with which you can create new clips and animations.
+/// This plugin injects the systems required for running animations and inserts the [AnimationLibrary] resource with which you can create new clips and animations.
 ///
 /// # Examples
 ///
@@ -27,19 +27,17 @@ use crate::{
 /// // ...
 /// ```
 ///
-/// Adding the plugin to a Bevy app makes the [SpritesheetLibrary] available as a resource:
+/// Adding the plugin to a Bevy app makes the [AnimationLibrary] available as a resource:
 ///
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_spritesheet_animation::prelude::*;
-/// fn my_system(mut library: ResMut<SpritesheetLibrary>) {
-///     let clip_id = library.new_clip(|clip| {
-///         // ...
-///     });
+/// fn my_system(mut library: ResMut<AnimationLibrary>) {
+///     let clip = Clip::from_frames([1, 2, 3]);
+///     let clip_id = library.register_clip(clip);
 ///
-///     let animation_id = library.new_animation(|animation| {
-///         // ...
-///     });
+///     let animation = Animation::from_clip(clip_id);
+///     let animation_id = library.register_animation(animation);
 ///
 ///     // ...
 /// }
@@ -57,8 +55,8 @@ pub struct Sprite3dSystem;
 impl Plugin for SpritesheetAnimationPlugin {
     fn build(&self, app: &mut App) {
         app
-            // The spritesheet library, for creating clips, animations and markers
-            .insert_resource(SpritesheetLibrary::new())
+            // The animation library, for creating clips, animations and markers
+            .insert_resource(AnimationLibrary::new())
             // The animator responsible for running animations
             .insert_resource(SpritesheetAnimator::new())
             // Atlas UVs for 3D sprites

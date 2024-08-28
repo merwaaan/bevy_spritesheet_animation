@@ -6,7 +6,7 @@ use crate::{
     animation::{AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat},
     easing::Easing,
     events::AnimationMarkerId,
-    library::SpritesheetLibrary,
+    library::AnimationLibrary,
 };
 
 /// A partial version of AnimationEvent.
@@ -17,18 +17,18 @@ use crate::{
 pub(super) enum AnimationFrameEvent {
     MarkerHit {
         marker_id: AnimationMarkerId,
-        stage_index: usize,
+        clip_index: usize,
         animation_id: AnimationId,
     },
-    ClipCycleEnd {
-        stage_index: usize,
+    ClipRepetitionEnd {
+        clip_index: usize,
         animation_id: AnimationId,
     },
     ClipEnd {
-        stage_index: usize,
+        clip_index: usize,
         animation_id: AnimationId,
     },
-    AnimationCycleEnd {
+    AnimationRepetitionEnd {
         animation_id: AnimationId,
     },
 }
@@ -39,7 +39,7 @@ pub(super) struct AnimationFrame {
     pub atlas_index: usize,
     pub duration: u32,
     pub events: Vec<AnimationFrameEvent>,
-    pub stage_index: usize,
+    pub clip_index: usize,
 }
 
 /// The [AnimationCache] contains pre-computed frames for an animation.
@@ -63,7 +63,16 @@ pub(super) struct AnimationCache {
 }
 
 impl AnimationCache {
-    pub fn new(animation_id: AnimationId, library: &SpritesheetLibrary) -> AnimationCache {
+    fn empty() -> Self {
+        Self {
+            frames: Vec::new(),
+            frames_pong: None,
+            repetitions: None,
+            animation_direction: AnimationDirection::Forwards,
+        }
+    }
+
+    pub fn new(animation_id: AnimationId, library: &AnimationLibrary) -> AnimationCache {
         // Retrieve the animation
 
         let animation = library
@@ -76,119 +85,98 @@ impl AnimationCache {
 
         // If the animation repeats 0 times, just create an empty cache that will play no frames
 
-        let animation_repeat = animation.repeat().unwrap_or_default();
+        let animation_repetitions = animation.repetitions().unwrap_or_default();
 
-        if matches!(animation_repeat, AnimationRepeat::Times(0)) {
-            return Self {
-                frames: Vec::new(),
-                frames_pong: None,
-                repetitions: None,
-                animation_direction,
-            };
+        if matches!(animation_repetitions, AnimationRepeat::Times(0)) {
+            return Self::empty();
         }
 
         // Gather the data for all the stages
 
-        let stages_data = animation
-            .stages()
+        let clips_data = animation
+            .clip_ids()
             .iter()
             .enumerate()
-            .map(|(stage_index, stage)| {
-                let stage_clip = library
+            .map(|(clip_index, clip_id)| {
+                let clip = library
                     .clips()
-                    .get(stage.clip_id())
+                    .get(clip_id)
                     // In practice, this cannot fail as the library is the sole creator of clip/clip IDs
                     .unwrap();
 
-                let stage_duration = stage
-                    // Use the stage's duration first
+                let duration = clip
+                    // Use the clip's duration first
                     .duration()
-                    // Fallback to the clip's default duration
-                    .or(*stage_clip.default_duration())
                     // Fallback to the global default value
                     .unwrap_or(AnimationDuration::default());
 
-                let stage_repeat = stage
-                    // Use the stage's repetitions first
-                    .repeat()
-                    // Fallback to the clip's default repetitions
-                    .or(*stage_clip.default_repeat())
+                let repetitions = clip
+                    // Use the clip's repetitions first
+                    .repetitions()
                     // Fallback to a default value
                     .unwrap_or(1);
 
-                let stage_direction = stage
-                    // Use the stage's direction first
+                let direction = clip
+                    // Use the clip's direction first
                     .direction()
-                    // Fallback to the clip's default direction
-                    .or(*stage_clip.default_direction())
                     // Fallback to the global default value
                     .unwrap_or(AnimationDirection::default());
 
-                let stage_easing = stage
-                    // Use the stage's easing first
+                let easing = clip
+                    // Use the clip's easing first
                     .easing()
-                    // Fallback to the clip's default easing
-                    .or(*stage_clip.default_easing())
                     // Fallback to the global default value
                     .unwrap_or(Easing::default());
 
-                // Compute the stage's duration in milliseconds, taking repetitions into account
+                // Compute the clip's duration in milliseconds, taking repetitions into account
 
-                let frame_count_with_repetitions = match stage_direction {
+                let frame_count_with_repetitions = match direction {
                     AnimationDirection::Forwards | AnimationDirection::Backwards => {
-                        stage_clip.frame_count() as u32 * stage_repeat
+                        clip.frames().len() as u32 * repetitions
                     }
                     AnimationDirection::PingPong => {
-                        stage_clip.frame_count().saturating_sub(1) as u32 * stage_repeat + 1
+                        clip.frames().len().saturating_sub(1) as u32 * repetitions + 1
                     }
                 };
 
-                let stage_duration_with_repetitions_ms = match stage_duration {
+                let clip_duration_with_repetitions_ms = match duration {
                     AnimationDuration::PerFrame(frame_duration) => {
                         frame_duration * frame_count_with_repetitions as u32
                     }
-                    AnimationDuration::PerCycle(cycle_duration) => cycle_duration,
+                    AnimationDuration::PerRepetition(cycle_duration) => cycle_duration,
                 };
 
                 (
-                    stage_index,
-                    stage_clip,
-                    stage_duration,
-                    stage_repeat,
-                    stage_direction,
-                    stage_easing,
-                    stage_duration_with_repetitions_ms,
+                    clip_index,
+                    clip,
+                    duration,
+                    repetitions,
+                    direction,
+                    easing,
+                    clip_duration_with_repetitions_ms,
                 )
             });
 
-        // Filter out stages with 0 frames / durations of 0
+        // Filter out clips with 0 frames / durations of 0
         //
         // Doing so at this point will simplify what follows as well as the playback code as we won't have to handle those special cases
 
-        let stages_data = stages_data.filter(
-            |(_, stage_clip, _, _, _, _, stage_duration_with_repetitions_ms)| {
-                stage_clip.frame_count() > 0 && *stage_duration_with_repetitions_ms > 0
-            },
-        );
+        let clips_data =
+            clips_data.filter(|(_, clip, _, _, _, _, duration_with_repetitions_ms)| {
+                clip.frames().len() > 0 && *duration_with_repetitions_ms > 0
+            });
 
         // Compute the total duration of one cycle of the animation in milliseconds
 
-        let animation_cycle_duration_ms = stages_data
+        let animation_one_cycle_duration_ms = clips_data
             .clone()
-            .map(|(_, _, _, _, _, _, stage_duration_with_repetitions_ms)| {
-                stage_duration_with_repetitions_ms
-            })
+            .map(|(_, _, _, _, _, _, duration_with_repetitions_ms)| duration_with_repetitions_ms)
             .sum::<u32>();
 
         // If the animation lasts 0 ms, just create an empty cache that will play no frames
 
-        if animation_cycle_duration_ms == 0 {
-            return Self {
-                frames: Vec::new(),
-                frames_pong: None,
-                repetitions: None,
-                animation_direction,
-            };
+        if animation_one_cycle_duration_ms == 0 {
+            return Self::empty();
         }
 
         // Generate all the frames that make up one full cycle of the animation
@@ -208,11 +196,11 @@ impl AnimationCache {
             stage_index,
             stage_clip,
             stage_duration,
-            stage_repeat,
+            stage_repetition_count,
             stage_direction,
             _stage_easing,
             stage_duration_with_repetitions_ms,
-        ) in stages_data.clone()
+        ) in clips_data.clone()
         {
             // Adjust the actual duration of the current stage if the animation specifies its own duration
 
@@ -227,13 +215,13 @@ impl AnimationCache {
 
                 // The per-cycle duration of the animation is defined:
                 // assign a duration to the stage that stays proportional to its base duration with respect to the total animation duration
-                Some(AnimationDuration::PerCycle(animation_cycle_duration)) => {
+                Some(AnimationDuration::PerRepetition(animation_cycle_duration)) => {
                     let stage_ratio = stage_duration_with_repetitions_ms as f32
-                        / animation_cycle_duration_ms as f32;
+                        / animation_one_cycle_duration_ms as f32;
 
-                    AnimationDuration::PerCycle(
-                        (*animation_cycle_duration as f32 * stage_ratio / stage_repeat as f32)
-                            as u32,
+                    AnimationDuration::PerRepetition(
+                        (*animation_cycle_duration as f32 * stage_ratio
+                            / stage_repetition_count as f32) as u32,
                     )
                 }
             };
@@ -242,46 +230,49 @@ impl AnimationCache {
 
             let stage_frame_duration_ms = match stage_corrected_duration {
                 AnimationDuration::PerFrame(frame_duration_ms) => frame_duration_ms,
-                AnimationDuration::PerCycle(cycle_duration_ms) => {
-                    cycle_duration_ms / stage_clip.frame_count() as u32
+                AnimationDuration::PerRepetition(cycle_duration_ms) => {
+                    cycle_duration_ms / stage_clip.frames().len() as u32
                 }
             };
 
             // Generate all the frames for a single cycle of the current stage
 
-            let one_cycle = stage_clip.frame_indices().iter().enumerate().map(
-                move |(frame_index, atlas_index)| {
-                    // Convert this frame's markers into events to emit when reaching it
+            let one_cycle =
+                stage_clip
+                    .frames()
+                    .iter()
+                    .enumerate()
+                    .map(move |(frame_index, atlas_index)| {
+                        // Convert this frame's markers into events to emit when reaching it
 
-                    let events = stage_clip
-                        .markers()
-                        .get(&frame_index)
-                        .map(|frame_markers| {
-                            frame_markers
-                                .iter()
-                                .map(|marker| AnimationFrameEvent::MarkerHit {
-                                    marker_id: *marker,
-                                    stage_index,
-                                    animation_id,
-                                })
-                                .collect()
-                        })
-                        .unwrap_or(Vec::new());
+                        let events = stage_clip
+                            .markers()
+                            .get(&frame_index)
+                            .map(|frame_markers| {
+                                frame_markers
+                                    .iter()
+                                    .map(|marker| AnimationFrameEvent::MarkerHit {
+                                        marker_id: *marker,
+                                        clip_index: stage_index,
+                                        animation_id,
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or(Vec::new());
 
-                    AnimationFrame {
-                        atlas_index: *atlas_index,
-                        duration: stage_frame_duration_ms,
-                        events,
-                        stage_index,
-                    }
-                },
-            );
+                        AnimationFrame {
+                            atlas_index: *atlas_index,
+                            duration: stage_frame_duration_ms,
+                            events,
+                            clip_index: stage_index,
+                        }
+                    });
 
             // Repeat/reverse the cycle for all the repetitions of the current stage
 
             let mut stage_repetitions = Vec::new();
 
-            for cycle_index in 0..stage_repeat {
+            for cycle_index in 0..stage_repetition_count {
                 stage_repetitions.push(match stage_direction {
                     AnimationDirection::Forwards => one_cycle.clone().collect_vec(),
                     AnimationDirection::Backwards => one_cycle.clone().rev().collect_vec(),
@@ -367,13 +358,15 @@ impl AnimationCache {
                     if let Some(stage_index) = previous_cycle_stage_index {
                         // At this point, we can safely access [0] as empty repetitions have been filtered out
 
-                        cycle[0].events.push(AnimationFrameEvent::ClipCycleEnd {
-                            stage_index,
-                            animation_id,
-                        });
+                        cycle[0]
+                            .events
+                            .push(AnimationFrameEvent::ClipRepetitionEnd {
+                                clip_index: stage_index,
+                                animation_id,
+                            });
                     }
 
-                    previous_cycle_stage_index = Some(cycle[0].stage_index);
+                    previous_cycle_stage_index = Some(cycle[0].clip_index);
                 }
 
                 // Inject a ClipEnd event on the first frame of each stage after the first one
@@ -383,18 +376,18 @@ impl AnimationCache {
 
                 if let Some(stage_index) = previous_stage_stage_index {
                     stage[0][0].events.push(AnimationFrameEvent::ClipEnd {
-                        stage_index,
+                        clip_index: stage_index,
                         animation_id,
                     });
                 }
 
-                previous_stage_stage_index = Some(stage[0][0].stage_index);
+                previous_stage_stage_index = Some(stage[0][0].clip_index);
             }
 
             // Build a (stage index, easing) record
 
             let stages_easing: HashMap<usize, Easing> = HashMap::from_iter(
-                stages_data
+                clips_data
                     .clone()
                     .map(|(stage_index, _, _, _, _, stage_easing, _)| (stage_index, stage_easing)),
             );
@@ -410,7 +403,7 @@ impl AnimationCache {
 
                 // Apply easing on the stage
 
-                let stage_index = stage_frames[0].stage_index;
+                let stage_index = stage_frames[0].clip_index;
                 let easing = stages_easing[&stage_index];
 
                 apply_easing(&mut stage_frames, easing);
@@ -437,9 +430,9 @@ impl AnimationCache {
 
         // Compute the total number of stages (taking repetitions into account)
 
-        let animation_repeat = animation.repeat().unwrap_or_default();
+        let animation_repetitions = animation.repetitions().unwrap_or_default();
 
-        let cycle_count = match animation_repeat {
+        let cycle_count = match animation_repetitions {
             AnimationRepeat::Loop => None,
             AnimationRepeat::Times(n) => Some(n),
         };

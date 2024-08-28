@@ -1,4 +1,4 @@
-// This example illustrates how to create 3D sprites.
+// This example shows how to create 3D sprites.
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -18,24 +18,28 @@ fn main() {
 
 fn setup(
     mut commands: Commands,
-    mut library: ResMut<SpritesheetLibrary>,
+    mut library: ResMut<AnimationLibrary>,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
 ) {
+    // 3D sprites require a 3D camera
+
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, 1000.0, 4000.0).looking_at(Vec3::ZERO, Dir3::Y),
         ..default()
     });
 
-    // Create an animation
+    // Create an animation as usual
 
-    let clip_id = library.new_clip(|clip| {
-        clip.push_frame_indices(Spritesheet::new(8, 8).row(3));
-    });
+    let spritesheet = Spritesheet::new(8, 8);
 
-    let animation_id = library.new_animation(|animation| {
-        animation.add_stage(clip_id.into());
-    });
+    let clip = Clip::from_frames(spritesheet.row(3));
+
+    let clip_id = library.register_clip(clip);
+
+    let animation = Animation::from_clip(clip_id);
+
+    let animation_id = library.register_animation(animation);
 
     // Create an image and an atlas layout like you would for any Bevy sprite
 
@@ -51,7 +55,7 @@ fn setup(
 
     // Spawn 3D sprites
 
-    // Orbiting sprites with various parameters
+    // A few 3D sprites orbiting around the center with various parameters
 
     let sprite_builders = [
         Sprite3dBuilder::from_image(texture.clone()),
@@ -83,7 +87,7 @@ fn setup(
         ));
     }
 
-    // Non-animated sprite in the center
+    // A non-animated 3D sprite in the center
 
     commands.spawn(
         Sprite3dBuilder::from_image(texture.clone())
@@ -92,7 +96,7 @@ fn setup(
             .build(),
     );
 
-    // Text
+    // Help text
 
     commands.spawn(TextBundle::from_section(
         "C: random colors\nX: flip on X\nY: flip on Y\nA: random anchors\nS: random sizes\nR: reset",

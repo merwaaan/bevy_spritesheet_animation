@@ -4,11 +4,7 @@ use crate::animation::AnimationId;
 
 /// A Bevy component that enables spritesheet animations.
 ///
-/// It contains an [AnimationId] that references an [Animation](crate::prelude::Animation) created with [SpritesheetLibrary::new_animation](crate::prelude::SpritesheetLibrary::new_animation).
-///
-/// The animation can be paused and resumed by toggling the `playing` field.
-///
-/// The speed of the animation can be tweaked with `speed_factor`.
+/// It contains an [AnimationId] that references an [Animation](crate::prelude::Animation) obtained with [AnimationLibrary::register_animation](crate::prelude::AnimationLibrary::register_animation).
 ///
 /// # Note
 ///
@@ -21,13 +17,15 @@ use crate::animation::AnimationId;
 /// # use bevy_spritesheet_animation::prelude::*;
 /// fn my_system(
 ///     mut commands: Commands,
-///     mut library: ResMut<SpritesheetLibrary>,
+///     mut library: ResMut<AnimationLibrary>,
 ///     # assets: Res<AssetServer>,
 ///     # mut layouts: ResMut<Assets<TextureAtlasLayout>>,
 /// ) {
-///     let animation_id = library.new_animation(|animation| {
-///         // ...
-///     });
+///     let clip = Clip::from_frames([1, 2, 3]);
+///     let clip_id = library.register_clip(clip);
+///
+///     let animation = Animation::from_clip(clip_id);
+///     let animation_id = library.register_animation(animation);
 ///
 ///     // ... omitted: load a texture and an atlas layout ...
 ///     # let texture = assets.load("fake");
@@ -65,7 +63,7 @@ pub struct SpritesheetAnimation {
 }
 
 impl SpritesheetAnimation {
-    /// Creates a [SpritesheetAnimation] component from an [AnimationId] returned by [SpritesheetLibrary::new_animation](crate::prelude::SpritesheetLibrary::new_animation).
+    /// Creates a [SpritesheetAnimation] component from an [AnimationId] returned by [AnimationLibrary::register_animation](crate::prelude::AnimationLibrary::register_animation).
     ///
     /// # Arguments
     ///

@@ -1,9 +1,10 @@
-use crate::{easing::Easing, stage::AnimationStage};
 use std::fmt;
+
+use crate::{clip::ClipId, easing::Easing};
 
 /// An opaque identifier that references an [Animation].
 ///
-/// Returned by [SpritesheetLibrary::new_animation](crate::prelude::SpritesheetLibrary::new_animation).
+/// Returned by [AnimationLibrary::register_animation](crate::prelude::AnimationLibrary::register_animation).
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct AnimationId {
     pub(crate) value: usize,
@@ -11,19 +12,19 @@ pub struct AnimationId {
 
 impl fmt::Display for AnimationId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "animation:{}", self.value)
+        write!(f, "animation{}", self.value)
     }
 }
 
-/// Specifies the duration of an animation.
+/// Specifies the duration of an [Animation].
 ///
 /// Defaults to `PerFrame(100)`.
 #[derive(Debug, Clone, Copy)]
 pub enum AnimationDuration {
     /// Specifies the duration of each frame in milliseconds
     PerFrame(u32),
-    /// Specifies the duration of one animation cycle in milliseconds
-    PerCycle(u32),
+    /// Specifies the duration of one repetition of the animation in milliseconds
+    PerRepetition(u32),
 }
 
 impl Default for AnimationDuration {
@@ -49,7 +50,7 @@ impl Default for AnimationRepeat {
     }
 }
 
-/// Specifies the direction of an animation.
+/// Specifies the direction of an [Animation].
 ///
 /// Defaults to `AnimationDirection::Forwards`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -58,7 +59,7 @@ pub enum AnimationDirection {
     Forwards,
     /// Frames play from right to left
     Backwards,
-    /// Alternates at each animation cycle, starting from left to right
+    /// Alternates at each repetition of the animation, starting from left to right
     PingPong,
 }
 
@@ -70,45 +71,42 @@ impl Default for AnimationDirection {
 
 /// A playable animation to assign to a [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) component.
 ///
-/// An animation is composed of one or several [AnimationStage]s.
+/// An animation is composed of one or several [Clip](crate::prelude::Clip)s.
 ///
-/// Parameters like duration, repeat, direction and easing can be specified.
-///
-/// If specified, they will be combined with the parameters of the underlying [AnimationStage]s and [AnimationClip](crate::prelude::AnimationClip)s.
+/// Parameters like duration, repetitions, direction and easing can be specified.
+/// If specified, they will be combined with the parameters of the underlying [Clip](crate::prelude::Clip)s.
 ///
 /// # Example
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = SpritesheetLibrary::new();
-/// # let some_clip_id = library.new_clip(|clip| {});
-/// # let another_clip_id = library.new_clip(|clip| {});
-/// let animation_id = library.new_animation(|animation| {
-///     let mut stage1 = AnimationStage::from_clip(some_clip_id);
-///     stage1
-///         .set_duration(AnimationDuration::PerCycle(2000))
-///         .set_easing(Easing::In(EasingVariety::Quadratic));
+/// # let mut library = AnimationLibrary::new();
+/// let some_clip = Clip::from_frames([1, 2, 3])
+///     .with_duration(AnimationDuration::PerRepetition(2000));
 ///
-///     let mut stage2 = AnimationStage::from_clip(another_clip_id);
-///     stage2
-///         .set_repeat(10)
-///         .set_direction(AnimationDirection::PingPong);
+/// let some_clip_id = library.register_clip(some_clip);
 ///
-///     animation
-///         .add_stage(stage1)
-///         .add_stage(stage2)
-///         .set_repeat(AnimationRepeat::Times(5));
-/// });
+/// let another_clip = Clip::from_frames([7, 8, 9, 7, 7])
+///     .with_repetitions(10)
+///     .with_direction(AnimationDirection::PingPong);
+///
+/// let another_clip_id = library.register_clip(another_clip);
+///
+/// let animation = Animation::from_clips([some_clip_id, another_clip_id])
+///     .with_repetitions(AnimationRepeat::Loop)
+///     .with_easing(Easing::In(EasingVariety::Quadratic));
+///
+/// let animation_id = library.register_animation(animation);
 /// ```
 #[derive(Debug, Clone)]
 pub struct Animation {
-    /// The [AnimationStage]s that compose this animation
-    stages: Vec<AnimationStage>,
+    /// The IDs of the [Clip](crate::prelude::Clip)s that compose this animation
+    clip_ids: Vec<ClipId>,
 
     /// The optional duration of this animation
     duration: Option<AnimationDuration>,
     /// The optional number of repetitions of this animation
-    repeat: Option<AnimationRepeat>,
+    repetitions: Option<AnimationRepeat>,
     /// The optional direction of this animation
     direction: Option<AnimationDirection>,
     /// The optional easing of this animation
@@ -116,52 +114,41 @@ pub struct Animation {
 }
 
 impl Animation {
-    pub(crate) fn new() -> Self {
+    /// Creates a new animation from a single clip.
+    pub fn from_clip(clip_id: ClipId) -> Self {
         Self {
-            stages: Vec::new(),
+            clip_ids: vec![clip_id],
             duration: None,
-            repeat: None,
+            repetitions: None,
             direction: None,
             easing: None,
         }
     }
 
-    /// Adds a stage to the animation.
-    ///
-    /// Stages are played in the same order that they are added.
-    ///
-    /// # Arguments
-    ///
-    /// `stage` - the stage to add to the animation
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
-    /// # let some_clip_id = library.new_clip(|clip| {});
-    /// let animation_id = library.new_animation(|animation| {
-    ///     // Directly add a first clip to the animation as a stage
-    ///
-    ///     animation.add_stage(some_clip_id.into());
-    ///
-    ///     // Add a second clip
-    ///     //
-    ///     // This time, we create an explicit stage to tweak the clip's parameters
-    ///
-    ///     let mut stage = AnimationStage::from_clip(some_clip_id);
-    ///     stage.set_direction(AnimationDirection::Backwards);
-    ///
-    ///     animation.add_stage(stage);
-    /// });
-    /// ```
-    pub fn add_stage(&mut self, stage: AnimationStage) -> &mut Self {
-        self.stages.push(stage);
-        self
+    /// Creates a new animation from a sequence of clips.
+    pub fn from_clips(clip_ids: impl IntoIterator<Item = ClipId>) -> Self {
+        Self {
+            clip_ids: clip_ids.into_iter().collect(),
+            duration: None,
+            repetitions: None,
+            direction: None,
+            easing: None,
+        }
     }
 
-    pub fn stages(&self) -> &[AnimationStage] {
-        &self.stages
+    pub fn clip_ids(&self) -> &[ClipId] {
+        &self.clip_ids
+    }
+
+    pub fn duration(&self) -> &Option<AnimationDuration> {
+        &self.duration
+    }
+
+    pub fn with_duration(&self, duration: AnimationDuration) -> Self {
+        Self {
+            duration: Some(duration),
+            ..self.clone()
+        }
     }
 
     pub fn set_duration(&mut self, duration: AnimationDuration) -> &mut Self {
@@ -169,21 +156,19 @@ impl Animation {
         self
     }
 
-    pub fn duration(&self) -> &Option<AnimationDuration> {
-        &self.duration
+    pub fn repetitions(&self) -> &Option<AnimationRepeat> {
+        &self.repetitions
     }
 
-    pub fn set_repeat(&mut self, repeat: AnimationRepeat) -> &mut Self {
-        self.repeat = Some(repeat);
-        self
+    pub fn with_repetitions(&self, repetitions: AnimationRepeat) -> Self {
+        Self {
+            repetitions: Some(repetitions),
+            ..self.clone()
+        }
     }
 
-    pub fn repeat(&self) -> &Option<AnimationRepeat> {
-        &self.repeat
-    }
-
-    pub fn set_direction(&mut self, direction: AnimationDirection) -> &mut Self {
-        self.direction = Some(direction);
+    pub fn set_repetitions(&mut self, repetitions: AnimationRepeat) -> &mut Self {
+        self.repetitions = Some(repetitions);
         self
     }
 
@@ -191,12 +176,31 @@ impl Animation {
         &self.direction
     }
 
-    pub fn set_easing(&mut self, easing: Easing) -> &mut Self {
-        self.easing = Some(easing);
+    pub fn with_direction(&self, direction: AnimationDirection) -> Self {
+        Self {
+            direction: Some(direction),
+            ..self.clone()
+        }
+    }
+
+    pub fn set_direction(&mut self, direction: AnimationDirection) -> &mut Self {
+        self.direction = Some(direction);
         self
     }
 
     pub fn easing(&self) -> &Option<Easing> {
         &self.easing
+    }
+
+    pub fn with_easing(&self, easing: Easing) -> Self {
+        Self {
+            easing: Some(easing),
+            ..self.clone()
+        }
+    }
+
+    pub fn set_easing(&mut self, easing: Easing) -> &mut Self {
+        self.easing = Some(easing);
+        self
     }
 }

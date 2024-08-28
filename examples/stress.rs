@@ -1,5 +1,5 @@
 // A stress test with thousands of animated sprites
-// (best run in --release mode!)
+// (best executed in --release mode!)
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -20,22 +20,10 @@ fn main() {
 fn setup(
     mut commands: Commands,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<SpritesheetLibrary>,
+    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
 ) {
     commands.spawn(Camera2dBundle::default());
-
-    // Load assets for the sprite
-
-    let texture = assets.load("character.png");
-
-    let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-        UVec2::new(96, 96),
-        8,
-        8,
-        None,
-        None,
-    ));
 
     // Create clips from a spritesheet
 
@@ -53,9 +41,8 @@ fn setup(
     ];
 
     let clip_ids = clip_frames.map(|frames| {
-        library.new_clip(|clip| {
-            clip.push_frame_indices(frames.clone());
-        })
+        let clip = Clip::from_frames(frames);
+        library.register_clip(clip)
     });
 
     // Create 100 animations from those clips, each with random parameters
@@ -72,20 +59,29 @@ fn setup(
         .map(|_| {
             let clip_id = clip_ids.choose(&mut rng).unwrap().clone();
 
-            let duration = AnimationDuration::PerCycle(rng.gen_range(100..1000));
+            let duration = AnimationDuration::PerRepetition(rng.gen_range(100..1000));
 
             let direction = animation_directions.choose(&mut rng).unwrap().clone();
 
-            library.new_animation(|animation| {
-                animation
-                    .add_stage(clip_id.into())
-                    .set_duration(duration)
-                    .set_direction(direction);
-            })
+            let animation = Animation::from_clip(clip_id)
+                .with_duration(duration)
+                .with_direction(direction);
+
+            library.register_animation(animation)
         })
         .collect();
 
     // Spawn a lot of sprites, each with a random animation assigned
+
+    let texture = assets.load("character.png");
+
+    let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::new(96, 96),
+        8,
+        8,
+        None,
+        None,
+    ));
 
     for _ in 0..100_000 {
         let animation = animation_ids.choose(&mut rng).unwrap();

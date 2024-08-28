@@ -10,26 +10,21 @@ fn markers_emit_events() {
     let marker1_id = ctx.library().new_marker();
     let marker2_id = ctx.library().new_marker();
 
-    let clip1_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([0, 1, 2])
-            .add_marker(marker1_id, 0)
-            .add_marker(marker2_id, 1)
-            .add_marker(marker1_id, 2)
-            .add_marker(marker2_id, 2);
-    });
+    let clip1 = Clip::from_frames([0, 1, 2])
+        .with_marker(marker1_id, 0)
+        .with_marker(marker2_id, 1)
+        .with_marker(marker1_id, 2)
+        .with_marker(marker2_id, 2);
+    let clip1_id = ctx.library().register_clip(clip1);
 
-    let clip2_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([7, 8, 9])
-            .add_marker(marker2_id, 0)
-            .add_marker(marker1_id, 2);
-    });
+    let clip2 = Clip::from_frames([7, 8, 9])
+        .with_marker(marker2_id, 0)
+        .with_marker(marker1_id, 2);
+    let clip2_id = ctx.library().register_clip(clip2);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(clip1_id.into())
-            .add_stage(clip2_id.into())
-            .set_duration(AnimationDuration::PerFrame(100));
-    });
+    let animation =
+        Animation::from_clips([clip1_id, clip2_id]).with_duration(AnimationDuration::PerFrame(100));
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 

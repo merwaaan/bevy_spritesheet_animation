@@ -5,11 +5,11 @@ use crate::animation::AnimationId;
 
 /// A Bevy event emitted when an animation reaches a point of interest
 ///
-/// * when a clip cycle ends
-/// * when a clip ends (if the clip repeats multiple times, only occurs at the end of the last cycle)
-/// * when an animation cycle ends
-/// * when an animation ends (if the animation repeats multiple times, only occurs at the end of the last cycle)
-/// * when an [animation marker](crate::prelude::AnimationClip::add_marker) is hit
+/// * when a clip repetition ends
+/// * when a clip ends (if the clip repeats multiple times, only occurs at the end of the last repetition)
+/// * when an animation repetition ends
+/// * when an animation ends (if the animation repeats multiple times, only occurs at the end of the last repetition)
+/// * when an [animation marker](crate::prelude::Clip::add_marker) is hit
 ///
 /// # Example
 ///
@@ -21,7 +21,7 @@ use crate::animation::AnimationId;
 /// # fn go_to_main_menu() {}
 /// fn death_transition_system(
 ///     mut events: EventReader<AnimationEvent>,
-///     library: Res<SpritesheetLibrary>
+///     library: Res<AnimationLibrary>
 /// ) {
 ///     for event in events.read() {
 ///         match event {
@@ -48,7 +48,7 @@ use crate::animation::AnimationId;
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = SpritesheetLibrary::new();
+/// # let mut library = AnimationLibrary::new();
 /// // Let's create a marker to be notified when the exact frame
 /// // of the character shooting their gun is played
 /// let marker_id = library.new_marker();
@@ -57,12 +57,9 @@ use crate::animation::AnimationId;
 /// // if you don't want to keep its ID around
 /// library.name_marker(marker_id, "bullet goes out");
 ///
-/// let clip_id = library.new_clip(|clip| {
-///     clip
-///         .push_frame_indices([10, 11, 15, 16, 17])
-///         // The character shoots their gun on the fourth frame
-///         .add_marker(marker_id, 3);
-/// });
+/// let clip = Clip::from_frames([10, 11, 15, 16, 17])
+///     // The character shoots their gun on the fourth frame
+///     .with_marker(marker_id, 3);
 /// ```
 ///
 /// ```
@@ -72,7 +69,7 @@ use crate::animation::AnimationId;
 /// // We can watch events from any system and react to them
 /// fn spawn_visual_effects_system(
 ///     mut events: EventReader<AnimationEvent>,
-///     library: Res<SpritesheetLibrary>
+///     library: Res<AnimationLibrary>
 ///) {
 ///     for event in events.read() {
 ///         match event {
@@ -97,22 +94,22 @@ pub enum AnimationEvent {
         entity: Entity,
         marker_id: AnimationMarkerId,
         animation_id: AnimationId,
-        stage_index: usize,
+        clip_index: usize,
     },
-    /// A cycle of a clip has ended
-    ClipCycleEnd {
+    /// A repetition of a clip has ended
+    ClipRepetitionEnd {
         entity: Entity,
         animation_id: AnimationId,
-        stage_index: usize,
+        clip_index: usize,
     },
     /// An clip ended
     ClipEnd {
         entity: Entity,
         animation_id: AnimationId,
-        stage_index: usize,
+        clip_index: usize,
     },
-    /// A cycle of an animation has ended
-    AnimationCycleEnd {
+    /// A repetition of an animation has ended
+    AnimationRepetitionEnd {
         entity: Entity,
         animation_id: AnimationId,
     },
@@ -125,7 +122,7 @@ pub enum AnimationEvent {
 
 /// An opaque identifier that references an animation marker.
 ///
-/// Returned by [SpritesheetLibrary::new_marker](crate::prelude::SpritesheetLibrary::new_marker).
+/// Returned by [AnimationLibrary::new_marker](crate::prelude::AnimationLibrary::new_marker).
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct AnimationMarkerId {
     pub(crate) value: usize,
@@ -133,6 +130,6 @@ pub struct AnimationMarkerId {
 
 impl fmt::Display for AnimationMarkerId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "marker:{}", self.value)
+        write!(f, "marker{}", self.value)
     }
 }

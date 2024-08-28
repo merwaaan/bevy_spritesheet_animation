@@ -12,18 +12,18 @@
 //! # Quick start
 //!
 //! 1. Add the [SpritesheetAnimationPlugin](crate::prelude::SpritesheetAnimationPlugin) to your app
-//! 2. Use the [SpritesheetLibrary](crate::prelude::SpritesheetLibrary) resource to create new clips and animations
+//! 2. Use the [AnimationLibrary](crate::prelude::AnimationLibrary) resource to create new clips and animations
 //! 3. Add a [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) component to your entity
 //!
-//! ```
-//! # use bevy::prelude::*;
-//! # use bevy_spritesheet_animation::prelude::*;
+//! ```no_run (cannot actually execute this during CI builds as there are no displays)
+//! use bevy::prelude::*;
+//! use bevy_spritesheet_animation::prelude::*;
+//!
 //! fn main() {
-//!     # return; // cannot actually execute this during CI builds as there are no displays
 //!     let app = App::new()
 //!         .add_plugins(DefaultPlugins)
 //!         // Add the plugin to enable animations.
-//!         // This makes the SpritesheetLibrary resource available to your systems.
+//!         // This makes the AnimationLibrary resource available to your systems.
 //!         .add_plugins(SpritesheetAnimationPlugin)
 //!         .add_systems(Startup, setup);
 //!
@@ -32,31 +32,30 @@
 //!
 //! fn setup(
 //!     mut commands: Commands,
-//!     mut library: ResMut<SpritesheetLibrary>,
+//!     mut library: ResMut<AnimationLibrary>,
 //!     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 //!     assets: Res<AssetServer>,
 //! ) {
-//!     // Create an animation
+//!     // Create a clip that references some frames from a spritesheet
 //!
-//!     let clip_id = library.new_clip(|clip| {
-//!         // You can configure this clip here (duration, number of repetitions, etc...)
+//!     let spritesheet = Spritesheet::new(8, 8);
 //!
-//!         // This clip will use all the frames in row 3 of the spritesheet
-//!         clip.push_frame_indices(Spritesheet::new(8, 8).row(3));
-//!     });
+//!     let clip = Clip::from_frames(spritesheet.row(3));
 //!
-//!     let animation_id = library.new_animation(|animation| {
-//!         // You can configure this animation here (duration, number of repetitions, etc...)
+//!     let clip_id = library.register_clip(clip);
 //!
-//!         animation.add_stage(clip_id.into());
+//!     // Create an animation that uses the clip
 //!
-//!         // This is a simple animation with a single clip but we can create more sophisticated
-//!         // animations with multiple clips, each one having different parameters.
-//!         //
-//!         // See the `composition` example for more details.
-//!     });
+//!     let animation = Animation::from_clip(clip_id);
 //!
-//!     // Spawn a sprite using Bevy's built-in SpriteBundle
+//!     let animation_id = library.register_animation(animation);
+//!
+//!     // This is a simple animation made of a single clip but we can create more sophisticated
+//!     // animations with multiple clips, each one having different parameters.
+//!     //
+//!     // See the `composition` example for more details.
+//!
+//!     // Spawn an animated sprite using Bevy's built-in SpriteBundle
 //!
 //!     let texture = assets.load("character.png");
 //!
@@ -77,7 +76,7 @@
 //!             layout,
 //!             ..default()
 //!         },
-//!         // Add a SpritesheetAnimation component that references our newly created animation
+//!         // Add a SpritesheetAnimation component that references our animation
 //!         SpritesheetAnimation::from_id(animation_id),
 //!     ));
 //!
@@ -93,7 +92,6 @@ pub mod events;
 pub mod library;
 pub mod plugin;
 pub mod spritesheet;
-pub mod stage;
 
 mod animator;
 mod systems;
@@ -103,17 +101,16 @@ pub mod prelude {
         animation::{
             Animation, AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat,
         },
-        clip::{AnimationClip, AnimationClipId},
+        clip::{Clip, ClipId},
         components::{
             sprite3d::{Sprite3d, Sprite3dBuilder, Sprite3dBundle},
             spritesheet_animation::SpritesheetAnimation,
         },
         easing::{Easing, EasingVariety},
         events::{AnimationEvent, AnimationMarkerId},
-        library::SpritesheetLibrary,
+        library::{AnimationLibrary, LibraryError},
         plugin::SpritesheetAnimationPlugin,
         spritesheet::Spritesheet,
-        stage::AnimationStage,
     };
 }
 

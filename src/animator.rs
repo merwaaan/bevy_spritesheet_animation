@@ -13,7 +13,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     animation::AnimationId, components::spritesheet_animation::SpritesheetAnimation,
-    events::AnimationEvent, library::SpritesheetLibrary,
+    events::AnimationEvent, library::AnimationLibrary,
     systems::spritesheet_animation::ActualTime,
 };
 
@@ -27,7 +27,7 @@ struct AnimationInstance {
     animation_id: AnimationId,
     iterator: AnimationIterator,
     current_frame_duration: u32,
-    current_stage_index: usize,
+    current_clip_index: usize,
     accumulated_time: u32,
 
     /// Marks when the animation has ended to emit end events only once
@@ -58,7 +58,7 @@ impl SpritesheetAnimator {
     pub fn update(
         &mut self,
         time: &ActualTime,
-        library: &SpritesheetLibrary,
+        library: &AnimationLibrary,
         event_writer: &mut EventWriter<AnimationEvent>,
         query: &mut Query<(Entity, &mut SpritesheetAnimation, &mut TextureAtlas)>,
     ) {
@@ -120,8 +120,8 @@ impl SpritesheetAnimator {
                     }
                 }
 
-                let (first_frame_duration, first_stage_index) = maybe_first_frame
-                    .map(|frame| (frame.duration, frame.stage_index))
+                let (first_frame_duration, first_clip_index) = maybe_first_frame
+                    .map(|frame| (frame.duration, frame.clip_index))
                     .unwrap_or((u32::MAX, usize::MAX));
 
                 self.animation_instances.insert(
@@ -130,7 +130,7 @@ impl SpritesheetAnimator {
                         animation_id: entity_animation.animation_id,
                         iterator,
                         current_frame_duration: first_frame_duration,
-                        current_stage_index: first_stage_index,
+                        current_clip_index: first_clip_index,
                         accumulated_time: 0,
                         ended: false,
                     },
@@ -167,7 +167,7 @@ impl SpritesheetAnimator {
                     // Store this frame's data
 
                     animation_instance.current_frame_duration = next_frame.duration;
-                    animation_instance.current_stage_index = next_frame.stage_index;
+                    animation_instance.current_clip_index = next_frame.clip_index;
 
                     // Emit the events for this frame
 
@@ -182,19 +182,19 @@ impl SpritesheetAnimator {
                     // Emit all the end events if the animation just ended
 
                     if !animation_instance.ended {
-                        event_writer.send(AnimationEvent::ClipCycleEnd {
+                        event_writer.send(AnimationEvent::ClipRepetitionEnd {
                             entity,
-                            stage_index: animation_instance.current_stage_index,
+                            clip_index: animation_instance.current_clip_index,
                             animation_id: animation_instance.animation_id,
                         });
 
                         event_writer.send(AnimationEvent::ClipEnd {
                             entity,
-                            stage_index: animation_instance.current_stage_index,
+                            clip_index: animation_instance.current_clip_index,
                             animation_id: animation_instance.animation_id,
                         });
 
-                        event_writer.send(AnimationEvent::AnimationCycleEnd {
+                        event_writer.send(AnimationEvent::AnimationRepetitionEnd {
                             entity,
                             animation_id: animation_instance.animation_id,
                         });
@@ -229,32 +229,32 @@ impl SpritesheetAnimator {
             .map(|event| match event {
                 AnimationFrameEvent::MarkerHit {
                     marker_id,
-                    stage_index,
+                    clip_index,
                     animation_id,
                 } => AnimationEvent::MarkerHit {
                     entity: *entity,
                     marker_id: *marker_id,
-                    stage_index: *stage_index,
+                    clip_index: *clip_index,
                     animation_id: *animation_id,
                 },
-                AnimationFrameEvent::ClipCycleEnd {
-                    stage_index,
+                AnimationFrameEvent::ClipRepetitionEnd {
+                    clip_index,
                     animation_id,
-                } => AnimationEvent::ClipCycleEnd {
+                } => AnimationEvent::ClipRepetitionEnd {
                     entity: *entity,
-                    stage_index: *stage_index,
+                    clip_index: *clip_index,
                     animation_id: *animation_id,
                 },
                 AnimationFrameEvent::ClipEnd {
-                    stage_index,
+                    clip_index,
                     animation_id,
                 } => AnimationEvent::ClipEnd {
                     entity: *entity,
-                    stage_index: *stage_index,
+                    clip_index: *clip_index,
                     animation_id: *animation_id,
                 },
-                AnimationFrameEvent::AnimationCycleEnd { animation_id } => {
-                    AnimationEvent::AnimationCycleEnd {
+                AnimationFrameEvent::AnimationRepetitionEnd { animation_id } => {
+                    AnimationEvent::AnimationRepetitionEnd {
                         entity: *entity,
                         animation_id: *animation_id,
                     }

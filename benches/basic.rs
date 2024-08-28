@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use bevy_spritesheet_animation::prelude::*;
 use criterion::{criterion_group, criterion_main, Criterion};
 
+// TODO add 3D bench
+
 fn basic(c: &mut Criterion) {
     c.bench_function("basic", |b| {
         b.iter(|| {
@@ -30,16 +32,14 @@ fn basic(c: &mut Criterion) {
 
             let mut library = app
                 .world_mut()
-                .get_resource_mut::<SpritesheetLibrary>()
+                .get_resource_mut::<AnimationLibrary>()
                 .unwrap();
 
-            let clip_id = library.new_clip(|clip| {
-                clip.push_frame_indices([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-            });
+            let clip = Clip::from_frames([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+            let clip_id = library.register_clip(clip);
 
-            let animation_id = library.new_animation(|animation| {
-                animation.add_stage(clip_id.into());
-            });
+            let animation = Animation::from_clip(clip_id);
+            let animation_id = library.register_animation(animation);
 
             for _ in 0..1000 {
                 app.world_mut().spawn((

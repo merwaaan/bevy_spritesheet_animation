@@ -3,35 +3,33 @@ use std::ops::RangeBounds;
 
 use crate::CRATE_NAME;
 
-/// An helper to obtain frame indices from a spritesheet with a given layout.
+/// An helper to obtain frame indices from a spritesheet.
 ///
-/// When creating an animation clip, you might specify its frames by using raw indices:
+/// When creating a clip, you might specify its frames by using raw indices:
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = SpritesheetLibrary::new();
-/// let clip_id = library.new_clip(|clip| {
-///     clip.push_frame_indices([6, 7, 8, 9, 10, 11]);
-/// });
+/// # let mut library = AnimationLibrary::new();
+/// let clip = Clip::from_frames([6, 7, 8, 9, 10, 11]);
 /// ```
 ///
 /// However, a clearer and less error-prone approach is to use a [Spritesheet] to retrieve indices with layout queries:
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = SpritesheetLibrary::new();
+/// # let mut library = AnimationLibrary::new();
 /// // We're working with a spritesheet with 8 columns and 4 rows
+///
 /// let spritesheet = Spritesheet::new(8, 4);
 ///
-/// let clip1_id = library.new_clip(|clip| {
-///     // Use all the frames in row 2
-///     clip.push_frame_indices(spritesheet.row(2));
-/// });
+/// // Create a clip from all the frames in row 2
 ///
-/// let clip2_id = library.new_clip(|clip| {
-///     // Pick 12 frames vertically starting at (0, 1), will wrap to the next columns
-///     clip.push_frame_indices(spritesheet.vertical_strip(0, 1, 12));
-/// });
+/// let clip1 = Clip::from_frames(spritesheet.row(2));
+///
+/// // Create another clip with the vertical strip starting at (0, 1)
+/// // (will wrap to the next columns)
+///
+/// let clip2 = Clip::from_frames(spritesheet.vertical_strip(0, 1, 12));
 /// ```
 #[derive(Debug, Clone, Copy)]
 pub struct Spritesheet {
@@ -66,16 +64,14 @@ impl Spritesheet {
     /// // └───┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let spritesheet = Spritesheet::new(2, 2);
     ///
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.all());
+    /// let clip = Clip::from_frames(spritesheet.all());
     ///
-    ///     // This clip will play frames A → B → C → D
+    /// // This clip will play frames A → B → C → D
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![0, 1, 2, 3]);
-    /// });
+    /// assert_eq!(clip.frames(), vec![0, 1, 2, 3]);
     /// ```
     pub fn all(&self) -> Vec<usize> {
         (0..(self.columns * self.rows)).collect()
@@ -98,18 +94,16 @@ impl Spritesheet {
     /// // └───┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let spritesheet = Spritesheet::new(2, 2);
     ///
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.positions([(1, 0), (0, 1)]));
+    /// let clip = Clip::from_frames(spritesheet.positions([(1, 0), (0, 1)]));
     ///
-    ///     // This clip will play frames B → C
+    /// // This clip will play frames B → C
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![1, 2]);
-    /// });
+    /// assert_eq!(clip.frames(), vec![1, 2]);
     /// ```
-    pub fn positions<I: IntoIterator<Item = (usize, usize)>>(&self, positions: I) -> Vec<usize> {
+    pub fn positions(&self, positions: impl IntoIterator<Item = (usize, usize)>) -> Vec<usize> {
         let mut indices = Vec::new();
 
         for (x, y) in positions {
@@ -145,16 +139,14 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.row(1));
+    /// let clip = Clip::from_frames(spritesheet.row(1));
     ///
-    ///     // This clip will play frames D → E → F
+    /// // This clip will play frames D → E → F
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![3, 4, 5]);
-    /// });
+    /// assert_eq!(clip.frames(), vec![3, 4, 5]);
     /// ```
     pub fn row(&self, row: usize) -> Vec<usize> {
         if row < self.rows {
@@ -190,32 +182,26 @@ impl Spritesheet {
     /// // └─────────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let spritesheet = Spritesheet::new(5, 2);
     ///
-    /// let clip1_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.row_partial(1, 1..=3));
+    /// // This clip will play frames G → H → I
     ///
-    ///     // This clip will play frames G → H → I
+    /// let clip1 = Clip::from_frames(spritesheet.row_partial(1, 1..=3));
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![6, 7, 8]);
-    /// });
+    /// assert_eq!(clip1.frames(), vec![6, 7, 8]);
     ///
-    /// let clip2_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.row_partial(0, 2..));
+    /// // This clip will play frames C → D → E
     ///
-    ///     // This clip will play frames C → D → E
+    /// let clip2 = Clip::from_frames(spritesheet.row_partial(0, 2..));
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![2, 3, 4]);
-    /// });
+    /// assert_eq!(clip2.frames(), vec![2, 3, 4]);
     ///
-    /// let clip3_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.row_partial(1, ..4));
+    /// // This clip will play frames F → G → H → I
     ///
-    ///     // This clip will play frames F → G → H → I
+    /// let clip3 = Clip::from_frames(spritesheet.row_partial(1, ..4));
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![5, 6, 7, 8]);
-    /// });
+    /// assert_eq!(clip3.frames(), vec![5, 6, 7, 8]);
     /// ```
     pub fn row_partial<R: RangeBounds<usize>>(&self, row: usize, column_range: R) -> Vec<usize> {
         if row >= self.rows {
@@ -274,16 +260,14 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.column(1));
+    /// let clip = Clip::from_frames(spritesheet.column(1));
     ///
-    ///     // This clip will play frames B → E
+    /// // This clip will play frames B → E
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![1, 4]);
-    /// });
+    /// assert_eq!(clip.frames(), vec![1, 4]);
     /// ```
     pub fn column(&self, column: usize) -> Vec<usize> {
         if column < self.columns {
@@ -318,16 +302,14 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let spritesheet = Spritesheet::new(3, 4);
     ///
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.column_partial(1, 1..));
+    /// let clip = Clip::from_frames(spritesheet.column_partial(1, 1..));
     ///
-    ///     // This clip will play frames E → H → K
+    /// // This clip will play frames E → H → K
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![4, 7, 10]);
-    /// });
+    /// assert_eq!(clip.frames(), vec![4, 7, 10]);
     /// ```
     pub fn column_partial<R: RangeBounds<usize>>(&self, column: usize, row_range: R) -> Vec<usize> {
         if column >= self.columns {
@@ -389,16 +371,14 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.horizontal_strip(2, 0, 3));
+    /// let clip = Clip::from_frames(spritesheet.horizontal_strip(2, 0, 3));
     ///
-    ///     // This clip will play frames C → D → E
+    /// // This clip will play frames C → D → E
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![2, 3, 4]);
-    /// });
+    /// assert_eq!(clip.frames(), vec![2, 3, 4]);
     /// ```
     pub fn horizontal_strip(&self, x: usize, y: usize, count: usize) -> Vec<usize> {
         let first_index = y * self.columns + x;
@@ -436,16 +416,14 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip.push_frame_indices(spritesheet.vertical_strip(1, 0, 3));
+    /// let clip = Clip::from_frames(spritesheet.vertical_strip(1, 0, 3));
     ///
-    ///     // This clip will play frames B → E → C
+    /// // This clip will play frames B → E → C
     ///
-    ///     assert_eq!(clip.frame_indices(), vec![1, 4, 2]);
-    /// });
+    /// assert_eq!(clip.frames(), vec![1, 4, 2]);
     /// ```
     pub fn vertical_strip(&self, x: usize, y: usize, count: usize) -> Vec<usize> {
         let available_count = (self.columns - (x + 1)) * self.rows + self.rows - y;

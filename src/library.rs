@@ -1,57 +1,59 @@
-use bevy::ecs::system::Resource;
 use std::collections::{HashMap, HashSet};
 
+use bevy::prelude::Resource;
+
 use crate::{
-    animation::{Animation, AnimationId},
-    clip::{AnimationClip, AnimationClipId},
+    clip::{Clip, ClipId},
     events::AnimationMarkerId,
+    prelude::{Animation, AnimationId},
 };
 
-/// Error type returned by some [SpritesheetLibrary] methods.
+/// Error type returned by some [AnimationLibrary] methods.
 #[derive(Debug)]
 pub enum LibraryError {
     /// The name given to a clip/animation/marker is already in use
     NameAlreadyTaken,
 }
 
-/// The library is the global store for clips and animations.
+/// The animation library is the global store for clips and animations.
 ///
-/// When the [SpritesheetAnimationPlugin](crate::prelude::SpritesheetAnimationPlugin) is added to the app, the [SpritesheetLibrary] becomes available as a resource.
+/// When the [SpritesheetAnimationPlugin](crate::prelude::SpritesheetAnimationPlugin) is added to the app, the [AnimationLibrary] becomes available as a resource.
 ///
-/// You can then create new clips, new animations and new markers from any system.
+/// You can then use it to register new clips and animations, and create new markers.
 ///
 /// # Example
 ///
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_spritesheet_animation::prelude::*;
-/// fn my_system(mut library: ResMut<SpritesheetLibrary>) {
+/// fn my_system(mut library: ResMut<AnimationLibrary>) {
+///     // Create a marker
+///
 ///     let marker_id = library.new_marker();
 ///
-///     let clip_id = library.new_clip(|clip| {
-///         // Configure your clip here...
+///     // Create a clip and attach the marker created above
 ///
-///         // Let's use the marker created above
-///         clip.add_marker(marker_id, 5);
-///     });
+///     let clip = Clip::from_frames([0, 1, 2, 3])
+///         .with_marker(marker_id, 5);
 ///
-///     let animation_id = library.new_animation(|animation| {
-///         // Configure your animation here...
+///     let clip_id = library.register_clip(clip);
 ///
-///         // Let's use the clip created above
-///         animation.add_stage(clip_id.into());
-///     });
+///     // Create an animation that uses the clip
+///
+///     let animation = Animation::from_clip(clip_id);
+///
+///     let animation_id = library.register_animation(animation);
 ///
 ///     // ... Assign the animation to a SpritesheetAnimation component ...
 /// }
 /// ```
 #[derive(Resource)]
-pub struct SpritesheetLibrary {
+pub struct AnimationLibrary {
     /// All the clips
-    clips: HashMap<AnimationClipId, AnimationClip>,
+    clips: HashMap<ClipId, Clip>,
 
     /// Name to ID lookup for clips
-    clip_name_lookup: HashMap<String, AnimationClipId>,
+    clip_name_lookup: HashMap<String, ClipId>,
 
     /// All the animations
     animations: HashMap<AnimationId, Animation>,
@@ -66,7 +68,7 @@ pub struct SpritesheetLibrary {
     marker_name_lookup: HashMap<String, AnimationMarkerId>,
 }
 
-impl SpritesheetLibrary {
+impl AnimationLibrary {
     #[cfg_attr(feature = "integration-tests", visibility::make(pub))]
     pub(crate) fn new() -> Self {
         Self {
@@ -79,35 +81,27 @@ impl SpritesheetLibrary {
         }
     }
 
-    /// Creates a clip and returns a unique ID to refer to it.
+    /// Registers a [Clip] and returns its ID.
     ///
-    /// The clip can then be referenced in one or several [AnimationStage](crate::prelude::AnimationStage)s.
-    ///
-    /// # Arguments
-    ///
-    /// * `builder` - a builder function that takes the new clip as an argument so that you can configure it
+    /// The clip can then be referenced in one or several [Animation]s.
     ///
     /// # Example
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip
-    ///         .push_frame_indices([0, 4, 5])
-    ///         .set_default_repeat(10);
-    /// });
+    /// # let mut library = AnimationLibrary::new();
+    /// let clip = Clip::from_frames([4, 5, 6]).with_repetitions(10);
     ///
-    /// let stage = AnimationStage::from_clip(clip_id);
+    /// let clip_id = library.register_clip(clip);
+    ///
+    /// let animation = Animation::from_clip(clip_id);
+    ///
+    /// // ...
     /// ```
-    pub fn new_clip<F: FnMut(&mut AnimationClip)>(&mut self, mut builder: F) -> AnimationClipId {
-        let id = AnimationClipId {
+    pub fn register_clip(&mut self, clip: Clip) -> ClipId {
+        let id = ClipId {
             value: self.clips.len(),
         };
-
-        let mut clip = AnimationClip::new();
-
-        builder(&mut clip);
 
         self.clips.insert(id, clip);
 
@@ -116,7 +110,7 @@ impl SpritesheetLibrary {
 
     /// Associates a unique name to a clip.
     ///
-    /// The clip ID can then later be queried from that name with [SpritesheetLibrary::clip_with_name].
+    /// The clip ID can then later be queried from that name with [AnimationLibrary::clip_with_name].
     ///
     /// Returns a [LibraryError::NameAlreadyTaken] error if the name is already in use.
     ///
@@ -129,10 +123,9 @@ impl SpritesheetLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
-    /// let clip_id = library.new_clip(|clip| {
-    ///     // ...
-    /// });
+    /// # let mut library = AnimationLibrary::new();
+    /// let clip = Clip::from_frames([1, 2, 3]);
+    /// let clip_id = library.register_clip(clip);
     ///
     /// library.name_clip(clip_id, "jump");
     ///
@@ -141,7 +134,7 @@ impl SpritesheetLibrary {
     /// ```
     pub fn name_clip(
         &mut self,
-        clip_id: AnimationClipId,
+        clip_id: ClipId,
         name: impl Into<String>,
     ) -> Result<(), LibraryError> {
         let name = name.into();
@@ -164,7 +157,7 @@ impl SpritesheetLibrary {
     /// # Arguments
     ///
     /// * `name` - the clip name
-    pub fn clip_with_name(&self, name: impl Into<String>) -> Option<AnimationClipId> {
+    pub fn clip_with_name(&self, name: impl Into<String>) -> Option<ClipId> {
         self.clip_name_lookup.get(&name.into()).copied()
     }
 
@@ -174,7 +167,7 @@ impl SpritesheetLibrary {
     ///
     /// * `clip_id` - the ID of the clip to check the name of
     /// * `name` - the name to check
-    pub fn is_clip_name(&self, clip_id: AnimationClipId, name: impl Into<String>) -> bool {
+    pub fn is_clip_name(&self, clip_id: ClipId, name: impl Into<String>) -> bool {
         self.clip_name_lookup
             .get(&name.into())
             .map(|id| *id == clip_id)
@@ -182,17 +175,13 @@ impl SpritesheetLibrary {
     }
 
     /// Returns all the clips registered in the library.
-    pub fn clips(&self) -> &HashMap<AnimationClipId, AnimationClip> {
+    pub fn clips(&self) -> &HashMap<ClipId, Clip> {
         &self.clips
     }
 
-    /// Creates an animation and returns a unique ID to refer to it.
+    /// Registers an new [Animation] and returns its ID.
     ///
-    /// The animation can then be referenced in [crate::prelude::SpritesheetAnimation] components.
-    ///
-    /// # Arguments
-    ///
-    /// * `builder` - a builder function that takes the new animation as an argument so that you can configure it
+    /// The animation can then be referenced in [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) components.
     ///
     /// # Example
     ///
@@ -201,22 +190,23 @@ impl SpritesheetLibrary {
     /// # use bevy_spritesheet_animation::prelude::*;
     /// fn f(
     ///     mut commands: Commands,
-    ///     mut library: SpritesheetLibrary,
+    ///     mut library: AnimationLibrary,
     ///     # texture: Handle<Image>,
     ///     # layout: Handle<TextureAtlasLayout>
     ///     // ...
     /// ) {
-    ///     # let some_clip_id = library.new_clip(|clip| {});
+    ///     let clip = Clip::from_frames([4, 5, 6]);
     ///
-    ///     let animation_id = library.new_animation(|animation| {
-    ///         animation
-    ///             .add_stage(some_clip_id.into())
-    ///             .set_duration(AnimationDuration::PerCycle(1500));
-    ///     });
+    ///     let clip_id = library.register_clip(clip);
+    ///
+    ///     let animation = Animation::from_clip(clip_id)
+    ///         .with_duration(AnimationDuration::PerRepetition(1500));
+    ///
+    ///     let animation_id = library.register_animation(animation);
     ///
     ///     // The animation can then be assigned to an entity
     ///
-    ///     // ... Load a texture and create an atlas layout for the sprite ...
+    ///     // ... omitted: load a texture and create an atlas layout for the sprite ...
     ///
     ///     commands.spawn((
     ///         SpriteBundle {
@@ -231,14 +221,10 @@ impl SpritesheetLibrary {
     ///     ));
     /// }
     /// ```
-    pub fn new_animation<F: FnMut(&mut Animation)>(&mut self, mut builder: F) -> AnimationId {
+    pub fn register_animation(&mut self, animation: Animation) -> AnimationId {
         let id = AnimationId {
             value: self.animations.len(),
         };
-
-        let mut animation = Animation::new();
-
-        builder(&mut animation);
 
         self.animations.insert(id, animation);
 
@@ -247,7 +233,7 @@ impl SpritesheetLibrary {
 
     /// Associates a unique name to an animation.
     ///
-    /// The animation ID can then later be queried from that name with [SpritesheetLibrary::animation_with_name].
+    /// The animation ID can then later be queried from that name with [AnimationLibrary::animation_with_name].
     ///
     /// Returns a [LibraryError::NameAlreadyTaken] error if the name is already in use.
     ///
@@ -260,10 +246,12 @@ impl SpritesheetLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
-    /// let animation_id = library.new_animation(|animation| {
-    ///     // ...
-    /// });
+    /// # let mut library = AnimationLibrary::new();
+    /// # let clip = Clip::from_frames([]);
+    /// # let clip_id = library.register_clip(clip);
+    /// let animation = Animation::from_clip(clip_id);
+    ///
+    /// let animation_id = library.register_animation(animation);
     ///
     /// library.name_animation(animation_id, "crouch");
     ///
@@ -319,7 +307,7 @@ impl SpritesheetLibrary {
 
     /// Creates a new animation marker and returns a unique ID to refer to it.
     ///
-    /// The marker can then be inserted into [AnimationClip]s and an [AnimationEvent::MarkerHit](crate::prelude::AnimationEvent::MarkerHit) event
+    /// The marker can then be inserted into [Clip]s and an [AnimationEvent::MarkerHit](crate::prelude::AnimationEvent::MarkerHit) event
     /// will be emitted whenever an animation reaches it.
     ///
     /// For more details, see the documentation of [AnimationEvent](crate::prelude::AnimationEvent).
@@ -328,15 +316,11 @@ impl SpritesheetLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
-    ///
+    /// # let mut library = AnimationLibrary::new();
     /// let marker = library.new_marker();
     ///
-    /// let clip_id = library.new_clip(|clip| {
-    ///     clip
-    ///         .push_frame_indices([7, 8, 9, 10, 11, 12])
-    ///         .add_marker(marker, 3);
-    /// });
+    /// let clip = Clip::from_frames([7, 8, 9, 10, 11, 12])
+    ///     .with_marker(marker, 3);
     /// ```
     pub fn new_marker(&mut self) -> AnimationMarkerId {
         let id = AnimationMarkerId {
@@ -350,7 +334,7 @@ impl SpritesheetLibrary {
 
     /// Associates a unique name to an animation marker.
     ///
-    /// The marker ID can then later be queried from that name with [SpritesheetLibrary::marker_with_name].
+    /// The marker ID can then later be queried from that name with [AnimationLibrary::marker_with_name].
     ///
     /// Returns a [LibraryError::NameAlreadyTaken] error if the name is already in use.
     ///
@@ -363,7 +347,7 @@ impl SpritesheetLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = SpritesheetLibrary::new();
+    /// # let mut library = AnimationLibrary::new();
     /// let marker_id = library.new_marker();
     ///
     /// library.name_marker(marker_id, "raise sword");

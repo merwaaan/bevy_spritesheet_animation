@@ -2,10 +2,32 @@
 
 ## 0.4.0 - 2024-??-??
 
+This update simplifies the high-level API of the library.
+
+A few structs have been renamed for clarity and consistency.
+
+More importantly, creating animations is more straightforward.
+You can now directly instantiate clips and animations, configure them and register them with the library, which gives them unique IDs.
+The animation stages that acted like "clip instances" have been removed.
+To create a variant of a clip, just clone and reconfigure it before registering the variant.
+
+### Added
+
+- Add with_xxx() methods to Clip and Animation to make it easier to set their parameters
+
 ### Changed
 
-- Rename structs related to 3D sprites with lowercase "3d" to better match Bevy
+- Clip and Animation can be instantiated directly and must then be registered with the library
+- Rename AnimationClip to Clip
+- Rename SpritesheetLibrary to AnimationLibrary
+- Rename "cycles" to "repetitions"
 - Rename AnimationRepeat::Cycles to AnimationRepeat::Times
+- Rename AnimationDuration::PerCycle to AnimationDuration::PerRepetition
+- Rename structs related to 3D sprites with lowercase "3d" to better match Bevy
+
+### Removed
+
+- Remove AnimationStage
 
 ## 0.3.0 - 2024-08-26
 
@@ -34,7 +56,7 @@
 
 ### Fixed
 
-- Fix SpritesheetLibrary::name_clip/animation/marker returning an error when naming an item with a name it already has
+- Fix AnimationLibrary::name_clip/animation/marker returning an error when naming an item with a name it already has
 - Fix MarketHit events reporting an incorrect stage index when an animation has empty clips
 - Fix Easing::Out with the Cubic and Quartic modes generating incorrect values
 

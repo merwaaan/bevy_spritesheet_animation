@@ -41,12 +41,14 @@ impl Context {
         .insert_resource(TimeUpdateStrategy::ManualInstant(Instant::now()));
 
         // Increase the max delta for each frame
+
         app.world_mut()
             .get_resource_mut::<Time<Virtual>>()
             .unwrap()
             .set_max_delta(Duration::from_millis(10000));
 
         // Update the app once so that Time's delta is not zero in the tests
+
         app.update();
 
         // Add a sprite
@@ -85,10 +87,10 @@ impl Context {
         Self { app, sprite }
     }
 
-    pub fn library(&mut self) -> Mut<'_, SpritesheetLibrary> {
+    pub fn library(&mut self) -> Mut<'_, AnimationLibrary> {
         self.app
             .world_mut()
-            .get_resource_mut::<SpritesheetLibrary>()
+            .get_resource_mut::<AnimationLibrary>()
             .unwrap()
     }
 
@@ -126,10 +128,10 @@ impl Context {
         self.app.update();
     }
 
-    pub fn check<I: IntoIterator<Item = AnimationEvent>>(
+    pub fn check(
         &mut self,
         expected_atlas_index: usize,
-        expected_events: I,
+        expected_events: impl IntoIterator<Item = AnimationEvent>,
     ) {
         println!("check");
         // Check the current atlas index of the sprite
@@ -180,35 +182,35 @@ impl Context {
     pub fn marker_hit(
         &self,
         marker_id: AnimationMarkerId,
-        stage_index: usize,
+        clip_index: usize,
         animation_id: AnimationId,
     ) -> AnimationEvent {
         AnimationEvent::MarkerHit {
             entity: self.sprite,
             marker_id,
             animation_id,
-            stage_index,
+            clip_index,
         }
     }
 
-    pub fn clip_cycle_end(&self, stage_index: usize, animation_id: AnimationId) -> AnimationEvent {
-        AnimationEvent::ClipCycleEnd {
+    pub fn clip_cycle_end(&self, clip_index: usize, animation_id: AnimationId) -> AnimationEvent {
+        AnimationEvent::ClipRepetitionEnd {
             entity: self.sprite,
-            stage_index,
+            clip_index,
             animation_id,
         }
     }
 
-    pub fn clip_end(&self, stage_index: usize, animation_id: AnimationId) -> AnimationEvent {
+    pub fn clip_end(&self, clip_index: usize, animation_id: AnimationId) -> AnimationEvent {
         AnimationEvent::ClipEnd {
             entity: self.sprite,
-            stage_index,
+            clip_index,
             animation_id,
         }
     }
 
     pub fn anim_cycle_end(&self, animation_id: AnimationId) -> AnimationEvent {
-        AnimationEvent::AnimationCycleEnd {
+        AnimationEvent::AnimationRepetitionEnd {
             entity: self.sprite,
             animation_id,
         }

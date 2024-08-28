@@ -11,7 +11,7 @@ fn library_available_as_a_resource() {
     assert!(ctx
         .app
         .world()
-        .get_resource::<SpritesheetLibrary>()
+        .get_resource::<AnimationLibrary>()
         .is_some());
 }
 

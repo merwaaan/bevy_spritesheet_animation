@@ -72,7 +72,7 @@ pub struct Sprite3dBundle {
 /// The geometry and material required for rendering a 3D sprite will be automatically added by the library in an internal system.
 ///
 /// The library requires the sprite's texture to be loaded before setting everything up.
-/// If the texture has already been loaded (for instance, in a loading stage), the sprite will appear on the next update.
+/// If the texture has already been loaded (for example, in a loading stage), the sprite will appear on the next update.
 /// Otherwise, the actual rendering will be delayed and the sprite will not be visible during a few frames.
 ///
 /// # Example

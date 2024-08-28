@@ -1,4 +1,4 @@
-// This example illustrates how to create a simple animated sprite.
+// This example shows how to create a simple animated sprite.
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -10,69 +10,64 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         // Add the plugin to enable animations.
-        // This makes the SpritesheetLibrary resource available to your systems.
+        // This makes the AnimationLibrary resource available to your systems.
         .add_plugins(SpritesheetAnimationPlugin)
         .add_systems(Startup, (setup, spawn_sprite.after(setup)))
         .run();
 }
 
-fn setup(mut commands: Commands, mut library: ResMut<SpritesheetLibrary>) {
+fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
     commands.spawn(Camera2dBundle::default());
 
-    // Create a simple animation
-    //
-    // - create a new clip that references some frames from a spritesheet
-    // - create a new animation that uses that clip
+    // Create a clip that references some frames from a spritesheet
 
-    let clip_id = library.new_clip(|clip| {
-        // You can configure this clip here (duration, number of repetitions, etc...)
+    let spritesheet = Spritesheet::new(8, 8);
 
-        // This clip will use all the frames in row 3 of the spritesheet
-        clip.push_frame_indices(Spritesheet::new(8, 8).row(3));
-    });
+    let clip = Clip::from_frames(spritesheet.row(3));
 
-    let animation_id = library.new_animation(|animation| {
-        // You can configure this animation here (duration, number of repetitions, etc...)
+    let clip_id = library.register_clip(clip);
 
-        animation.add_stage(clip_id.into());
+    // Create an animation that uses the clip
 
-        // This is a simple animation with a single clip but we can create more sophisticated
-        // animations with multiple clips, each one having different parameters.
-        //
-        // See the `composition` example for more details.
-    });
+    let animation = Animation::from_clip(clip_id);
 
-    // Attach a name to the animation in order to be able to retrieve it from the library in other systems
-    //
-    // If you prefer a less error-prone approach, you may keep the animation ID around instead
-    // (for instance in a Bevy Resource that contains the IDs of all your animations)
+    let animation_id = library.register_animation(animation);
+
+    // Name the animation to retrieve it from other systems
 
     library.name_animation(animation_id, "walk").unwrap();
+
+    // This is a simple animation with a single clip but we can create more sophisticated
+    // animations with multiple clips, each one having different parameters.
+    //
+    // See the `composition` example for more details.
 }
+
+// We split the setup in two separate systems to show how to retrieve animations from their name
 
 fn spawn_sprite(
     mut commands: Commands,
-    library: Res<SpritesheetLibrary>,
+    library: Res<AnimationLibrary>,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
 ) {
-    // Create an image and an atlas layout like you would for any Bevy sprite
-
-    let texture = assets.load("character.png");
-
-    let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-        UVec2::new(96, 96),
-        8,
-        8,
-        None,
-        None,
-    ));
-
     // Retrieve our animation from the library
 
     let animation_id = library.animation_with_name("walk");
 
     if let Some(id) = animation_id {
+        // Create an image and an atlas layout like you would for any Bevy sprite
+
+        let texture = assets.load("character.png");
+
+        let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
+            UVec2::new(96, 96),
+            8,
+            8,
+            None,
+            None,
+        ));
+
         // Spawn a sprite with Bevy's built-in SpriteBundle
 
         commands.spawn((

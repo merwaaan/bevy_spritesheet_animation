@@ -20,29 +20,19 @@ pub enum EasingVariety {
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = SpritesheetLibrary::new();
-/// let clip_id = library.new_clip(|clip| {
-///     clip
-///         .push_frame_indices([10, 11, 15])
-///         // Set a default easing for the animation stages that reference this clip
-///         .set_default_easing(Easing::In(EasingVariety::Quadratic));
-/// });
+/// # let mut library = AnimationLibrary::new();
+/// // Apply easing on a clip
 ///
-/// let animation_id = library.new_animation(|animation| {
-///     let mut stage = AnimationStage::from_clip(clip_id);
+/// let clip = Clip::from_frames([7, 8, 9])
+///     .with_easing(Easing::In(EasingVariety::Quadratic));
 ///
-///     // Apply easing on the stage
-///     //
-///     // This overrides the clip's default easing
-///     stage.set_easing(Easing::Out(EasingVariety::Sin));
+/// let clip_id = library.register_clip(clip);
 ///
-///     animation
-///         .add_stage(stage)
-///         // Apply easing on the whole animation
-///         //
-///         // (on top of any easing applied to its stages)
-///         .set_easing(Easing::InOut(EasingVariety::Cubic));
-/// });
+/// // Apply easing on the whole animation
+/// // (will combine with the clip's own easing)
+///
+/// let animation = Animation::from_clip(clip_id)
+///     .with_easing(Easing::InOut(EasingVariety::Cubic));
 /// ```
 ///
 /// # References

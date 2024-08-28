@@ -7,16 +7,13 @@ use context::*;
 fn clip_zero() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([0, 1]).set_default_repeat(0);
-    });
+    let clip = Clip::from_frames([0, 1]).with_repetitions(0);
+    let clip_id = ctx.library().register_clip(clip);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(clip_id.into())
-            .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Times(1));
-    });
+    let animation = Animation::from_clip(clip_id)
+        .with_duration(AnimationDuration::PerFrame(100))
+        .with_repetitions(AnimationRepeat::Times(1));
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 
@@ -30,16 +27,13 @@ fn clip_zero() {
 fn clip_once() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([0, 1]).set_default_repeat(1);
-    });
+    let clip = Clip::from_frames([0, 1]).with_repetitions(1);
+    let clip_id = ctx.library().register_clip(clip);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(clip_id.into())
-            .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Times(1));
-    });
+    let animation = Animation::from_clip(clip_id)
+        .with_duration(AnimationDuration::PerFrame(100))
+        .with_repetitions(AnimationRepeat::Times(1));
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 
@@ -72,16 +66,13 @@ fn clip_once() {
 fn clip_many() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([0, 1]).set_default_repeat(10);
-    });
+    let clip = Clip::from_frames([0, 1]).with_repetitions(10);
+    let clip_id = ctx.library().register_clip(clip);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(clip_id.into())
-            .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Times(1));
-    });
+    let animation = Animation::from_clip(clip_id)
+        .with_duration(AnimationDuration::PerFrame(100))
+        .with_repetitions(AnimationRepeat::Times(1));
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 
@@ -126,26 +117,24 @@ fn clip_many() {
 fn some_clips_repeated_zero_times() {
     let mut ctx = Context::new();
 
-    let zero_clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([3, 2]).set_default_repeat(0);
-    });
+    let zero_clip = Clip::from_frames([3, 2]).with_repetitions(0);
+    let zero_clip_id = ctx.library().register_clip(zero_clip);
 
-    let ok_clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([9, 8]);
-    });
+    let ok_clip = Clip::from_frames([9, 8]);
+    let ok_clip_id = ctx.library().register_clip(ok_clip);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(zero_clip_id.into())
-            .add_stage(ok_clip_id.into())
-            .add_stage(zero_clip_id.into())
-            .add_stage(ok_clip_id.into())
-            .add_stage(zero_clip_id.into())
-            .add_stage(zero_clip_id.into())
-            .add_stage(zero_clip_id.into())
-            .set_duration(AnimationDuration::PerFrame(110))
-            .set_repeat(AnimationRepeat::Times(1));
-    });
+    let animation = Animation::from_clips([
+        zero_clip_id,
+        ok_clip_id,
+        zero_clip_id,
+        ok_clip_id,
+        zero_clip_id,
+        zero_clip_id,
+        zero_clip_id,
+    ])
+    .with_duration(AnimationDuration::PerFrame(110))
+    .with_repetitions(AnimationRepeat::Times(1));
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 
@@ -183,18 +172,11 @@ fn some_clips_repeated_zero_times() {
 fn animation_zero() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([0, 1]).set_default_repeat(1000); // should be ignored
-    });
+    let clip = Clip::from_frames([0, 1]).with_repetitions(1000); // should be ignored
+    let clip_id = ctx.library().register_clip(clip);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        let mut stage = AnimationStage::from_clip(clip_id);
-        stage.set_repeat(1000); // should be ignored
-
-        animation
-            .add_stage(stage)
-            .set_repeat(AnimationRepeat::Times(0));
-    });
+    let animation = Animation::from_clip(clip_id).with_repetitions(AnimationRepeat::Times(0));
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 
@@ -208,16 +190,13 @@ fn animation_zero() {
 fn animation_once() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([0, 1]);
-    });
+    let clip = Clip::from_frames([0, 1]);
+    let clip_id = ctx.library().register_clip(clip);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(clip_id.into())
-            .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Times(1));
-    });
+    let animation = Animation::from_clip(clip_id)
+        .with_duration(AnimationDuration::PerFrame(100))
+        .with_repetitions(AnimationRepeat::Times(1));
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 
@@ -250,16 +229,13 @@ fn animation_once() {
 fn animation_many() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([0, 1]);
-    });
+    let clip = Clip::from_frames([0, 1]);
+    let clip_id = ctx.library().register_clip(clip);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(clip_id.into())
-            .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Times(10));
-    });
+    let animation = Animation::from_clip(clip_id)
+        .with_duration(AnimationDuration::PerFrame(100))
+        .with_repetitions(AnimationRepeat::Times(10));
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 
@@ -311,16 +287,13 @@ fn animation_many() {
 fn animation_forever() {
     let mut ctx = Context::new();
 
-    let clip_id = ctx.library().new_clip(|clip| {
-        clip.push_frame_indices([0, 1]);
-    });
+    let clip = Clip::from_frames([0, 1]);
+    let clip_id = ctx.library().register_clip(clip);
 
-    let animation_id = ctx.library().new_animation(|animation| {
-        animation
-            .add_stage(clip_id.into())
-            .set_duration(AnimationDuration::PerFrame(100))
-            .set_repeat(AnimationRepeat::Loop);
-    });
+    let animation = Animation::from_clip(clip_id)
+        .with_duration(AnimationDuration::PerFrame(100))
+        .with_repetitions(AnimationRepeat::Loop);
+    let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
 

@@ -1,13 +1,13 @@
-// This example illustrates how to react to animations reaching points of interest with events.
+// This example shows how to react to animations reaching points of interest with events.
 //
-// - We'll create a few animations for our character in a setup system (idle, run, shoot)
+// - We'll create a few animations for our character (idle, run, shoot) in a setup system
 //
 // - We'll add markers on interesting frames of our animations:
 //      - when a character's foot touches the ground
 //      - when the character shoots their gun
 //
 // - We'll setup a UI that shows all the animation events that exist.
-//   The events received at each update will be highlighted.
+//   Events received at each update will be highlighted.
 //
 // - We'll spawn special effects when a marker is hit:
 //      - A bullet when the character shoots their gun
@@ -39,12 +39,51 @@ fn main() {
 fn setup(
     mut commands: Commands,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<SpritesheetLibrary>,
+    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
 ) {
     commands.spawn(Camera2dBundle::default());
 
-    // Load assets for the sprite
+    // Create a running clip
+
+    let spritesheet = Spritesheet::new(8, 8);
+
+    let foot_touches_ground_marker = library.new_marker();
+
+    library
+        .name_marker(foot_touches_ground_marker, "foot touches ground")
+        .unwrap();
+
+    let run_clip = Clip::from_frames(spritesheet.row(3))
+        .with_repetitions(4)
+        // The character's foot touches the ground on frame 1...
+        .with_marker(foot_touches_ground_marker, 1)
+        // ... and then again on frame 5
+        .with_marker(foot_touches_ground_marker, 5);
+
+    let run_clip_id = library.register_clip(run_clip);
+
+    // Create a shooting clip
+
+    let bullet_out_marker = library.new_marker();
+
+    library
+        .name_marker(bullet_out_marker, "bullet goes out")
+        .unwrap();
+
+    let shoot_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 5, 5))
+        // The character shoots their gun on frame 1
+        .with_marker(bullet_out_marker, 1);
+
+    let shoot_clip_id = library.register_clip(shoot_clip);
+
+    // Create the final animation
+
+    let animation = Animation::from_clips([run_clip_id, shoot_clip_id]);
+
+    let animation_id = library.register_animation(animation);
+
+    // Spawn a sprite using the animation
 
     let texture = assets.load("character.png");
 
@@ -55,49 +94,6 @@ fn setup(
         None,
         None,
     ));
-
-    // Create a running clip
-
-    let foot_touches_ground_marker = library.new_marker();
-
-    library
-        .name_marker(foot_touches_ground_marker, "foot touches ground")
-        .unwrap();
-
-    let run_clip_id = library.new_clip(|clip| {
-        clip.push_frame_indices(Spritesheet::new(8, 8).row(3))
-            // The character's foot touches the ground on frame 1...
-            .add_marker(foot_touches_ground_marker, 1)
-            // ... and then on frame 5
-            .add_marker(foot_touches_ground_marker, 5);
-    });
-
-    // Create a shooting clip
-
-    let bullet_out_marker = library.new_marker();
-
-    library
-        .name_marker(bullet_out_marker, "bullet goes out")
-        .unwrap();
-
-    let shoot_clip_id = library.new_clip(|clip| {
-        clip.push_frame_indices(Spritesheet::new(8, 8).horizontal_strip(0, 5, 5))
-            // The character shoots their gun on frame 1
-            .add_marker(bullet_out_marker, 1);
-    });
-
-    // Assemble the two clips into an animation
-
-    let animation_id = library.new_animation(|animation| {
-        let mut run_stage = AnimationStage::from_clip(run_clip_id);
-        run_stage.set_repeat(4);
-
-        animation
-            .add_stage(run_stage)
-            .add_stage(shoot_clip_id.into());
-    });
-
-    // Spawn a sprite using the animation
 
     commands.spawn((
         SpriteBundle {
@@ -172,9 +168,9 @@ fn setup(
             };
 
             add_event(EventType::MarkerHit);
-            add_event(EventType::ClipCycleEnd);
+            add_event(EventType::ClipRepetitionEnd);
             add_event(EventType::ClipEnd);
-            add_event(EventType::CycleEnd);
+            add_event(EventType::RepetitionEnd);
             add_event(EventType::End);
         });
 }
@@ -183,9 +179,9 @@ fn setup(
 #[derive(Debug, Component, Clone, Copy, PartialEq, Eq, Hash)]
 enum EventType {
     MarkerHit,
-    ClipCycleEnd,
+    ClipRepetitionEnd,
     ClipEnd,
-    CycleEnd,
+    RepetitionEnd,
     End,
 }
 
@@ -203,14 +199,14 @@ fn show_triggered_events(
             AnimationEvent::MarkerHit { .. } => {
                 triggered_events.insert(EventType::MarkerHit);
             }
-            AnimationEvent::ClipCycleEnd { .. } => {
-                triggered_events.insert(EventType::ClipCycleEnd);
+            AnimationEvent::ClipRepetitionEnd { .. } => {
+                triggered_events.insert(EventType::ClipRepetitionEnd);
             }
             AnimationEvent::ClipEnd { .. } => {
                 triggered_events.insert(EventType::ClipEnd);
             }
-            AnimationEvent::AnimationCycleEnd { .. } => {
-                triggered_events.insert(EventType::CycleEnd);
+            AnimationEvent::AnimationRepetitionEnd { .. } => {
+                triggered_events.insert(EventType::RepetitionEnd);
             }
             AnimationEvent::AnimationEnd { .. } => {
                 triggered_events.insert(EventType::End);
@@ -232,7 +228,7 @@ fn show_triggered_events(
 // Spawns footsteps & bullets when the marked frames are played
 fn spawn_visual_effects(
     mut commands: Commands,
-    library: Res<SpritesheetLibrary>,
+    library: Res<AnimationLibrary>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut events: EventReader<AnimationEvent>,
