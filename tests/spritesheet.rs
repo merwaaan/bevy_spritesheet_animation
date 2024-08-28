@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use bevy_spritesheet_animation::prelude::*;
 
 #[test]
@@ -126,4 +127,28 @@ fn vertical_strip() {
     assert_eq!(sheet.vertical_strip(0, 0, 2), vec![0, 4]);
     assert_eq!(sheet.vertical_strip(1, 1, 6), vec![5, 9, 2, 6, 10, 3]);
     assert_eq!(sheet.vertical_strip(3, 0, 1000), vec![3, 7, 11]);
+}
+
+#[test]
+fn atlas_layout() {
+    let sheet1 = Spritesheet::new(2, 3);
+    let layout1 = sheet1.atlas_layout(100, 200);
+
+    assert_eq!(layout1.size, UVec2::new(200, 600));
+    assert_eq!(layout1.textures.len(), 6);
+
+    assert_eq!(layout1.textures.get(0), Some(&URect::new(0, 0, 100, 200)));
+    assert_eq!(layout1.textures.get(1), Some(&URect::new(100, 0, 200, 200)));
+
+    assert_eq!(layout1.textures.get(2), Some(&URect::new(0, 200, 100, 400)));
+    assert_eq!(
+        layout1.textures.get(3),
+        Some(&URect::new(100, 200, 200, 400))
+    );
+
+    assert_eq!(layout1.textures.get(4), Some(&URect::new(0, 400, 100, 600)));
+    assert_eq!(
+        layout1.textures.get(5),
+        Some(&URect::new(100, 400, 200, 600))
+    );
 }

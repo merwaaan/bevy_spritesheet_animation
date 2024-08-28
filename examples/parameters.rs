@@ -26,18 +26,6 @@ fn setup(
 ) {
     commands.spawn(Camera2dBundle::default());
 
-    // Load assets for the sprite
-
-    let texture = assets.load("ball.png");
-
-    let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-        UVec2::new(100, 20),
-        1,
-        30,
-        None,
-        None,
-    ));
-
     // Create a clip
 
     let spritesheet = Spritesheet::new(1, 30);
@@ -45,6 +33,12 @@ fn setup(
     let clip = Clip::from_frames(spritesheet.column(0));
 
     let clip_id = library.register_clip(clip);
+
+    // Load assets for the sprites
+
+    let texture = assets.load("ball.png");
+
+    let layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
 
     // Create an animated sprite for each parameter set
 

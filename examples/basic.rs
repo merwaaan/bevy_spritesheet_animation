@@ -60,13 +60,7 @@ fn spawn_sprite(
 
         let texture = assets.load("character.png");
 
-        let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-            UVec2::new(96, 96),
-            8,
-            8,
-            None,
-            None,
-        ));
+        let layout = atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96));
 
         // Spawn a sprite with Bevy's built-in SpriteBundle
 

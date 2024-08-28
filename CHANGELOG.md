@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 - 2024-??-??
+## 0.4.0 - 2024-08-28
 
 This update simplifies the high-level API of the library.
 
@@ -14,6 +14,7 @@ To create a variant of a clip, just clone and reconfigure it before registering 
 ### Added
 
 - Add with_xxx() methods to Clip and Animation to make it easier to set their parameters
+- Add Spritesheet::atlas_layout() to create a TextureAtlasLayout from a spritesheet
 
 ### Changed
 

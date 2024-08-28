@@ -1,4 +1,4 @@
-use bevy::log::warn;
+use bevy::{log::warn, math::UVec2, sprite::TextureAtlasLayout};
 use std::ops::RangeBounds;
 
 use crate::CRATE_NAME;
@@ -447,5 +447,54 @@ impl Spritesheet {
         }
 
         frames
+    }
+
+    /// Creates a [TextureAtlasLayout] from the spritesheet.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame_width` - the width of a single frame
+    /// * `frame_height` - the height of a single frame
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use bevy::prelude::*;
+    /// # use bevy_spritesheet_animation::prelude::*;
+    /// fn setup(
+    ///     mut commands: Commands,
+    ///     mut library: ResMut<AnimationLibrary>,
+    ///     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    ///     assets: Res<AssetServer>,
+    /// #   animation_id: AnimationId
+    /// ) {
+    ///     let spritesheet = Spritesheet::new(8, 8);
+    ///
+    ///     // ... omitted: create an animation ...
+    ///
+    ///     let layout = atlas_layouts.add(spritesheet.atlas_layout(100, 200));
+    ///
+    ///     commands.spawn((
+    ///         SpriteBundle {
+    ///             texture: assets.load("character.png"),
+    ///             ..default()
+    ///         },
+    ///         TextureAtlas {
+    ///             layout,
+    ///             ..default()
+    ///         },
+    ///         // Add a SpritesheetAnimation component that references our animation
+    ///         SpritesheetAnimation::from_id(animation_id),
+    ///     ));
+    /// }
+    /// ```
+    pub fn atlas_layout(&self, frame_width: u32, frame_height: u32) -> TextureAtlasLayout {
+        TextureAtlasLayout::from_grid(
+            UVec2::new(frame_width, frame_height),
+            self.columns as u32,
+            self.rows as u32,
+            None,
+            None,
+        )
     }
 }

@@ -22,13 +22,7 @@ fn basic(c: &mut Criterion) {
                 .get_resource_mut::<Assets<TextureAtlasLayout>>()
                 .unwrap();
 
-            let layout = atlas_layouts.add(TextureAtlasLayout::from_grid(
-                UVec2::new(96, 96),
-                8,
-                8,
-                None,
-                None,
-            ));
+            let layout = atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96));
 
             let mut library = app
                 .world_mut()
