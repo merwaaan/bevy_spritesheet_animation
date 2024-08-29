@@ -23,14 +23,14 @@ pub(crate) type ActualTime = Time<Real>;
 pub(crate) type ActualTime = Time;
 
 use crate::{
-    animator::SpritesheetAnimator, components::spritesheet_animation::SpritesheetAnimation,
+    animator::Animator, components::spritesheet_animation::SpritesheetAnimation,
     events::AnimationEvent, library::AnimationLibrary,
 };
 
 pub(crate) fn play_animations(
     time: Res<ActualTime>,
     library: Res<AnimationLibrary>,
-    mut animator: ResMut<SpritesheetAnimator>,
+    mut animator: ResMut<Animator>,
     mut events: EventWriter<AnimationEvent>,
     mut query: Query<(Entity, &mut SpritesheetAnimation, &mut TextureAtlas)>,
 ) {

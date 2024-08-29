@@ -4,7 +4,7 @@ use bevy::{
 };
 
 use crate::{
-    animator::SpritesheetAnimator,
+    animator::Animator,
     events::AnimationEvent,
     library::AnimationLibrary,
     systems::{sprite3d, spritesheet_animation},
@@ -58,7 +58,7 @@ impl Plugin for SpritesheetAnimationPlugin {
             // The animation library, for creating clips, animations and markers
             .insert_resource(AnimationLibrary::new())
             // The animator responsible for running animations
-            .insert_resource(SpritesheetAnimator::new())
+            .insert_resource(Animator::new())
             // Atlas UVs for 3D sprites
             .insert_resource(sprite3d::TextureAtlasLayoutUvs::default())
             // Animations events

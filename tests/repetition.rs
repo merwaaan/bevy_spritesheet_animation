@@ -47,9 +47,9 @@ fn clip_once() {
     ctx.check(
         1,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
             ctx.anim_end(animation_id),
         ],
     );
@@ -81,12 +81,12 @@ fn clip_many() {
     ctx.run(50);
     ctx.check(0, []);
 
-    for _ in 0..9 {
+    for i in 0..9 {
         ctx.run(100);
         ctx.check(1, []);
 
         ctx.run(100);
-        ctx.check(0, [ctx.clip_cycle_end(0, animation_id)]);
+        ctx.check(0, [ctx.clip_rep_end(animation_id, clip_id, i)]);
     }
 
     // Last cycle
@@ -98,9 +98,9 @@ fn clip_many() {
     ctx.check(
         1,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 9),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
             ctx.anim_end(animation_id),
         ],
     );
@@ -148,8 +148,8 @@ fn some_clips_repeated_zero_times() {
     ctx.check(
         9,
         [
-            ctx.clip_cycle_end(1, animation_id),
-            ctx.clip_end(1, animation_id),
+            ctx.clip_rep_end(animation_id, ok_clip_id, 0),
+            ctx.clip_end(animation_id, ok_clip_id),
         ],
     );
 
@@ -160,9 +160,9 @@ fn some_clips_repeated_zero_times() {
     ctx.check(
         8,
         [
-            ctx.clip_cycle_end(3, animation_id),
-            ctx.clip_end(3, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, ok_clip_id, 0),
+            ctx.clip_end(animation_id, ok_clip_id),
+            ctx.anim_rep_end(animation_id, 0),
             ctx.anim_end(animation_id),
         ],
     );
@@ -210,9 +210,9 @@ fn animation_once() {
     ctx.check(
         1,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
             ctx.anim_end(animation_id),
         ],
     );
@@ -244,7 +244,7 @@ fn animation_many() {
     ctx.run(50);
     ctx.check(0, []);
 
-    for _ in 0..9 {
+    for i in 0..9 {
         ctx.run(100);
         ctx.check(1, []);
 
@@ -252,9 +252,9 @@ fn animation_many() {
         ctx.check(
             0,
             [
-                ctx.clip_cycle_end(0, animation_id),
-                ctx.clip_end(0, animation_id),
-                ctx.anim_cycle_end(animation_id),
+                ctx.clip_rep_end(animation_id, clip_id, 0),
+                ctx.clip_end(animation_id, clip_id),
+                ctx.anim_rep_end(animation_id, i),
             ],
         );
     }
@@ -268,9 +268,9 @@ fn animation_many() {
     ctx.check(
         1,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 9),
             ctx.anim_end(animation_id),
         ],
     );
@@ -300,17 +300,17 @@ fn animation_forever() {
     ctx.run(50);
     ctx.check(0, []);
 
-    for _ in 0..1000 {
-        ctx.run(100);
+    for i in 0..1000 {
+        ctx.run(100); // 100 * i + 50
         ctx.check(1, []);
 
-        ctx.run(100);
+        ctx.run(100); // 100 * i + 150
         ctx.check(
             0,
             [
-                ctx.clip_cycle_end(0, animation_id),
-                ctx.clip_end(0, animation_id),
-                ctx.anim_cycle_end(animation_id),
+                ctx.clip_rep_end(animation_id, clip_id, 0),
+                ctx.clip_end(animation_id, clip_id),
+                ctx.anim_rep_end(animation_id, i),
             ],
         );
     }

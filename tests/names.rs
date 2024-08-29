@@ -59,41 +59,49 @@ fn animations() {
 
     // Create a first animation
 
-    let anim1 = Animation::from_clips([]);
-    let anim1_id = ctx.library().register_animation(anim1);
+    let animation1 = Animation::from_clips([]);
+    let animation1_id = ctx.library().register_animation(animation1);
 
-    assert!(!ctx.library().is_animation_name(anim1_id, "first"));
+    assert!(!ctx.library().is_animation_name(animation1_id, "first"));
     assert_eq!(ctx.library().animation_with_name("first"), None);
 
     // Name it
 
-    assert!(ctx.library().name_animation(anim1_id, "first").is_ok());
+    assert!(ctx.library().name_animation(animation1_id, "first").is_ok());
 
-    assert!(ctx.library().is_animation_name(anim1_id, "first"));
-    assert_eq!(ctx.library().animation_with_name("first"), Some(anim1_id));
+    assert!(ctx.library().is_animation_name(animation1_id, "first"));
+    assert_eq!(
+        ctx.library().animation_with_name("first"),
+        Some(animation1_id)
+    );
 
     // Give it a second name, this is not forbidden
 
     assert!(ctx
         .library()
-        .name_animation(anim1_id, "first again")
+        .name_animation(animation1_id, "first again")
         .is_ok());
 
-    assert!(ctx.library().is_animation_name(anim1_id, "first"));
-    assert_eq!(ctx.library().animation_with_name("first"), Some(anim1_id));
+    assert!(ctx.library().is_animation_name(animation1_id, "first"));
+    assert_eq!(
+        ctx.library().animation_with_name("first"),
+        Some(animation1_id)
+    );
 
-    assert!(ctx.library().is_animation_name(anim1_id, "first again"));
+    assert!(ctx
+        .library()
+        .is_animation_name(animation1_id, "first again"));
     assert_eq!(
         ctx.library().animation_with_name("first again"),
-        Some(anim1_id)
+        Some(animation1_id)
     );
 
     // Give it the same names again, this is a no-op
 
-    assert!(ctx.library().name_animation(anim1_id, "first").is_ok());
+    assert!(ctx.library().name_animation(animation1_id, "first").is_ok());
     assert!(ctx
         .library()
-        .name_animation(anim1_id, "first again")
+        .name_animation(animation1_id, "first again")
         .is_ok());
 
     // Create another animation and reuse one of those names, this should not work
@@ -108,8 +116,11 @@ fn animations() {
 
     assert!(!ctx.library().is_animation_name(anim2_id, "first"));
 
-    assert_eq!(ctx.library().animation_with_name("first"), Some(anim1_id));
-    assert!(ctx.library().is_animation_name(anim1_id, "first"));
+    assert_eq!(
+        ctx.library().animation_with_name("first"),
+        Some(animation1_id)
+    );
+    assert!(ctx.library().is_animation_name(animation1_id, "first"));
 }
 
 #[test]

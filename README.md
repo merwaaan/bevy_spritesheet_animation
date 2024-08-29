@@ -17,7 +17,7 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for anima
 - A [convenient API](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/spritesheet/struct.Spritesheet.html) to select frames in spritesheets.
 
 > [!TIP]
-> This crate is under active development. Please regularly check [CHANGELOG.md] for recent changes.
+> This crate is under active development. Please regularly check the [CHANGELOG](CHANGELOG.md) for recent changes.
 
 # Quick start
 
@@ -278,6 +278,7 @@ For more examples, browse the [examples/](examples) directory.
 | -------------------------------------- | ------------------------------------------------------------------------ |
 | [basic](examples/basic.rs)             | Shows how to create an animated sprite                                   |
 | [3d](examples/3d.rs)                   | Shows how to create 3D sprites                                           |
+| [progress](examples/progress.rs)       | Shows how to control an animation                                        |
 | [composition](examples/composition.rs) | Shows how to create an animation with multiple clips                     |
 | [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                             |
 | [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations    |

@@ -16,13 +16,14 @@
 #[path = "./common/mod.rs"]
 pub mod common;
 
+use std::collections::HashSet;
+
 use bevy::{
     color::palettes::css::{DEEP_PINK, GRAY, YELLOW},
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_spritesheet_animation::prelude::*;
-use std::collections::HashSet;
 
 fn main() {
     App::new()

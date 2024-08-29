@@ -96,8 +96,8 @@ fn animation_duration_per_frame() {
     ctx.check(
         0,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
+            ctx.clip_rep_end(animation_id, clip1_id, 0),
+            ctx.clip_end(animation_id, clip1_id),
         ],
     );
 
@@ -105,7 +105,7 @@ fn animation_duration_per_frame() {
     ctx.check(1, []);
 
     ctx.run(600); // 2200
-    ctx.check(0, [ctx.clip_cycle_end(1, animation_id)]);
+    ctx.check(0, [ctx.clip_rep_end(animation_id, clip2_id, 0)]);
 
     ctx.run(400); // 2600
     ctx.check(1, []);
@@ -131,13 +131,13 @@ fn animation_duration_per_cycle() {
 
     // Animation duration = 10 000 per cycle
     //
-    // Stage 1 duration = 1000 per cycle
-    // Stage 2 duration = 2000 per frame * 2 repetitions = 8000 per cycle
+    // Clip 1 duration = 1000 per cycle
+    // Clip 2 duration = 2000 per frame * 2 repetitions = 8000 per cycle
     //
-    // So stage 1 takes 1000/9000th of the animation time = 1111
-    // And stage 2 takes 8000/9000th = 8888
+    // So clip 1 takes 1000/9000th of the animation time = 1111
+    // And clip 2 takes 8000/9000th = 8888
 
-    // stage 0, frame 0: 0 to 555
+    // clip 1, frame 0: 0 to 555
 
     ctx.run(200);
     ctx.check(0, []);
@@ -145,7 +145,7 @@ fn animation_duration_per_cycle() {
     ctx.run(350); // 550
     ctx.check(0, []);
 
-    // stage 0, frame 1: 555 to 1111
+    // clip 1, frame 1: 555 to 1111
 
     ctx.run(10); // 560
     ctx.check(1, []);
@@ -153,21 +153,21 @@ fn animation_duration_per_cycle() {
     ctx.run(540); // 1100
     ctx.check(1, []);
 
-    // stage 1, frame 0: 1111 to 3333
+    // clip 2, frame 0: 1111 to 3333
 
     ctx.run(20); // 1120
     ctx.check(
         0,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
+            ctx.clip_rep_end(animation_id, clip1_id, 0),
+            ctx.clip_end(animation_id, clip1_id),
         ],
     );
 
     ctx.run(2200); // 3320
     ctx.check(0, []);
 
-    // stage 1, frame 1: 3333 to 5555
+    // clip 2, frame 1: 3333 to 5555
 
     ctx.run(20); // 3340
     ctx.check(1, []);
@@ -175,15 +175,15 @@ fn animation_duration_per_cycle() {
     ctx.run(2210); // 5550
     ctx.check(1, []);
 
-    // stage 1, frame 0 (repeated): 5555 to 7777
+    // clip 2, frame 0 (repeated): 5555 to 7777
 
     ctx.run(20); // 5570
-    ctx.check(0, [ctx.clip_cycle_end(1, animation_id)]);
+    ctx.check(0, [ctx.clip_rep_end(animation_id, clip2_id, 0)]);
 
     ctx.run(2200); // 7770
     ctx.check(0, []);
 
-    // stage 1, frame 1: 7777 to 9999
+    // clip 2, frame 1: 7777 to 9999
 
     ctx.run(10); // 7780
     ctx.check(1, []);
@@ -197,9 +197,9 @@ fn animation_duration_per_cycle() {
     ctx.check(
         0,
         [
-            ctx.clip_cycle_end(1, animation_id),
-            ctx.clip_end(1, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip2_id, 1),
+            ctx.clip_end(animation_id, clip2_id),
+            ctx.anim_rep_end(animation_id, 0),
         ],
     );
 }

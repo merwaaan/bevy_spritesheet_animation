@@ -11,7 +11,6 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(SpritesheetAnimationPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, reset_on_keypress)
         .run();
 }
 
@@ -74,15 +73,4 @@ fn setup(
         },
         SpritesheetAnimation::from_id(animation_id),
     ));
-}
-
-fn reset_on_keypress(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut sprites: Query<&mut SpritesheetAnimation>,
-) {
-    if keyboard.get_just_pressed().len() > 0 {
-        for mut animation in &mut sprites {
-            animation.reset();
-        }
-    }
 }

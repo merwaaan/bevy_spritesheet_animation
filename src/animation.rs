@@ -41,7 +41,7 @@ pub enum AnimationRepeat {
     /// Loops indefinitely
     Loop,
     /// Repeats a fixed number of times
-    Times(u32),
+    Times(usize),
 }
 
 impl Default for AnimationRepeat {

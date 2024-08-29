@@ -1,4 +1,4 @@
-mod cache;
+pub mod cache;
 mod iterator;
 
 use bevy::{
@@ -9,52 +9,47 @@ use bevy::{
     },
     sprite::TextureAtlas,
 };
-use std::{collections::HashMap, sync::Arc};
+use iterator::AnimationIteratorEvent;
+use std::collections::HashMap;
 
 use crate::{
-    animation::AnimationId, components::spritesheet_animation::SpritesheetAnimation,
-    events::AnimationEvent, library::AnimationLibrary,
+    animation::AnimationId,
+    components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
+    events::AnimationEvent,
+    library::AnimationLibrary,
     systems::spritesheet_animation::ActualTime,
 };
 
-use self::{
-    cache::{AnimationCache, AnimationFrameEvent},
-    iterator::AnimationIterator,
-};
+use self::{iterator::AnimationIterator, iterator::IteratorFrame};
 
 /// An instance of an animation that is currently being played
 struct AnimationInstance {
     animation_id: AnimationId,
     iterator: AnimationIterator,
-    current_frame_duration: u32,
-    current_clip_index: usize,
-    accumulated_time: u32,
 
-    /// Marks when the animation has ended to emit end events only once
-    ended: bool,
+    // Current frame
+    current_frame: Option<(IteratorFrame, AnimationProgress)>,
+
+    /// Time accumulated since the last frame
+    accumulated_time: u32,
 }
 
 /// The animator is responsible for playing animations as time advances.
 #[derive(Resource)]
-pub(crate) struct SpritesheetAnimator {
-    /// Animation caches, one for each animation.
-    /// They contain all the data required to play an animation.
-    animation_caches: HashMap<AnimationId, Arc<AnimationCache>>,
-
+pub(crate) struct Animator {
     /// Instances of animations currently being played.
     /// Each animation instance is associated to an entity with a [SpritesheetAnimation] component.
     animation_instances: HashMap<Entity, AnimationInstance>,
 }
 
-impl SpritesheetAnimator {
+impl Animator {
     pub fn new() -> Self {
         Self {
-            animation_caches: HashMap::new(),
             animation_instances: HashMap::new(),
         }
     }
 
-    /// Run the animations
+    /// Plays the animations
     pub fn update(
         &mut self,
         time: &ActualTime,
@@ -71,73 +66,81 @@ impl SpritesheetAnimator {
 
         for (entity, mut entity_animation, mut entity_atlas) in query.iter_mut() {
             // Create a new animation instance if:
-            // - the entity is new OR
-            // - it switched animation OR
-            // - a reset has been requested
-
             let needs_new_animation_instance = match self.animation_instances.get(&entity) {
                 // The entity has an animation instance already but it switched animation
-                Some(instance) => {
-                    instance.animation_id != entity_animation.animation_id
-                        || entity_animation.reset_requested
-                }
+                Some(instance) => instance.animation_id != entity_animation.animation_id,
                 // The entity has no animation instance yet
                 None => true,
             };
 
             if needs_new_animation_instance {
-                // Clear any reset request
-
-                entity_animation.reset_requested = false;
-
-                // Retrieve the cached animation data (create it if needed)
-
-                let cache = self
-                    .animation_caches
-                    .entry(entity_animation.animation_id)
-                    .or_insert_with(|| {
-                        Arc::new(AnimationCache::new(entity_animation.animation_id, library))
-                    });
-
                 // Create a new iterator for this animation
 
-                let mut iterator =
-                    AnimationIterator::new(entity_animation.animation_id, cache.clone());
+                let cache = library.get_animation_cache(entity_animation.animation_id);
 
-                // Immediatly assign the first frame to kicktart the animation
+                let mut iterator = AnimationIterator::new(cache.clone());
 
-                let maybe_first_frame = iterator.next();
+                // Move to the starting progress if specified
 
-                if let Some(first_frame) = &maybe_first_frame {
-                    entity_atlas.index = first_frame.atlas_index;
-
-                    // Emit events for the first frame
-
-                    let events = SpritesheetAnimator::promote_events(&first_frame.events, &entity);
-
-                    for event in events {
-                        event_writer.send(event);
+                if entity_animation.progress != AnimationProgress::default() {
+                    // Start from the beginning if the progress is invalid
+                    if !iterator.to(entity_animation.progress) {
+                        entity_animation.progress = AnimationProgress::default();
                     }
                 }
 
-                let (first_frame_duration, first_clip_index) = maybe_first_frame
-                    .map(|frame| (frame.duration, frame.clip_index))
-                    .unwrap_or((u32::MAX, usize::MAX));
+                // Create the instance and immediately play the first frame
+
+                let first_frame = Self::play_frame(
+                    &mut iterator,
+                    &mut entity_animation,
+                    &entity,
+                    &mut entity_atlas,
+                    event_writer,
+                );
 
                 self.animation_instances.insert(
                     entity,
                     AnimationInstance {
                         animation_id: entity_animation.animation_id,
                         iterator,
-                        current_frame_duration: first_frame_duration,
-                        current_clip_index: first_clip_index,
+                        current_frame: first_frame,
                         accumulated_time: 0,
-                        ended: false,
                     },
                 );
             }
 
             let animation_instance = self.animation_instances.get_mut(&entity).unwrap();
+
+            // Apply manual progress updates
+
+            if animation_instance
+                .current_frame
+                .as_ref()
+                .filter(|frame| entity_animation.progress != frame.1)
+                .is_some()
+            {
+                if animation_instance.iterator.to(entity_animation.progress) {
+                    Self::play_frame(
+                        &mut animation_instance.iterator,
+                        &mut entity_animation,
+                        &entity,
+                        &mut entity_atlas,
+                        event_writer,
+                    )
+                    .inspect(|new_frame| {
+                        animation_instance.current_frame = Some(new_frame.clone());
+                        animation_instance.accumulated_time = 0;
+                    });
+                } else {
+                    // Restore to the last valid progress if invalid
+                    entity_animation.progress = animation_instance
+                        .current_frame
+                        .as_ref()
+                        .map(|(_, progress)| progress.clone())
+                        .unwrap_or_default()
+                }
+            }
 
             // Skip the update if the animation is paused
             //
@@ -152,113 +155,130 @@ impl SpritesheetAnimator {
             animation_instance.accumulated_time +=
                 (time.delta_seconds() * entity_animation.speed_factor * 1000.0) as u32;
 
-            while animation_instance.accumulated_time > animation_instance.current_frame_duration {
+            while let Some(frame) = animation_instance
+                .current_frame
+                .as_ref()
+                .filter(|frame| animation_instance.accumulated_time > frame.0.duration)
+            {
                 // Consume the elapsed time
 
-                animation_instance.accumulated_time -= animation_instance.current_frame_duration;
+                animation_instance.accumulated_time -= frame.0.duration;
 
                 // Fetch the next frame
 
-                if let Some(next_frame) = animation_instance.iterator.next() {
-                    // Update the entity's texture atlas
+                animation_instance.current_frame = Self::play_frame(
+                    &mut animation_instance.iterator,
+                    &mut entity_animation,
+                    &entity,
+                    &mut entity_atlas,
+                    event_writer,
+                )
+                .or_else(|| {
+                    // The animation is over
 
-                    entity_atlas.index = next_frame.atlas_index;
-
-                    // Store this frame's data
-
-                    animation_instance.current_frame_duration = next_frame.duration;
-                    animation_instance.current_clip_index = next_frame.clip_index;
-
-                    // Emit the events for this frame
-
-                    let events = SpritesheetAnimator::promote_events(&next_frame.events, &entity);
-
-                    for frame_event in events {
-                        event_writer.send(frame_event);
-                    }
-                }
-                // Otherwise, the animation is over
-                else {
                     // Emit all the end events if the animation just ended
 
-                    if !animation_instance.ended {
-                        event_writer.send(AnimationEvent::ClipRepetitionEnd {
-                            entity,
-                            clip_index: animation_instance.current_clip_index,
-                            animation_id: animation_instance.animation_id,
-                        });
+                    event_writer.send(AnimationEvent::ClipRepetitionEnd {
+                        entity,
+                        animation_id: animation_instance.animation_id,
+                        clip_id: frame.0.clip_id,
+                        clip_repetition: frame.0.clip_repetition,
+                    });
 
-                        event_writer.send(AnimationEvent::ClipEnd {
-                            entity,
-                            clip_index: animation_instance.current_clip_index,
-                            animation_id: animation_instance.animation_id,
-                        });
+                    event_writer.send(AnimationEvent::ClipEnd {
+                        entity,
+                        animation_id: animation_instance.animation_id,
+                        clip_id: frame.0.clip_id,
+                    });
 
-                        event_writer.send(AnimationEvent::AnimationRepetitionEnd {
-                            entity,
-                            animation_id: animation_instance.animation_id,
-                        });
+                    event_writer.send(AnimationEvent::AnimationRepetitionEnd {
+                        entity,
+                        animation_id: animation_instance.animation_id,
+                        animation_repetition: frame.0.animation_repetition,
+                    });
 
-                        event_writer.send(AnimationEvent::AnimationEnd {
-                            entity,
-                            animation_id: animation_instance.animation_id,
-                        });
+                    event_writer.send(AnimationEvent::AnimationEnd {
+                        entity,
+                        animation_id: animation_instance.animation_id,
+                    });
 
-                        //
-
-                        animation_instance.current_frame_duration = u32::MAX;
-                    }
-
-                    animation_instance.ended = true;
-
-                    // Stop
-
-                    break;
-                }
+                    None
+                });
             }
         }
     }
 
-    /// Promotes AnimationFrameEvents to regular AnimationEvents
+    fn play_frame(
+        iterator: &mut AnimationIterator,
+        animation: &mut SpritesheetAnimation,
+        entity: &Entity,
+        atlas: &mut TextureAtlas,
+        event_writer: &mut EventWriter<AnimationEvent>,
+    ) -> Option<(IteratorFrame, AnimationProgress)> {
+        let maybe_frame = iterator.next();
+
+        if let Some((frame, progress)) = &maybe_frame {
+            // Update the sprite
+
+            atlas.index = frame.atlas_index;
+
+            animation.progress = *progress;
+
+            // Emit events
+
+            let events = Animator::promote_events(&frame.events, animation.animation_id, entity);
+
+            for event in events {
+                event_writer.send(event);
+            }
+        }
+
+        maybe_frame
+    }
+
+    /// Promotes AnimationIteratorEvents to regular AnimationEvents
     fn promote_events(
-        animation_events: &[AnimationFrameEvent],
+        animation_events: &[AnimationIteratorEvent],
+        animation_id: AnimationId,
         entity: &Entity,
     ) -> Vec<AnimationEvent> {
         animation_events
             .iter()
             .map(|event| match event {
-                AnimationFrameEvent::MarkerHit {
+                AnimationIteratorEvent::MarkerHit {
                     marker_id,
-                    clip_index,
-                    animation_id,
+                    animation_repetition,
+                    clip_id,
+                    clip_repetition,
                 } => AnimationEvent::MarkerHit {
                     entity: *entity,
                     marker_id: *marker_id,
-                    clip_index: *clip_index,
-                    animation_id: *animation_id,
-                },
-                AnimationFrameEvent::ClipRepetitionEnd {
-                    clip_index,
                     animation_id,
+                    animation_repetition: *animation_repetition,
+                    clip_id: *clip_id,
+                    clip_repetition: *clip_repetition,
+                },
+                AnimationIteratorEvent::ClipRepetitionEnd {
+                    clip_id,
+                    clip_repetition,
                 } => AnimationEvent::ClipRepetitionEnd {
                     entity: *entity,
-                    clip_index: *clip_index,
-                    animation_id: *animation_id,
-                },
-                AnimationFrameEvent::ClipEnd {
-                    clip_index,
                     animation_id,
-                } => AnimationEvent::ClipEnd {
-                    entity: *entity,
-                    clip_index: *clip_index,
-                    animation_id: *animation_id,
+                    clip_id: *clip_id,
+                    clip_repetition: *clip_repetition,
                 },
-                AnimationFrameEvent::AnimationRepetitionEnd { animation_id } => {
-                    AnimationEvent::AnimationRepetitionEnd {
-                        entity: *entity,
-                        animation_id: *animation_id,
-                    }
-                }
+                AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
+                    entity: *entity,
+                    animation_id,
+                    clip_id: *clip_id,
+                },
+                AnimationIteratorEvent::AnimationRepetitionEnd {
+                    animation_repetition,
+                } => AnimationEvent::AnimationRepetitionEnd {
+                    entity: *entity,
+                    animation_id,
+                    animation_repetition: *animation_repetition,
+                },
             })
             .collect()
     }

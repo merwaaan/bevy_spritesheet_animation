@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1 - 2024-??-??
+
+### Added
+
+- Add a `progress` field to the SpritesheetAnimation component to query and control the animation state
+- Add a `switch()` method to SpritesheetAnimation component to switch to another animation and reset the progress
+- Add `get_clip()` and `get_animation()` methods to the library
+- Attach more information to animation events (current clip ID, current clip repetition, current animation repetition)
+
+### Changed
+
+- Change the type for repetitions from u32 to usize for consistency
+
 ## 0.4.0 - 2024-08-28
 
 This update simplifies the high-level API of the library.

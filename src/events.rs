@@ -1,7 +1,8 @@
-use bevy::ecs::{entity::Entity, event::Event};
 use std::fmt;
 
-use crate::animation::AnimationId;
+use bevy::ecs::{entity::Entity, event::Event};
+
+use crate::{animation::AnimationId, clip::ClipId};
 
 /// A Bevy event emitted when an animation reaches a point of interest
 ///
@@ -94,24 +95,28 @@ pub enum AnimationEvent {
         entity: Entity,
         marker_id: AnimationMarkerId,
         animation_id: AnimationId,
-        clip_index: usize,
+        animation_repetition: usize,
+        clip_id: ClipId,
+        clip_repetition: usize,
     },
     /// A repetition of a clip has ended
     ClipRepetitionEnd {
         entity: Entity,
         animation_id: AnimationId,
-        clip_index: usize,
+        clip_id: ClipId,
+        clip_repetition: usize,
     },
     /// An clip ended
     ClipEnd {
         entity: Entity,
         animation_id: AnimationId,
-        clip_index: usize,
+        clip_id: ClipId,
     },
     /// A repetition of an animation has ended
     AnimationRepetitionEnd {
         entity: Entity,
         animation_id: AnimationId,
+        animation_repetition: usize,
     },
     /// An animation has ended
     AnimationEnd {

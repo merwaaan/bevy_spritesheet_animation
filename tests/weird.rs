@@ -50,7 +50,10 @@ fn animation_with_some_empty_clips() {
         empty_clip_id,
         ok_clip_id,
         empty_clip_id,
+        empty_clip_id,
+        empty_clip_id,
         ok_clip_id,
+        empty_clip_id,
         empty_clip_id,
     ])
     .with_duration(AnimationDuration::PerFrame(110));
@@ -69,8 +72,8 @@ fn animation_with_some_empty_clips() {
     ctx.check(
         9,
         [
-            ctx.clip_cycle_end(1, animation_id),
-            ctx.clip_end(1, animation_id),
+            ctx.clip_rep_end(animation_id, ok_clip_id, 0),
+            ctx.clip_end(animation_id, ok_clip_id),
         ],
     );
 
@@ -110,7 +113,7 @@ fn animation_assigned_while_paused() {
     let animation2_id = ctx.library().register_animation(animation2);
 
     ctx.update_sprite_animation(|anim| {
-        anim.animation_id = animation2_id;
+        anim.switch(animation2_id);
     });
 
     for _ in 0..100 {

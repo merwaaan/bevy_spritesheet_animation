@@ -81,7 +81,7 @@ pub struct Clip {
     duration: Option<AnimationDuration>,
 
     /// The optional number of repetitions of this animation
-    repetitions: Option<u32>,
+    repetitions: Option<usize>,
 
     /// The optional direction of this animation
     direction: Option<AnimationDirection>,
@@ -163,18 +163,18 @@ impl Clip {
         self
     }
 
-    pub fn repetitions(&self) -> &Option<u32> {
+    pub fn repetitions(&self) -> &Option<usize> {
         &self.repetitions
     }
 
-    pub fn with_repetitions(&self, repetitions: u32) -> Self {
+    pub fn with_repetitions(&self, repetitions: usize) -> Self {
         Self {
             repetitions: Some(repetitions),
             ..self.clone()
         }
     }
 
-    pub fn set_repetitions(&mut self, repetitions: u32) -> &mut Self {
+    pub fn set_repetitions(&mut self, repetitions: usize) -> &mut Self {
         self.repetitions = Some(repetitions);
         self
     }

@@ -1,8 +1,12 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use bevy::prelude::Resource;
 
 use crate::{
+    animator::cache::AnimationCache,
     clip::{Clip, ClipId},
     events::AnimationMarkerId,
     prelude::{Animation, AnimationId},
@@ -66,6 +70,10 @@ pub struct AnimationLibrary {
 
     /// Name to ID lookup for markers
     marker_name_lookup: HashMap<String, AnimationMarkerId>,
+
+    /// Animation caches, one for each animation.
+    /// They contain all the data required to play an animation.
+    animation_caches: HashMap<AnimationId, Arc<AnimationCache>>,
 }
 
 impl AnimationLibrary {
@@ -78,6 +86,7 @@ impl AnimationLibrary {
             animation_name_lookup: HashMap::new(),
             markers: HashSet::new(),
             marker_name_lookup: HashMap::new(),
+            animation_caches: HashMap::new(),
         }
     }
 
@@ -179,6 +188,12 @@ impl AnimationLibrary {
         &self.clips
     }
 
+    /// Returns a clip registered in the library.
+    pub fn get_clip(&self, clip_id: ClipId) -> &Clip {
+        // In practice, this cannot fail as the library is the sole creator of IDs
+        self.clips.get(&clip_id).unwrap()
+    }
+
     /// Registers an new [Animation] and returns its ID.
     ///
     /// The animation can then be referenced in [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) components.
@@ -227,6 +242,9 @@ impl AnimationLibrary {
         };
 
         self.animations.insert(id, animation);
+
+        self.animation_caches
+            .insert(id, Arc::new(AnimationCache::new(id, self)));
 
         id
     }
@@ -303,6 +321,12 @@ impl AnimationLibrary {
     /// Returns all the animations registered in the library.
     pub fn animations(&self) -> &HashMap<AnimationId, Animation> {
         &self.animations
+    }
+
+    /// Returns an animation registered in the library.
+    pub fn get_animation(&self, animation_id: AnimationId) -> &Animation {
+        // In practice, this cannot fail as the library is the sole creator of IDs
+        self.animations.get(&animation_id).unwrap()
     }
 
     /// Creates a new animation marker and returns a unique ID to refer to it.
@@ -400,5 +424,12 @@ impl AnimationLibrary {
     /// Returns all the animation markers registered in the library.
     pub fn markers(&self) -> &HashSet<AnimationMarkerId> {
         &self.markers
+    }
+
+    /// Returns the cache for an animation registered in the library
+    pub(crate) fn get_animation_cache(&self, animation_id: AnimationId) -> Arc<AnimationCache> {
+        // In practice, this cannot fail as the library is the sole creator of IDs
+        // and the cache is created when registering the animation
+        self.animation_caches.get(&animation_id).unwrap().clone()
     }
 }

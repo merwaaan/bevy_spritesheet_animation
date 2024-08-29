@@ -32,9 +32,9 @@ fn clip_backwards() {
     ctx.check(
         2,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
         ],
     );
 
@@ -50,14 +50,12 @@ fn animation_backwards() {
     let mut ctx = Context::new();
 
     let clip = Clip::from_frames([0, 1, 2]).with_direction(AnimationDirection::Forwards);
-
     let clip_id = ctx.library().register_clip(clip);
 
     let animation = Animation::from_clip(clip_id)
         .with_direction(AnimationDirection::Backwards)
         .with_duration(AnimationDuration::PerFrame(100))
         .with_repetitions(AnimationRepeat::Times(2));
-
     let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
@@ -75,9 +73,9 @@ fn animation_backwards() {
     ctx.check(
         2,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
         ],
     );
 
@@ -95,18 +93,15 @@ fn animation_backwards_clip_backwards() {
     // Backward clip sandwiched between two forward clips
 
     let forward_clip = Clip::from_frames([0, 1, 2]).with_direction(AnimationDirection::Forwards);
-
     let forward_clip_id = ctx.library().register_clip(forward_clip);
 
     let backward_clip = Clip::from_frames([0, 1, 2]).with_direction(AnimationDirection::Backwards);
-
     let backward_clip_id = ctx.library().register_clip(backward_clip);
 
     let animation = Animation::from_clips([forward_clip_id, backward_clip_id, forward_clip_id])
         .with_direction(AnimationDirection::Backwards)
         .with_duration(AnimationDuration::PerFrame(100))
         .with_repetitions(AnimationRepeat::Loop);
-
     let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
@@ -128,8 +123,8 @@ fn animation_backwards_clip_backwards() {
     ctx.check(
         0,
         [
-            ctx.clip_cycle_end(2, animation_id),
-            ctx.clip_end(2, animation_id),
+            ctx.clip_rep_end(animation_id, forward_clip_id, 0),
+            ctx.clip_end(animation_id, forward_clip_id),
         ],
     );
 
@@ -145,8 +140,8 @@ fn animation_backwards_clip_backwards() {
     ctx.check(
         2,
         [
-            ctx.clip_cycle_end(1, animation_id),
-            ctx.clip_end(1, animation_id),
+            ctx.clip_rep_end(animation_id, backward_clip_id, 0),
+            ctx.clip_end(animation_id, backward_clip_id),
         ],
     );
 
@@ -162,9 +157,9 @@ fn animation_backwards_clip_backwards() {
     ctx.check(
         2,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, forward_clip_id, 0),
+            ctx.clip_end(animation_id, forward_clip_id),
+            ctx.anim_rep_end(animation_id, 0),
         ],
     );
 }
@@ -177,14 +172,12 @@ fn clip_pingpong() {
 
     let clip = Clip::from_frames([0, 1, 2])
         .with_direction(AnimationDirection::PingPong)
-        .with_repetitions(3); // Needed for the ping-pong or we would only get pongs
-
+        .with_repetitions(3);
     let clip_id = ctx.library().register_clip(clip);
 
     let animation = Animation::from_clip(clip_id)
         .with_duration(AnimationDuration::PerFrame(100))
         .with_repetitions(AnimationRepeat::Loop);
-
     let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
@@ -203,7 +196,7 @@ fn clip_pingpong() {
     // Pong
 
     ctx.run(100);
-    ctx.check(1, [ctx.clip_cycle_end(0, animation_id)]);
+    ctx.check(1, [ctx.clip_rep_end(animation_id, clip_id, 0)]);
 
     ctx.run(100);
     ctx.check(0, []);
@@ -211,7 +204,7 @@ fn clip_pingpong() {
     // Ping again
 
     ctx.run(100);
-    ctx.check(1, [ctx.clip_cycle_end(0, animation_id)]);
+    ctx.check(1, [ctx.clip_rep_end(animation_id, clip_id, 1)]);
 
     ctx.run(100);
     ctx.check(2, []);
@@ -222,9 +215,9 @@ fn clip_pingpong() {
     ctx.check(
         0,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 2),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
         ],
     );
 }
@@ -240,7 +233,6 @@ fn animation_pingpong() {
         .with_direction(AnimationDirection::PingPong)
         .with_duration(AnimationDuration::PerFrame(100))
         .with_repetitions(AnimationRepeat::Loop);
-
     let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
@@ -262,9 +254,9 @@ fn animation_pingpong() {
     ctx.check(
         1,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
         ],
     );
 
@@ -277,9 +269,9 @@ fn animation_pingpong() {
     ctx.check(
         1,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 1),
         ],
     );
 
@@ -308,7 +300,7 @@ fn animation_pingpong() {
 //     ctx.add_animation_to_sprite(animation_id);
 
 //     // Animation ping
-//     // Stage ping
+//     // Clip ping
 
 //     ctx.run(50);
 //     ctx.check(0, []);
@@ -319,39 +311,39 @@ fn animation_pingpong() {
 //     ctx.run(100);
 //     ctx.check(2, []);
 
-//     // Stage pong
+//     // Clip pong
 
 //     ctx.run(100);
-//     ctx.check(1, [ctx.clip_cycle_end(0, animation_id)]);
+//     ctx.check(1, [ctx.clip_rep_end(0, animation_id)]);
 
 //     ctx.run(100);
 //     ctx.check(0, []);
 
 //     // Animation pong
-//     // Stage pong
+//     // Clip pong
 
 //     ctx.run(100);
 //     ctx.check(
 //         1,
 //         [
-//             ctx.clip_cycle_end(0, animation_id),
-//             ctx.clip_end(0, animation_id),
-//             ctx.anim_cycle_end(animation_id),
+//             ctx.clip_rep_end(animation_id, clip_id, 0),
+//             ctx.clip_end(animation_id, clip_id),
+//             ctx.anim_rep_end(animation_id, 0),
 //         ],
 //     );
 
 //     ctx.run(100);
 //     ctx.check(2, []);
 
-//     // Stage ping
+//     // Clip ping
 
 //     ctx.run(100);
 //     ctx.check(
 //         1,
 //         [
-//             ctx.clip_cycle_end(0, animation_id),
-//             ctx.clip_end(0, animation_id),
-//             ctx.anim_cycle_end(animation_id),
+//             ctx.clip_rep_end(animation_id, clip_id, 0),
+//             ctx.clip_end(animation_id, clip_id),
+//             ctx.anim_rep_end(animation_id, 0),
 //         ],
 //     );
 
@@ -364,14 +356,12 @@ fn animation_pingpong_clip_backwards() {
     let mut ctx = Context::new();
 
     let clip = Clip::from_frames([0, 1, 2]).with_direction(AnimationDirection::Backwards);
-
     let clip_id = ctx.library().register_clip(clip);
 
     let animation = Animation::from_clip(clip_id)
         .with_direction(AnimationDirection::PingPong)
         .with_duration(AnimationDuration::PerFrame(100))
         .with_repetitions(AnimationRepeat::Loop);
-
     let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
@@ -393,9 +383,9 @@ fn animation_pingpong_clip_backwards() {
     ctx.check(
         1,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
         ],
     );
 
@@ -408,9 +398,9 @@ fn animation_pingpong_clip_backwards() {
     ctx.check(
         1,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 1),
         ],
     );
 
@@ -425,14 +415,12 @@ fn animation_backwards_clip_pingpong() {
     let clip = Clip::from_frames([0, 1, 2])
         .with_direction(AnimationDirection::PingPong)
         .with_repetitions(2); // Needed for the ping-pong or we would only get pongs
-
     let clip_id = ctx.library().register_clip(clip);
 
     let animation = Animation::from_clip(clip_id)
         .with_direction(AnimationDirection::Backwards)
         .with_duration(AnimationDuration::PerFrame(100))
         .with_repetitions(AnimationRepeat::Loop);
-
     let animation_id = ctx.library().register_animation(animation);
 
     ctx.add_animation_to_sprite(animation_id);
@@ -448,7 +436,7 @@ fn animation_backwards_clip_pingpong() {
     // Ping
 
     ctx.run(100);
-    ctx.check(2, [ctx.clip_cycle_end(0, animation_id)]);
+    ctx.check(2, [ctx.clip_rep_end(animation_id, clip_id, 0)]);
 
     ctx.run(100);
     ctx.check(1, []);
@@ -462,9 +450,9 @@ fn animation_backwards_clip_pingpong() {
     ctx.check(
         0,
         [
-            ctx.clip_cycle_end(0, animation_id),
-            ctx.clip_end(0, animation_id),
-            ctx.anim_cycle_end(animation_id),
+            ctx.clip_rep_end(animation_id, clip_id, 1),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
         ],
     );
 

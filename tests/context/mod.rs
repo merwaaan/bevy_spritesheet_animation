@@ -1,3 +1,8 @@
+use std::{
+    collections::HashSet,
+    time::{Duration, Instant},
+};
+
 use bevy::{
     prelude::*,
     render::{settings::WgpuSettings, RenderPlugin},
@@ -5,10 +10,6 @@ use bevy::{
     winit::WinitPlugin,
 };
 use bevy_spritesheet_animation::prelude::*;
-use std::{
-    collections::HashSet,
-    time::{Duration, Instant},
-};
 
 pub struct Context {
     pub app: App,
@@ -133,7 +134,6 @@ impl Context {
         expected_atlas_index: usize,
         expected_events: impl IntoIterator<Item = AnimationEvent>,
     ) {
-        println!("check");
         // Check the current atlas index of the sprite
 
         let atlas = self.get_sprite_atlas(self.sprite);
@@ -155,6 +155,16 @@ impl Context {
         }
 
         assert_eq!(events, HashSet::from_iter(expected_events));
+    }
+
+    pub fn get_sprite<F: FnMut(&mut SpritesheetAnimation) -> ()>(&mut self, mut f: F) {
+        let mut sprite_animation = self
+            .app
+            .world_mut()
+            .get_mut::<SpritesheetAnimation>(self.sprite)
+            .unwrap();
+
+        f(&mut sprite_animation);
     }
 
     fn get_sprite_atlas(&self, entity: Entity) -> TextureAtlas {
@@ -182,37 +192,52 @@ impl Context {
     pub fn marker_hit(
         &self,
         marker_id: AnimationMarkerId,
-        clip_index: usize,
         animation_id: AnimationId,
+        animation_repetition: usize,
+        clip_id: ClipId,
+        clip_repetition: usize,
     ) -> AnimationEvent {
         AnimationEvent::MarkerHit {
             entity: self.sprite,
             marker_id,
             animation_id,
-            clip_index,
+            animation_repetition,
+            clip_id,
+            clip_repetition,
         }
     }
 
-    pub fn clip_cycle_end(&self, clip_index: usize, animation_id: AnimationId) -> AnimationEvent {
+    pub fn clip_rep_end(
+        &self,
+        animation_id: AnimationId,
+        clip_id: ClipId,
+        clip_repetition: usize,
+    ) -> AnimationEvent {
         AnimationEvent::ClipRepetitionEnd {
             entity: self.sprite,
-            clip_index,
             animation_id,
+            clip_id,
+            clip_repetition,
         }
     }
 
-    pub fn clip_end(&self, clip_index: usize, animation_id: AnimationId) -> AnimationEvent {
+    pub fn clip_end(&self, animation_id: AnimationId, clip_id: ClipId) -> AnimationEvent {
         AnimationEvent::ClipEnd {
             entity: self.sprite,
-            clip_index,
             animation_id,
+            clip_id,
         }
     }
 
-    pub fn anim_cycle_end(&self, animation_id: AnimationId) -> AnimationEvent {
+    pub fn anim_rep_end(
+        &self,
+        animation_id: AnimationId,
+        animation_repetition: usize,
+    ) -> AnimationEvent {
         AnimationEvent::AnimationRepetitionEnd {
             entity: self.sprite,
             animation_id,
+            animation_repetition,
         }
     }
 
