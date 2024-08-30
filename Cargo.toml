@@ -30,8 +30,8 @@ inherits = "release"
 [features]
 # Enable this feature so that the tests/doctests get access to some private constructors.
 #
-# > cargo test --features integration-tests
-integration-tests = []
+# > cargo test --features expose-internals-to-tests
+expose-internals-to-tests = []
 
 [[bench]]
 name = "basic"

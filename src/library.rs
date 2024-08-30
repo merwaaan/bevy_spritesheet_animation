@@ -77,7 +77,7 @@ pub struct AnimationLibrary {
 }
 
 impl AnimationLibrary {
-    #[cfg_attr(feature = "integration-tests", visibility::make(pub))]
+    #[cfg_attr(feature = "expose-internals-to-tests", visibility::make(pub))]
     pub(crate) fn new() -> Self {
         Self {
             clips: HashMap::new(),

@@ -24,5 +24,5 @@ jobs:
         run: cargo doc --no-deps
 
       - name: Run tests
-        # Enable the integration-tests feature so that tests/doctests get access to some private constructors
-        run: cargo test --features integration-tests
+        # Enable expose-internals-to-tests so that tests/doctests get access to some private constructors
+        run: cargo test --features expose-internals-to-tests

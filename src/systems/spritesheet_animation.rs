@@ -8,7 +8,7 @@ use bevy::{
     time::Time,
 };
 
-#[cfg(feature = "integration-tests")]
+#[cfg(feature = "expose-internals-to-tests")]
 use bevy::time::Real;
 
 // In unit tests, we use a TimeUpdateStrategy to control how time advances.
@@ -17,9 +17,9 @@ use bevy::time::Real;
 // So we use different time types in release and test builds for now.
 //
 // https://github.com/bevyengine/bevy/issues/11127
-#[cfg(feature = "integration-tests")]
+#[cfg(feature = "expose-internals-to-tests")]
 pub(crate) type ActualTime = Time<Real>;
-#[cfg(not(feature = "integration-tests"))]
+#[cfg(not(feature = "expose-internals-to-tests"))]
 pub(crate) type ActualTime = Time;
 
 use crate::{
