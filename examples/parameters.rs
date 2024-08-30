@@ -38,7 +38,7 @@ fn setup(
 
     let texture = assets.load("ball.png");
 
-    let layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+    let layout = atlas_layouts.add(spritesheet.atlas_layout(100, 20));
 
     // Create an animated sprite for each parameter set
 
