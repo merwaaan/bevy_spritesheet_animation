@@ -69,7 +69,7 @@ pub(crate) fn setup_rendering(
 
             if maybe_mesh_handle.is_none() {
                 let mut mesh = Mesh::new(
-                    PrimitiveTopology::TriangleStrip,
+                    PrimitiveTopology::TriangleList, // Needed to support raycasting
                     RenderAssetUsages::default(),
                 );
 
@@ -122,8 +122,8 @@ pub(crate) fn sync_sprites_with_component(
             if let Some(texture) = images.get(image_handle) {
                 update_mesh_vertices(mesh, sprite, texture);
 
-                if let Some(layout) = atlases_uvs.data.get(&atlas.layout) {
-                    update_mesh_uvs(mesh, sprite, layout.get(atlas.index));
+                if let Some(uvs) = atlases_uvs.data.get(&atlas.layout) {
+                    update_mesh_uvs(mesh, sprite, uvs.get(atlas.index));
                 }
             }
         }
@@ -144,8 +144,8 @@ pub(crate) fn sync_sprites_with_atlas(
 ) {
     for (sprite, atlas, mesh_handle) in &sprites {
         if let Some(mesh) = meshes.get_mut(mesh_handle.id()) {
-            if let Some(layout) = atlases_uvs.data.get(&atlas.layout) {
-                update_mesh_uvs(mesh, sprite, layout.get(atlas.index));
+            if let Some(uvs) = atlases_uvs.data.get(&atlas.layout) {
+                update_mesh_uvs(mesh, sprite, uvs.get(atlas.index));
             }
         }
     }
@@ -160,10 +160,14 @@ fn create_uvs_from_atlas_layout(atlas: &TextureAtlasLayout) -> Vec<QuadUvs> {
         .iter()
         .map(|texture| {
             vec![
+                // Triangle 1
                 (UVec2::new(texture.min.x, texture.max.y).as_vec2() / atlas_layout_size).to_array(),
                 (UVec2::new(texture.max.x, texture.max.y).as_vec2() / atlas_layout_size).to_array(),
                 (UVec2::new(texture.min.x, texture.min.y).as_vec2() / atlas_layout_size).to_array(),
+                // Triangle 2
+                (UVec2::new(texture.max.x, texture.max.y).as_vec2() / atlas_layout_size).to_array(),
                 (UVec2::new(texture.max.x, texture.min.y).as_vec2() / atlas_layout_size).to_array(),
+                (UVec2::new(texture.min.x, texture.min.y).as_vec2() / atlas_layout_size).to_array(),
             ]
         })
         .collect()
@@ -182,23 +186,41 @@ fn update_mesh_vertices(mesh: &mut Mesh, sprite: &Sprite3d, texture: &Image) {
     mesh.insert_attribute(
         Mesh::ATTRIBUTE_POSITION,
         vec![
+            // Triangle 1
             [
+                // bottom left
                 -half_size.x - anchor_offset.x,
                 -half_size.y - anchor_offset.y,
                 0.0,
             ],
             [
+                // bottom right
                 half_size.x - anchor_offset.x,
                 -half_size.y - anchor_offset.y,
                 0.0,
             ],
             [
+                // top left
                 -half_size.x - anchor_offset.x,
                 half_size.y - anchor_offset.y,
                 0.0,
             ],
+            // Triangle 2
             [
+                // bottom right
                 half_size.x - anchor_offset.x,
+                -half_size.y - anchor_offset.y,
+                0.0,
+            ],
+            [
+                // top right
+                half_size.x - anchor_offset.x,
+                half_size.y - anchor_offset.y,
+                0.0,
+            ],
+            [
+                // top left
+                -half_size.x - anchor_offset.x,
                 half_size.y - anchor_offset.y,
                 0.0,
             ],
@@ -207,7 +229,16 @@ fn update_mesh_vertices(mesh: &mut Mesh, sprite: &Sprite3d, texture: &Image) {
 }
 
 fn update_mesh_uvs(mesh: &mut Mesh, sprite: &Sprite3d, maybe_uvs: Option<&QuadUvs>) {
-    static DEFAULT_UVS: [[f32; 2]; 4] = [[0.0, 1.0], [1.0, 1.0], [0.0, 0.0], [1.0, 0.0]];
+    static DEFAULT_UVS: [[f32; 2]; 6] = [
+        // Triangle 1
+        [0.0, 1.0],
+        [1.0, 1.0],
+        [0.0, 0.0],
+        // Triangle 2
+        [1.0, 1.0],
+        [1.0, 0.0],
+        [0.0, 0.0],
+    ];
 
     let mut uvs = match maybe_uvs {
         Some(uvs) => uvs.clone(),
@@ -218,12 +249,16 @@ fn update_mesh_uvs(mesh: &mut Mesh, sprite: &Sprite3d, maybe_uvs: Option<&QuadUv
 
     if sprite.flip_x {
         uvs.swap(0, 1);
-        uvs.swap(2, 3);
+        uvs.swap(5, 4);
+        uvs[2] = uvs[5];
+        uvs[3] = uvs[1];
     }
 
     if sprite.flip_y {
         uvs.swap(0, 2);
-        uvs.swap(1, 3);
+        uvs.swap(3, 4);
+        uvs[1] = uvs[3];
+        uvs[5] = uvs[2];
     }
 
     mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
