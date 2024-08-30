@@ -5,7 +5,7 @@
 
 bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for animating sprites that are backed by spritesheets.
 
-![An animated character walking from the left to the right and shooting their gun](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/example.gif)
+![An animated character walking from the left to the right and shooting their gun](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example.gif)
 
 # Features
 
@@ -245,7 +245,7 @@ fn spawn_enemies(mut commands: Commands, library: Res<AnimationLibrary>) {
 
 ## 3D sprites
 
-![A dozen of 3D sprites moving in 3D space](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/example3d.gif)
+![A dozen of 3D sprites moving in 3D space](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example3d.gif)
 
 This crate also makes it easy to integrate 3D sprites into your games, which is not supported by Bevy out of the box.
 

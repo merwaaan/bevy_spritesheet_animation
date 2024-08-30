@@ -10,7 +10,8 @@ categories = ["game-development"]
 edition = "2021"
 resolver = "2"
 exclude = [
-  "example.gif"
+  "assets/example.gif",
+  "assets/example3d.gif"
 ]
 
 [dependencies]
