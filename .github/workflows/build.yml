@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Bevy has some additional dependencies on Linux
       # https://github.com/bevyengine/bevy/blob/9788b386c7846c99978ab5c1a33698ec5a471d84/.github/workflows/ci.yml
@@ -18,7 +18,7 @@ jobs:
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
 
       - name: Build
-        run: cargo build --lib --examples
+        run: cargo build --all-targets
 
       - name: Build doc
         run: cargo doc --no-deps
