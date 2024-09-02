@@ -11,7 +11,7 @@ use crate::{
 
 /// A pre-computed frame of animation, ready to be played back.
 #[derive(Debug, Clone)]
-pub(crate) struct CacheFrame {
+pub struct CacheFrame {
     pub atlas_index: usize,
     pub duration: u32,
     pub clip_id: ClipId,
@@ -28,7 +28,7 @@ pub(crate) struct CacheFrame {
 ///  - ClipRepetitionEnd, ClipEnd, AnimationRepetitionEnd on the first frame of the repetitions
 ///  - AnimationEnd after the last frame
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) enum AnimationCacheEvent {
+pub enum AnimationCacheEvent {
     MarkerHit {
         marker_id: AnimationMarkerId,
         clip_id: ClipId,
@@ -48,7 +48,7 @@ pub(crate) enum AnimationCacheEvent {
 /// The idea is to cache for each frame its atlas index, duration and emitted events
 /// so that playing an animation becomes just a matter of iterating over this cache
 /// without re-evaluating all the animation  parameters.
-pub(crate) struct AnimationCache {
+pub struct AnimationCache {
     /// All the frames
     pub frames: Vec<CacheFrame>,
 
@@ -92,12 +92,12 @@ impl AnimationCache {
         let clips_data = animation
             .clip_ids()
             .iter()
-            .map(|clip_id| ClipData::new(clip_id.clone(), library))
+            .map(|clip_id| ClipData::new(*clip_id, library))
             // Filter out clips with 0 frames / 0 repetitions / durations of 0
             //
             // Doing so at this point will simplify what follows as well as the playback code as we won't have to handle those special cases
             .filter(|data| {
-                data.clip.frames().len() > 0
+                !data.clip.frames().is_empty()
                     && data.repetitions > 0
                     && data.duration_with_repetitions_ms > 0
             });
@@ -169,7 +169,7 @@ impl AnimationCache {
 
         // Done!
 
-        let animation_repetitions = match animation.repetitions().unwrap_or_default() {
+        let animation_repetition_count = match animation_repetitions {
             AnimationRepeat::Loop => None,
             AnimationRepeat::Times(n) => Some(n),
         };
@@ -177,7 +177,7 @@ impl AnimationCache {
         Self {
             frames: all_frames,
             frames_pong: all_frames_pong,
-            repetitions: animation_repetitions,
+            repetitions: animation_repetition_count,
             animation_direction,
         }
     }
@@ -198,10 +198,10 @@ impl ClipData {
     fn new(clip_id: ClipId, library: &AnimationLibrary) -> Self {
         let clip = library.get_clip(clip_id).clone();
 
-        let duration = clip.duration().unwrap_or(AnimationDuration::default());
+        let duration = clip.duration().unwrap_or_default();
         let repetitions = clip.repetitions().unwrap_or(1);
-        let direction = clip.direction().unwrap_or(AnimationDirection::default());
-        let easing = clip.easing().unwrap_or(Easing::default());
+        let direction = clip.direction().unwrap_or_default();
+        let easing = clip.easing().unwrap_or_default();
 
         // Compute the clip's duration in milliseconds, taking repetitions into account
 
@@ -216,7 +216,7 @@ impl ClipData {
 
         let duration_with_repetitions_ms = match duration {
             AnimationDuration::PerFrame(frame_duration) => {
-                frame_duration * frame_count_with_repetitions as u32
+                frame_duration * frame_count_with_repetitions
             }
             AnimationDuration::PerRepetition(repetition_duration) => repetition_duration,
         };
@@ -326,7 +326,7 @@ impl ClipFrames {
                     }
                 })
                 // Filter out repetitions with no frames
-                .filter(|repetition| repetition.frames.len() > 0)
+                .filter(|repetition| !repetition.frames.is_empty())
                 .collect(),
             data: clip_data,
         }
@@ -358,7 +358,7 @@ impl AnimationFrames {
             clips: clips
                 .iter()
                 // Filter out repetitions with no repetitions
-                .filter(|clip: &&ClipFrames| clip.repetitions.len() > 0)
+                .filter(|clip| !clip.repetitions.is_empty())
                 .cloned()
                 .collect(),
         }
@@ -494,10 +494,7 @@ impl AnimationFrames {
             all_frames
         };
 
-        (
-            merge(animation_frames),
-            animation_frames_pong.map(|frames| merge(frames)),
-        )
+        (merge(animation_frames), animation_frames_pong.map(merge))
     }
 }
 

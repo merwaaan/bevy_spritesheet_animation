@@ -12,8 +12,10 @@ use common::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(SpritesheetAnimationPlugin)
+        .add_plugins((
+            DefaultPlugins.set(ImagePlugin::default_nearest()),
+            SpritesheetAnimationPlugin,
+        ))
         .add_systems(Startup, setup)
         .run();
 }

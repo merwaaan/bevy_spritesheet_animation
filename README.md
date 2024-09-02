@@ -262,7 +262,7 @@ fn spawn_character(mut commands: Commands, mut library: ResMut<AnimationLibrary>
 
     commands.spawn((
         Sprite3dBuilder::from_image(texture.clone())
-            .with_atlas(atlas_layout_handle)
+            .with_atlas(atlas_layout)
             .with_anchor(Anchor::BottomRight)
             .build(),
         SpritesheetAnimation::from_id(animation_id)

@@ -10,7 +10,7 @@ use crate::CRATE_NAME;
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::new();
+/// # let mut library = AnimationLibrary::default();
 /// let clip = Clip::from_frames([6, 7, 8, 9, 10, 11]);
 /// ```
 ///
@@ -18,7 +18,7 @@ use crate::CRATE_NAME;
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::new();
+/// # let mut library = AnimationLibrary::default();
 /// // We're working with a spritesheet with 8 columns and 4 rows
 ///
 /// let spritesheet = Spritesheet::new(8, 4);
@@ -65,7 +65,7 @@ impl Spritesheet {
     /// // └───┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(2, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.all());
@@ -95,7 +95,7 @@ impl Spritesheet {
     /// // └───┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(2, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.positions([(1, 0), (0, 1)]));
@@ -140,7 +140,7 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.row(1));
@@ -183,7 +183,7 @@ impl Spritesheet {
     /// // └─────────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(5, 2);
     ///
     /// // This clip will play frames G → H → I
@@ -261,7 +261,7 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.column(1));
@@ -303,7 +303,7 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 4);
     ///
     /// let clip = Clip::from_frames(spritesheet.column_partial(1, 1..));
@@ -372,7 +372,7 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.horizontal_strip(2, 0, 3));
@@ -417,7 +417,7 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.vertical_strip(1, 0, 3));

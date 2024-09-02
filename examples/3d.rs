@@ -9,8 +9,10 @@ use rand::{seq::SliceRandom, Rng};
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .add_plugins(SpritesheetAnimationPlugin)
+        .add_plugins((
+            DefaultPlugins.set(ImagePlugin::default_nearest()),
+            SpritesheetAnimationPlugin,
+        ))
         .add_systems(Startup, setup)
         .add_systems(Update, (update_on_keypress, orbit, draw_gizmos))
         .run();
@@ -45,7 +47,7 @@ fn setup(
 
     let texture = assets.load("character.png");
 
-    let atlas_layout_handle = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+    let atlas_layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
 
     // Spawn 3D sprites
 
@@ -70,10 +72,7 @@ fn setup(
 
     for (i, builder) in sprite_builders.iter().enumerate() {
         commands.spawn((
-            builder
-                .clone()
-                .with_atlas(atlas_layout_handle.clone())
-                .build(),
+            builder.clone().with_atlas(atlas_layout.clone()).build(),
             SpritesheetAnimation::from_id(animation_id),
             Orbit {
                 start_angle: i as f32 * std::f32::consts::TAU / sprite_builders.len() as f32,
@@ -85,7 +84,7 @@ fn setup(
 
     commands.spawn(
         Sprite3dBuilder::from_image(texture.clone())
-            .with_atlas(atlas_layout_handle.clone())
+            .with_atlas(atlas_layout.clone())
             .with_color(Color::linear_rgb(1.0, 0.0, 0.0))
             .build(),
     );

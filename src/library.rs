@@ -51,7 +51,7 @@ pub enum LibraryError {
 ///     // ... Assign the animation to a SpritesheetAnimation component ...
 /// }
 /// ```
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct AnimationLibrary {
     /// All the clips
     clips: HashMap<ClipId, Clip>,
@@ -77,19 +77,6 @@ pub struct AnimationLibrary {
 }
 
 impl AnimationLibrary {
-    #[cfg_attr(feature = "expose-internals-to-tests", visibility::make(pub))]
-    pub(crate) fn new() -> Self {
-        Self {
-            clips: HashMap::new(),
-            clip_name_lookup: HashMap::new(),
-            animations: HashMap::new(),
-            animation_name_lookup: HashMap::new(),
-            markers: HashSet::new(),
-            marker_name_lookup: HashMap::new(),
-            animation_caches: HashMap::new(),
-        }
-    }
-
     /// Registers a [Clip] and returns its ID.
     ///
     /// The clip can then be referenced in one or several [Animation]s.
@@ -98,7 +85,7 @@ impl AnimationLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let clip = Clip::from_frames([4, 5, 6]).with_repetitions(10);
     ///
     /// let clip_id = library.register_clip(clip);
@@ -132,7 +119,7 @@ impl AnimationLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let clip = Clip::from_frames([1, 2, 3]);
     /// let clip_id = library.register_clip(clip);
     ///
@@ -264,7 +251,7 @@ impl AnimationLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// # let clip = Clip::from_frames([]);
     /// # let clip_id = library.register_clip(clip);
     /// let animation = Animation::from_clip(clip_id);
@@ -340,7 +327,7 @@ impl AnimationLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let marker = library.new_marker();
     ///
     /// let clip = Clip::from_frames([7, 8, 9, 10, 11, 12])
@@ -371,7 +358,7 @@ impl AnimationLibrary {
     ///
     /// ```
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::new();
+    /// # let mut library = AnimationLibrary::default();
     /// let marker_id = library.new_marker();
     ///
     /// library.name_marker(marker_id, "raise sword");

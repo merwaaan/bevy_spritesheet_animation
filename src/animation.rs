@@ -80,7 +80,7 @@ impl Default for AnimationDirection {
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::new();
+/// # let mut library = AnimationLibrary::default();
 /// let some_clip = Clip::from_frames([1, 2, 3])
 ///     .with_duration(AnimationDuration::PerRepetition(2000));
 ///

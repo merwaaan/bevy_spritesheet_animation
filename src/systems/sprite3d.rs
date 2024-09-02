@@ -21,16 +21,16 @@ use bevy::{
 
 use crate::components::sprite3d::Sprite3d;
 
-pub(crate) type QuadUvs = Vec<[f32; 2]>;
+pub type QuadUvs = Vec<[f32; 2]>;
 
 /// A resource that stores the UV coordinates for all the atlas layouts used by 3D sprites.
 #[derive(Resource, Default)]
-pub(crate) struct TextureAtlasLayoutUvs {
+pub struct TextureAtlasLayoutUvs {
     data: HashMap<Handle<TextureAtlasLayout>, Vec<QuadUvs>>,
 }
 
 /// Setups 3D sprites for rendering by creating the 3D geometry and materials to display them.
-pub(crate) fn setup_rendering(
+pub fn setup_rendering(
     mut commands: Commands,
     atlases: Res<Assets<TextureAtlasLayout>>,
     mut atlases_uvs: ResMut<TextureAtlasLayoutUvs>,
@@ -97,7 +97,7 @@ pub(crate) fn setup_rendering(
 }
 
 /// Synchronizes 3D sprites with the data from their Sprite3D component.
-pub(crate) fn sync_sprites_with_component(
+pub fn sync_sprites_with_component(
     atlases_uvs: Res<TextureAtlasLayoutUvs>,
     images: Res<Assets<Image>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -137,7 +137,7 @@ pub(crate) fn sync_sprites_with_component(
 }
 
 /// Synchronizes the UV coordinates of the sprites' meshes when the index of their texture atlas changes.
-pub(crate) fn sync_sprites_with_atlas(
+pub fn sync_sprites_with_atlas(
     atlases_uvs: Res<TextureAtlasLayoutUvs>,
     mut meshes: ResMut<Assets<Mesh>>,
     sprites: Query<(&Sprite3d, &TextureAtlas, &mut Handle<Mesh>), Changed<TextureAtlas>>,

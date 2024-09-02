@@ -38,7 +38,7 @@ impl fmt::Display for ClipId {
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::new();
+/// # let mut library = AnimationLibrary::default();
 /// // Create a clip
 ///
 /// let spritesheet = Spritesheet::new(8, 4);

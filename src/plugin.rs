@@ -10,6 +10,14 @@ use crate::{
     systems::{sprite3d, spritesheet_animation},
 };
 
+/// Set for systems that update the animation state.
+#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
+struct AnimationSystemSet;
+
+/// Set for systems that update the sprite state.
+#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
+struct Sprite3dSystemSet;
+
 /// The spritesheet animation plugin to add to Bevy apps.
 ///
 /// This plugin injects the systems required for running animations and inserts the [AnimationLibrary] resource with which you can create new clips and animations.
@@ -44,23 +52,15 @@ use crate::{
 /// ```
 pub struct SpritesheetAnimationPlugin;
 
-/// Label for systems that update the animation state.
-#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
-pub struct AnimationSystem;
-
-/// Label for systems that update the sprite state.
-#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
-pub struct Sprite3dSystem;
-
 impl Plugin for SpritesheetAnimationPlugin {
     fn build(&self, app: &mut App) {
         app
             // The animation library, for creating clips, animations and markers
-            .insert_resource(AnimationLibrary::new())
+            .init_resource::<AnimationLibrary>()
             // The animator responsible for running animations
-            .insert_resource(Animator::new())
+            .init_resource::<Animator>()
             // Atlas UVs for 3D sprites
-            .insert_resource(sprite3d::TextureAtlasLayoutUvs::default())
+            .init_resource::<sprite3d::TextureAtlasLayoutUvs>()
             // Animations events
             .add_event::<AnimationEvent>()
             // Systems
@@ -68,15 +68,15 @@ impl Plugin for SpritesheetAnimationPlugin {
                 PostUpdate,
                 (
                     // Main animation system
-                    spritesheet_animation::play_animations.in_set(AnimationSystem),
+                    spritesheet_animation::play_animations.in_set(AnimationSystemSet),
                     // 3D sprite systems
                     (
                         sprite3d::setup_rendering,
                         sprite3d::sync_sprites_with_component,
                         sprite3d::sync_sprites_with_atlas,
                     )
-                        .in_set(Sprite3dSystem)
-                        .after(AnimationSystem),
+                        .in_set(Sprite3dSystemSet)
+                        .after(AnimationSystemSet),
                 ),
             );
     }

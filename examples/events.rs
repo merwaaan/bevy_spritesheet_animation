@@ -27,8 +27,10 @@ use bevy_spritesheet_animation::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(SpritesheetAnimationPlugin)
+        .add_plugins((
+            DefaultPlugins.set(ImagePlugin::default_nearest()),
+            SpritesheetAnimationPlugin,
+        ))
         .add_systems(Startup, setup)
         .add_systems(Update, show_triggered_events)
         .add_systems(Update, spawn_visual_effects)

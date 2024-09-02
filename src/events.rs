@@ -4,6 +4,20 @@ use bevy::ecs::{entity::Entity, event::Event};
 
 use crate::{animation::AnimationId, clip::ClipId};
 
+/// An opaque identifier that references an animation marker.
+///
+/// Returned by [AnimationLibrary::new_marker](crate::prelude::AnimationLibrary::new_marker).
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct AnimationMarkerId {
+    pub(crate) value: usize,
+}
+
+impl fmt::Display for AnimationMarkerId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "marker{}", self.value)
+    }
+}
+
 /// A Bevy event emitted when an animation reaches a point of interest
 ///
 /// * when a clip repetition ends
@@ -49,7 +63,7 @@ use crate::{animation::AnimationId, clip::ClipId};
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::new();
+/// # let mut library = AnimationLibrary::default();
 /// // Let's create a marker to be notified when the exact frame
 /// // of the character shooting their gun is played
 /// let marker_id = library.new_marker();
@@ -123,18 +137,4 @@ pub enum AnimationEvent {
         entity: Entity,
         animation_id: AnimationId,
     },
-}
-
-/// An opaque identifier that references an animation marker.
-///
-/// Returned by [AnimationLibrary::new_marker](crate::prelude::AnimationLibrary::new_marker).
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct AnimationMarkerId {
-    pub(crate) value: usize,
-}
-
-impl fmt::Display for AnimationMarkerId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "marker{}", self.value)
-    }
 }

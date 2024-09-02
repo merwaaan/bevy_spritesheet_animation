@@ -35,20 +35,14 @@ struct AnimationInstance {
 }
 
 /// The animator is responsible for playing animations as time advances.
-#[derive(Resource)]
-pub(crate) struct Animator {
+#[derive(Resource, Default)]
+pub struct Animator {
     /// Instances of animations currently being played.
     /// Each animation instance is associated to an entity with a [SpritesheetAnimation] component.
     animation_instances: HashMap<Entity, AnimationInstance>,
 }
 
 impl Animator {
-    pub fn new() -> Self {
-        Self {
-            animation_instances: HashMap::new(),
-        }
-    }
-
     /// Plays the animations
     pub fn update(
         &mut self,
@@ -137,7 +131,7 @@ impl Animator {
                     entity_animation.progress = animation_instance
                         .current_frame
                         .as_ref()
-                        .map(|(_, progress)| progress.clone())
+                        .map(|(_, progress)| *progress)
                         .unwrap_or_default()
                 }
             }
@@ -155,14 +149,14 @@ impl Animator {
             animation_instance.accumulated_time +=
                 (time.delta_seconds() * entity_animation.speed_factor * 1000.0) as u32;
 
-            while let Some(frame) = animation_instance
+            while let Some(current_frame) = animation_instance
                 .current_frame
                 .as_ref()
                 .filter(|frame| animation_instance.accumulated_time > frame.0.duration)
             {
                 // Consume the elapsed time
 
-                animation_instance.accumulated_time -= frame.0.duration;
+                animation_instance.accumulated_time -= current_frame.0.duration;
 
                 // Fetch the next frame
 
@@ -176,25 +170,25 @@ impl Animator {
                 .or_else(|| {
                     // The animation is over
 
-                    // Emit all the end events if the animation just ended
+                    // Emit the end events if the animation just ended
 
                     event_writer.send(AnimationEvent::ClipRepetitionEnd {
                         entity,
                         animation_id: animation_instance.animation_id,
-                        clip_id: frame.0.clip_id,
-                        clip_repetition: frame.0.clip_repetition,
+                        clip_id: current_frame.0.clip_id,
+                        clip_repetition: current_frame.0.clip_repetition,
                     });
 
                     event_writer.send(AnimationEvent::ClipEnd {
                         entity,
                         animation_id: animation_instance.animation_id,
-                        clip_id: frame.0.clip_id,
+                        clip_id: current_frame.0.clip_id,
                     });
 
                     event_writer.send(AnimationEvent::AnimationRepetitionEnd {
                         entity,
                         animation_id: animation_instance.animation_id,
-                        animation_repetition: frame.0.animation_repetition,
+                        animation_repetition: current_frame.0.animation_repetition,
                     });
 
                     event_writer.send(AnimationEvent::AnimationEnd {
@@ -220,66 +214,67 @@ impl Animator {
         if let Some((frame, progress)) = &maybe_frame {
             // Update the sprite
 
-            atlas.index = frame.atlas_index;
+            if atlas.index != frame.atlas_index {
+                // prevents needless "Changed" events
+                atlas.index = frame.atlas_index;
+            }
 
             animation.progress = *progress;
 
             // Emit events
 
-            let events = Animator::promote_events(&frame.events, animation.animation_id, entity);
-
-            for event in events {
-                event_writer.send(event);
-            }
+            Animator::emit_events(&frame.events, animation.animation_id, entity, event_writer);
         }
 
         maybe_frame
     }
 
-    /// Promotes AnimationIteratorEvents to regular AnimationEvents
-    fn promote_events(
+    fn emit_events(
         animation_events: &[AnimationIteratorEvent],
         animation_id: AnimationId,
         entity: &Entity,
-    ) -> Vec<AnimationEvent> {
-        animation_events
-            .iter()
-            .map(|event| match event {
-                AnimationIteratorEvent::MarkerHit {
-                    marker_id,
-                    animation_repetition,
-                    clip_id,
-                    clip_repetition,
-                } => AnimationEvent::MarkerHit {
-                    entity: *entity,
-                    marker_id: *marker_id,
-                    animation_id,
-                    animation_repetition: *animation_repetition,
-                    clip_id: *clip_id,
-                    clip_repetition: *clip_repetition,
+        event_writer: &mut EventWriter<AnimationEvent>,
+    ) {
+        animation_events.iter().for_each(|event| {
+            event_writer.send(
+                // Promote AnimationIteratorEvents to regular AnimationEvents
+                match event {
+                    AnimationIteratorEvent::MarkerHit {
+                        marker_id,
+                        animation_repetition,
+                        clip_id,
+                        clip_repetition,
+                    } => AnimationEvent::MarkerHit {
+                        entity: *entity,
+                        marker_id: *marker_id,
+                        animation_id,
+                        animation_repetition: *animation_repetition,
+                        clip_id: *clip_id,
+                        clip_repetition: *clip_repetition,
+                    },
+                    AnimationIteratorEvent::ClipRepetitionEnd {
+                        clip_id,
+                        clip_repetition,
+                    } => AnimationEvent::ClipRepetitionEnd {
+                        entity: *entity,
+                        animation_id,
+                        clip_id: *clip_id,
+                        clip_repetition: *clip_repetition,
+                    },
+                    AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
+                        entity: *entity,
+                        animation_id,
+                        clip_id: *clip_id,
+                    },
+                    AnimationIteratorEvent::AnimationRepetitionEnd {
+                        animation_repetition,
+                    } => AnimationEvent::AnimationRepetitionEnd {
+                        entity: *entity,
+                        animation_id,
+                        animation_repetition: *animation_repetition,
+                    },
                 },
-                AnimationIteratorEvent::ClipRepetitionEnd {
-                    clip_id,
-                    clip_repetition,
-                } => AnimationEvent::ClipRepetitionEnd {
-                    entity: *entity,
-                    animation_id,
-                    clip_id: *clip_id,
-                    clip_repetition: *clip_repetition,
-                },
-                AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
-                    entity: *entity,
-                    animation_id,
-                    clip_id: *clip_id,
-                },
-                AnimationIteratorEvent::AnimationRepetitionEnd {
-                    animation_repetition,
-                } => AnimationEvent::AnimationRepetitionEnd {
-                    entity: *entity,
-                    animation_id,
-                    animation_repetition: *animation_repetition,
-                },
-            })
-            .collect()
+            );
+        });
     }
 }

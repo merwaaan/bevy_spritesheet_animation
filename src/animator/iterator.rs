@@ -11,7 +11,7 @@ use super::cache::{AnimationCache, AnimationCacheEvent, CacheFrame};
 
 /// Same as [CacheFrame] but with `animation_repetition`
 #[derive(Debug, Clone)]
-pub(crate) struct IteratorFrame {
+pub struct IteratorFrame {
     pub atlas_index: usize,
     pub duration: u32,
     pub clip_id: ClipId,
@@ -24,7 +24,7 @@ pub(crate) struct IteratorFrame {
 ///
 /// The animation will promote them to regular AnimationEvents and add the information available at its level.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) enum AnimationIteratorEvent {
+pub enum AnimationIteratorEvent {
     MarkerHit {
         marker_id: AnimationMarkerId,
         animation_repetition: usize,
@@ -46,7 +46,7 @@ pub(crate) enum AnimationIteratorEvent {
 /// An iterator that advances an animation frame by frame.
 ///
 /// `next()` will produce frames until the end of the animation.
-pub(crate) struct AnimationIterator {
+pub struct AnimationIterator {
     /// Reference to the animation cache that contains all the frames for one repetition of the animation
     cache: Arc<AnimationCache>,
 

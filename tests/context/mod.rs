@@ -22,7 +22,7 @@ impl Context {
 
         let mut app = App::new();
 
-        app.add_plugins(
+        app.add_plugins((
             DefaultPlugins
                 .build()
                 // Headless mode
@@ -35,9 +35,8 @@ impl Context {
                     .into(),
                     ..default()
                 }),
-        )
-        // Add our plugin
-        .add_plugins(SpritesheetAnimationPlugin)
+            SpritesheetAnimationPlugin,
+        ))
         // Insert a manual update strategy to control time
         .insert_resource(TimeUpdateStrategy::ManualInstant(Instant::now()));
 

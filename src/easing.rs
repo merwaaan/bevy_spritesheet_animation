@@ -20,7 +20,7 @@ pub enum EasingVariety {
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::new();
+/// # let mut library = AnimationLibrary::default();
 /// // Apply easing on a clip
 ///
 /// let clip = Clip::from_frames([7, 8, 9])
