@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 use bevy::{
     asset::{Assets, Handle},
@@ -7,7 +7,6 @@ use bevy::{
         query::Changed,
         system::{Commands, Query, Res, ResMut, Resource},
     },
-    math::UVec2,
     pbr::StandardMaterial,
     prelude::*,
     render::{
@@ -21,22 +20,75 @@ use bevy::{
 
 use crate::components::sprite3d::Sprite3d;
 
-pub type QuadUvs = Vec<[f32; 2]>;
-
-/// A resource that stores the UV coordinates for all the atlas layouts used by 3D sprites.
+/// Cached data for the 3D sprites
 #[derive(Resource, Default)]
-pub struct TextureAtlasLayoutUvs {
-    data: HashMap<Handle<TextureAtlasLayout>, Vec<QuadUvs>>,
+pub struct Cache {
+    /// Materials used by 3D sprites.
+    ///
+    /// Shared when the image and color are the same.
+    materials: HashMap<MaterialId, Handle<StandardMaterial>>,
+
+    /// Meshes used by the 3D sprites.
+    ///
+    /// Shared when the size, flips and atlas are the same.
+    meshes: HashMap<MeshId, Handle<Mesh>>,
 }
 
-/// Setups 3D sprites for rendering by creating the 3D geometry and materials to display them.
+/// Uniquely identifies a sprite material
+#[derive(Hash, PartialEq, Eq)]
+struct MaterialId {
+    image: Handle<Image>,
+    color: u32,
+}
+
+impl MaterialId {
+    fn new(sprite: &Sprite3d, image_handle: &Handle<Image>) -> Self {
+        Self {
+            image: image_handle.clone_weak(),
+            color: sprite.color.to_linear().as_u32(),
+        }
+    }
+}
+
+/// Uniquely identifies a sprite mesh
+#[derive(Hash, PartialEq, Eq)]
+struct MeshId {
+    sprite_custom_size: [u32; 2],
+    sprite_anchor: [u32; 2],
+    sprite_flip_x: bool,
+    sprite_flip_y: bool,
+    image_size: UVec2,
+    atlas_rect: URect,
+}
+
+impl MeshId {
+    fn new(sprite: &Sprite3d, image: &Image, atlas_rect: &URect) -> Self {
+        let sprite_custom_size = sprite
+            .custom_size
+            .map_or([0, 0], |size| [size.x.to_bits(), size.y.to_bits()]);
+
+        let sprite_anchor_vec = sprite.anchor.as_vec();
+        let sprite_anchor = [sprite_anchor_vec.x.to_bits(), sprite_anchor_vec.y.to_bits()];
+
+        Self {
+            sprite_custom_size,
+            sprite_anchor,
+            sprite_flip_x: sprite.flip_x,
+            sprite_flip_y: sprite.flip_y,
+            image_size: image.size(),
+            atlas_rect: *atlas_rect,
+        }
+    }
+}
+
+/// Setups 3D sprites for rendering by attaching the 3D geometry and materials to display them.
 pub fn setup_rendering(
     mut commands: Commands,
-    atlases: Res<Assets<TextureAtlasLayout>>,
-    mut atlases_uvs: ResMut<TextureAtlasLayoutUvs>,
+    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
     images: Res<Assets<Image>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut cache: ResMut<Cache>,
     sprites: Query<
         (
             Entity,
@@ -51,59 +103,57 @@ pub fn setup_rendering(
 ) {
     for (entity, sprite, atlas, image_handle, maybe_mesh_handle, maybe_material_handle) in &sprites
     {
-        // We have to wait for the image to be loaded to access its dimensions
+        // Add a mesh to the entity if it does not have one yet
 
-        if let Some(texture) = images.get(image_handle) {
-            // Generate UVs for this sprite's layout if needed
-
-            let uvs = atlases.get(&atlas.layout).and_then(|layout| {
-                let atlas_uvs = atlases_uvs
-                    .data
-                    .entry(atlas.layout.clone_weak())
-                    .or_insert_with(|| create_uvs_from_atlas_layout(layout));
-
-                atlas_uvs.get(atlas.index)
-            });
-
-            // Add a mesh to the entity if it does not have one yet
+        if let Some(image) = images.get(image_handle) {
+            // (we have to wait for the image to be loaded to access its dimensions)
 
             if maybe_mesh_handle.is_none() {
-                let mut mesh = Mesh::new(
-                    PrimitiveTopology::TriangleList, // Needed to support raycasting
-                    RenderAssetUsages::default(),
+                let mesh_handle = get_or_create_mesh(
+                    sprite,
+                    image,
+                    atlas,
+                    &atlas_layouts,
+                    &mut meshes,
+                    &mut cache,
                 );
 
-                update_mesh_vertices(&mut mesh, sprite, texture);
-                update_mesh_uvs(&mut mesh, sprite, uvs);
-
-                commands.entity(entity).insert(meshes.add(mesh));
+                commands.entity(entity).insert(mesh_handle);
             }
+        }
 
-            // Add a material to the entity if it does not have one yet
+        // Add a material to the entity if it does not have one yet
 
-            if maybe_material_handle.is_none() {
-                let material = StandardMaterial {
-                    base_color_texture: Some(image_handle.clone()),
-                    base_color: sprite.color,
-                    unlit: true,
-                    alpha_mode: AlphaMode::Blend,
-                    ..default()
-                };
+        if maybe_material_handle.is_none() {
+            // let material_handle =
+            //     get_or_create_material(image_handle, &sprite.color, &mut cache, &mut materials);
 
-                commands.entity(entity).insert(materials.add(material));
-            }
+            // commands.entity(entity).insert(material_handle);
+
+            let material = StandardMaterial {
+                base_color_texture: Some(image_handle.clone()),
+                base_color: sprite.color,
+                unlit: true,
+                alpha_mode: AlphaMode::Blend,
+                ..default()
+            };
+
+            commands.entity(entity).insert(materials.add(material));
         }
     }
 }
 
-/// Synchronizes 3D sprites with the data from their Sprite3D component.
-pub fn sync_sprites_with_component(
-    atlases_uvs: Res<TextureAtlasLayoutUvs>,
+/// Synchronizes 3D sprites when their Sprite3D gets updated.
+pub fn sync_when_sprites_change(
+    mut commands: Commands,
     images: Res<Assets<Image>>,
+    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut cache: ResMut<Cache>,
     sprites: Query<
         (
+            Entity,
             &Sprite3d,
             &TextureAtlas,
             &Handle<Image>,
@@ -113,153 +163,220 @@ pub fn sync_sprites_with_component(
         Changed<Sprite3d>,
     >,
 ) {
-    for (sprite, atlas, image_handle, mesh_handle, material_handle) in &sprites {
-        // Update the mesh
+    for (entity, sprite, atlas, image_handle, mesh_handle, material_handle) in &sprites {
+        // Update the mesh if it changed
 
-        if let Some(mesh) = meshes.get_mut(mesh_handle) {
-            // We need to wait for the image to be loaded to get its size
+        if let Some(image) = images.get(image_handle) {
+            let new_mesh_handle = get_or_create_mesh(
+                sprite,
+                image,
+                atlas,
+                &atlas_layouts,
+                &mut meshes,
+                &mut cache,
+            );
 
-            if let Some(texture) = images.get(image_handle) {
-                update_mesh_vertices(mesh, sprite, texture);
-
-                if let Some(uvs) = atlases_uvs.data.get(&atlas.layout) {
-                    update_mesh_uvs(mesh, sprite, uvs.get(atlas.index));
-                }
+            if mesh_handle != &new_mesh_handle {
+                commands.entity(entity).remove::<Handle<Mesh>>();
+                commands.entity(entity).insert(new_mesh_handle);
             }
         }
 
-        // Update the material
+        // Update the material if it changed
 
-        if let Some(material) = materials.get_mut(material_handle) {
-            material.base_color = sprite.color;
+        let new_material_handle =
+            get_or_create_material(sprite, image_handle, &mut materials, &mut cache);
+
+        if material_handle != &new_material_handle {
+            commands.entity(entity).remove::<Handle<StandardMaterial>>();
+            commands.entity(entity).insert(new_material_handle);
         }
     }
 }
 
-/// Synchronizes the UV coordinates of the sprites' meshes when the index of their texture atlas changes.
-pub fn sync_sprites_with_atlas(
-    atlases_uvs: Res<TextureAtlasLayoutUvs>,
+/// Synchronizes 3D sprites when the index of their texture atlas changes.
+pub fn sync_when_atlases_change(
+    mut commands: Commands,
+    images: Res<Assets<Image>>,
+    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    sprites: Query<(&Sprite3d, &TextureAtlas, &mut Handle<Mesh>), Changed<TextureAtlas>>,
+    mut cache: ResMut<Cache>,
+    sprites: Query<
+        (
+            Entity,
+            &Sprite3d,
+            &TextureAtlas,
+            &Handle<Image>,
+            &Handle<Mesh>,
+        ),
+        Changed<TextureAtlas>,
+    >,
 ) {
-    for (sprite, atlas, mesh_handle) in &sprites {
-        if let Some(mesh) = meshes.get_mut(mesh_handle.id()) {
-            if let Some(uvs) = atlases_uvs.data.get(&atlas.layout) {
-                update_mesh_uvs(mesh, sprite, uvs.get(atlas.index));
+    for (entity, sprite, atlas, image_handle, mesh_handle) in &sprites {
+        if let Some(image) = images.get(image_handle) {
+            let new_mesh_handle = get_or_create_mesh(
+                sprite,
+                image,
+                atlas,
+                &atlas_layouts,
+                &mut meshes,
+                &mut cache,
+            );
+
+            if mesh_handle != &new_mesh_handle {
+                commands.entity(entity).remove::<Handle<Mesh>>();
+                commands.entity(entity).insert(new_mesh_handle);
             }
         }
     }
 }
 
-/// Generates UV coordinates from a texture atlas layout.
-fn create_uvs_from_atlas_layout(atlas: &TextureAtlasLayout) -> Vec<QuadUvs> {
-    let atlas_layout_size = atlas.size.as_vec2();
+// Retrieves a material from the cache or create a new one
+fn get_or_create_material(
+    sprite: &Sprite3d,
+    image_handle: &Handle<Image>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    cache: &mut Cache,
+) -> Handle<StandardMaterial> {
+    let material_id = MaterialId::new(sprite, image_handle);
 
-    atlas
+    cache
+        .materials
+        .get(&material_id)
+        .cloned()
+        .unwrap_or_else(|| {
+            let material_handle = materials.add(StandardMaterial {
+                base_color_texture: Some(image_handle.clone()),
+                base_color: sprite.color,
+                unlit: true,
+                alpha_mode: AlphaMode::Blend,
+                ..default()
+            });
+
+            cache
+                .materials
+                .insert(material_id, material_handle.clone_weak());
+
+            material_handle
+        })
+}
+
+// Retrieves a mesh from the cache or create a new one
+fn get_or_create_mesh(
+    sprite: &Sprite3d,
+    image: &Image,
+    atlas: &TextureAtlas,
+    atlas_layouts: &Res<Assets<TextureAtlasLayout>>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    cache: &mut Cache,
+) -> Handle<Mesh> {
+    let atlas_layout = atlas_layouts
+        .get(&atlas.layout)
+        .expect("cannot get 3D sprite's atlas layout");
+
+    let atlas_rect = atlas_layout
         .textures
-        .iter()
-        .map(|texture| {
+        .get(atlas.index)
+        .expect("cannot get 3D sprite's atlas rect");
+
+    let mesh_id = MeshId::new(sprite, image, atlas_rect);
+
+    cache.meshes.get(&mesh_id).cloned().unwrap_or_else(|| {
+        let mut mesh = Mesh::new(
+            PrimitiveTopology::TriangleList, // Needed to support raycasting
+            RenderAssetUsages::default(),
+        );
+
+        // Vertices
+
+        let size = match sprite.custom_size {
+            Some(size) => size,
+            None => image.size_f32(),
+        };
+
+        let half = size / 2.0;
+
+        let offset = sprite.anchor.as_vec() * size;
+
+        mesh.insert_attribute(
+            Mesh::ATTRIBUTE_POSITION,
             vec![
                 // Triangle 1
-                (UVec2::new(texture.min.x, texture.max.y).as_vec2() / atlas_layout_size).to_array(),
-                (UVec2::new(texture.max.x, texture.max.y).as_vec2() / atlas_layout_size).to_array(),
-                (UVec2::new(texture.min.x, texture.min.y).as_vec2() / atlas_layout_size).to_array(),
+                [
+                    // bottom left
+                    -half.x - offset.x,
+                    -half.y - offset.y,
+                    0.0,
+                ],
+                [
+                    // bottom right
+                    half.x - offset.x,
+                    -half.y - offset.y,
+                    0.0,
+                ],
+                [
+                    // top left
+                    -half.x - offset.x,
+                    half.y - offset.y,
+                    0.0,
+                ],
                 // Triangle 2
-                (UVec2::new(texture.max.x, texture.max.y).as_vec2() / atlas_layout_size).to_array(),
-                (UVec2::new(texture.max.x, texture.min.y).as_vec2() / atlas_layout_size).to_array(),
-                (UVec2::new(texture.min.x, texture.min.y).as_vec2() / atlas_layout_size).to_array(),
-            ]
-        })
-        .collect()
-}
+                [
+                    // bottom right
+                    half.x - offset.x,
+                    -half.y - offset.y,
+                    0.0,
+                ],
+                [
+                    // top right
+                    half.x - offset.x,
+                    half.y - offset.y,
+                    0.0,
+                ],
+                [
+                    // top left
+                    -half.x - offset.x,
+                    half.y - offset.y,
+                    0.0,
+                ],
+            ],
+        );
 
-fn update_mesh_vertices(mesh: &mut Mesh, sprite: &Sprite3d, texture: &Image) {
-    let size = match sprite.custom_size {
-        Some(size) => size,
-        None => texture.size_f32(),
-    };
+        // Texture coordinates
 
-    let half_size = size / 2.0;
+        let atlas_size = atlas_layout.size.as_vec2();
 
-    let anchor_offset = sprite.anchor.as_vec() * size;
-
-    mesh.insert_attribute(
-        Mesh::ATTRIBUTE_POSITION,
-        vec![
+        let mut uvs = vec![
             // Triangle 1
-            [
-                // bottom left
-                -half_size.x - anchor_offset.x,
-                -half_size.y - anchor_offset.y,
-                0.0,
-            ],
-            [
-                // bottom right
-                half_size.x - anchor_offset.x,
-                -half_size.y - anchor_offset.y,
-                0.0,
-            ],
-            [
-                // top left
-                -half_size.x - anchor_offset.x,
-                half_size.y - anchor_offset.y,
-                0.0,
-            ],
+            (UVec2::new(atlas_rect.min.x, atlas_rect.max.y).as_vec2() / atlas_size).to_array(),
+            (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size).to_array(),
+            (UVec2::new(atlas_rect.min.x, atlas_rect.min.y).as_vec2() / atlas_size).to_array(),
             // Triangle 2
-            [
-                // bottom right
-                half_size.x - anchor_offset.x,
-                -half_size.y - anchor_offset.y,
-                0.0,
-            ],
-            [
-                // top right
-                half_size.x - anchor_offset.x,
-                half_size.y - anchor_offset.y,
-                0.0,
-            ],
-            [
-                // top left
-                -half_size.x - anchor_offset.x,
-                half_size.y - anchor_offset.y,
-                0.0,
-            ],
-        ],
-    );
-}
+            (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size).to_array(),
+            (UVec2::new(atlas_rect.max.x, atlas_rect.min.y).as_vec2() / atlas_size).to_array(),
+            (UVec2::new(atlas_rect.min.x, atlas_rect.min.y).as_vec2() / atlas_size).to_array(),
+        ];
 
-fn update_mesh_uvs(mesh: &mut Mesh, sprite: &Sprite3d, maybe_uvs: Option<&QuadUvs>) {
-    static DEFAULT_UVS: [[f32; 2]; 6] = [
-        // Triangle 1
-        [0.0, 1.0],
-        [1.0, 1.0],
-        [0.0, 0.0],
-        // Triangle 2
-        [1.0, 1.0],
-        [1.0, 0.0],
-        [0.0, 0.0],
-    ];
+        if sprite.flip_x {
+            uvs.swap(0, 1);
+            uvs.swap(5, 4);
+            uvs[2] = uvs[5];
+            uvs[3] = uvs[1];
+        }
 
-    let mut uvs = match maybe_uvs {
-        Some(uvs) => uvs.clone(),
-        None => DEFAULT_UVS.to_vec(),
-    };
+        if sprite.flip_y {
+            uvs.swap(0, 2);
+            uvs.swap(3, 4);
+            uvs[1] = uvs[3];
+            uvs[5] = uvs[2];
+        }
 
-    // Flipping
+        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
 
-    if sprite.flip_x {
-        uvs.swap(0, 1);
-        uvs.swap(5, 4);
-        uvs[2] = uvs[5];
-        uvs[3] = uvs[1];
-    }
+        let mesh_handle = meshes.add(mesh);
 
-    if sprite.flip_y {
-        uvs.swap(0, 2);
-        uvs.swap(3, 4);
-        uvs[1] = uvs[3];
-        uvs[5] = uvs[2];
-    }
+        cache.meshes.insert(mesh_id, mesh_handle.clone());
 
-    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+        mesh_handle
+    })
 }

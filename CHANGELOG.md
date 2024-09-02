@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2 - 2024-09-??
+
+### Changed
+
+- Optimize playback for 3D sprites (~x3 speedup)
+
 ## 0.4.1 - 2024-08-30
 
 ### Added

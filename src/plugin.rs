@@ -59,8 +59,8 @@ impl Plugin for SpritesheetAnimationPlugin {
             .init_resource::<AnimationLibrary>()
             // The animator responsible for running animations
             .init_resource::<Animator>()
-            // Atlas UVs for 3D sprites
-            .init_resource::<sprite3d::TextureAtlasLayoutUvs>()
+            // Cache for 3D sprites
+            .init_resource::<sprite3d::Cache>()
             // Animations events
             .add_event::<AnimationEvent>()
             // Systems
@@ -72,8 +72,8 @@ impl Plugin for SpritesheetAnimationPlugin {
                     // 3D sprite systems
                     (
                         sprite3d::setup_rendering,
-                        sprite3d::sync_sprites_with_component,
-                        sprite3d::sync_sprites_with_atlas,
+                        sprite3d::sync_when_sprites_change,
+                        sprite3d::sync_when_atlases_change,
                     )
                         .in_set(Sprite3dSystemSet)
                         .after(AnimationSystemSet),
