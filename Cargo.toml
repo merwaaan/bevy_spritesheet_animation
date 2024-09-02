@@ -20,7 +20,9 @@ bevy = { version = "0.14.0", default-features = false, features = ["bevy_pbr", "
 [dev-dependencies]
 approx = "0.5.1"
 bevy = { version = "0.14.0", default-features = true }
+clap = { version = "4.5.16", features = ["derive"] }
 divan = "0.1.14"
+iyes_perf_ui = "0.3.0"
 rand = "0.8.5"
 
 [profile.test]
