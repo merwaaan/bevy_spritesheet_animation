@@ -20,7 +20,7 @@ bevy = { version = "0.14.0", default-features = false, features = ["bevy_pbr", "
 [dev-dependencies]
 approx = "0.5.1"
 bevy = { version = "0.14.0", default-features = true }
-criterion = "0.5.1"
+divan = "0.1.14"
 rand = "0.8.5"
 
 [profile.test]
