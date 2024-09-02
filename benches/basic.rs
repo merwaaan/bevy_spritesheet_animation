@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use bevy::{
     ecs::system::SystemState,
@@ -77,7 +77,7 @@ fn playback(bencher: Bencher, (animation_count, sprite_count): (usize, usize)) {
         );
     }
 
-    let mut time = Time::<Real>::new(Instant::now());
+    let mut time = Time::new_with(());
 
     let mut system_state: SystemState<(
         Res<AnimationLibrary>,
@@ -93,7 +93,7 @@ fn playback(bencher: Bencher, (animation_count, sprite_count): (usize, usize)) {
 
             animator.update(&time, &library, &mut event_writer, &mut query);
 
-            time.update_with_duration(Duration::from_millis(100));
+            time.advance_by(Duration::from_millis(100));
         }
     });
 }

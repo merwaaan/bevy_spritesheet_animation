@@ -79,6 +79,7 @@
 //! ```
 
 pub mod animation;
+pub mod animator;
 pub mod clip;
 pub mod components;
 pub mod easing;
@@ -87,7 +88,6 @@ pub mod library;
 pub mod plugin;
 pub mod spritesheet;
 
-mod animator;
 mod systems;
 
 pub mod prelude {

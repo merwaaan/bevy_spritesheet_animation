@@ -8,6 +8,7 @@ use bevy::{
         system::{Query, Resource},
     },
     sprite::TextureAtlas,
+    time::Time,
 };
 use iterator::AnimationIteratorEvent;
 use std::collections::HashMap;
@@ -17,7 +18,6 @@ use crate::{
     components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
     events::AnimationEvent,
     library::AnimationLibrary,
-    systems::spritesheet_animation::ActualTime,
 };
 
 use self::{iterator::AnimationIterator, iterator::IteratorFrame};
@@ -46,7 +46,7 @@ impl Animator {
     /// Plays the animations
     pub fn update(
         &mut self,
-        time: &ActualTime,
+        time: &Time,
         library: &AnimationLibrary,
         event_writer: &mut EventWriter<AnimationEvent>,
         query: &mut Query<(Entity, &mut SpritesheetAnimation, &mut TextureAtlas)>,
