@@ -10,7 +10,7 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for anima
 # Features
 
 - Animate 2D and [3D sprites](#3d-sprites)! 🎉
-- A single Bevy [component](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/component/struct.SpritesheetAnimation.html) to add to your entities to play animations.
+- A single Bevy [component](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) to add to your entities to play animations.
 - Tunable parameters: [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html), [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html).
 - [Composable animations](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html) from multiple clips.
 - [Events](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/events/enum.AnimationEvent.html) to react to animations ending or reaching specific points.
@@ -23,7 +23,7 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for anima
 
 1. Add the [SpritesheetAnimationPlugin](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/plugin/struct.SpritesheetAnimationPlugin.html) to your app
 2. Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to create new clips and animations
-3. Add a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/component/struct.SpritesheetAnimation.html) component to your entity
+3. Add a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) component to your entity
 
 ```rust
 use bevy::prelude::*;
@@ -45,7 +45,7 @@ fn setup(
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
 ) {
-    // Create an animation
+    // Create a clip
 
     let spritesheet = Spritesheet::new(8, 8);
 
@@ -98,7 +98,7 @@ A clip is a sequence of frames.
 It is the most basic building block for creating animations.
 Simple animations may contain a single clip while more complex animations may contain a sequence of clips.
 
-Parameters like duration, repetitions, direction and easing can be specified.
+Parameters like [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html) and [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html) can be specified.
 
 Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to register new clips.
 
@@ -109,7 +109,7 @@ fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
 
     // Create a clip that uses some frames from a spritesheet
 
-    let spritesheet = Spritesheet::new(8, 8).column(2);
+    let spritesheet = Spritesheet::new(8, 8);
 
     let clip = Clip::from_frames(spritesheet.column(2))
         .with_duration(AnimationDuration::PerRepetition(1500))
@@ -251,14 +251,14 @@ This crate also makes it easy to integrate 3D sprites into your games, which is 
 
 [Sprite3dBundle](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3dBundle.html) contains all the necesary components to enable 3D sprites. Use [Sprite3dBuilder](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3dBuilder.html) to easily create one of those.
 
-Animating a 3D sprite is the same as animating 2D sprites: simply attach a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/component/struct.SpritesheetAnimation.html) component to your entity.
+Animating a 3D sprite is the same as animating 2D sprites: simply attach a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) component to your entity.
 
 ```rust
 fn spawn_character(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
 
     // ...
 
-    let animation_id = library.register_animation();
+    let animation_id = library.register_animation(animation);
 
     commands.spawn((
         Sprite3dBuilder::from_image(texture.clone())
@@ -283,7 +283,7 @@ For more examples, browse the [examples/](examples) directory.
 | [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                             |
 | [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations    |
 | [events](examples/events.rs)           | Shows how to react to animations reaching points of interest with events |
-| [stress](examples/stress.rs)           | Stress test with thousands of animated sprites                           |
+| [stress](examples/stress.rs)           | Stress test with thousands of animated sprites (either 2D or 3D)         |
 
 # Compatibility
 
