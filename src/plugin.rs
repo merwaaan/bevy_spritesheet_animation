@@ -12,11 +12,11 @@ use crate::{
 
 /// Set for systems that update the animation state.
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
-struct AnimationSystemSet;
+pub struct AnimationSystemSet;
 
 /// Set for systems that update the sprite state.
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
-struct Sprite3dSystemSet;
+pub struct Sprite3dSystemSet;
 
 /// The spritesheet animation plugin to add to Bevy apps.
 ///
