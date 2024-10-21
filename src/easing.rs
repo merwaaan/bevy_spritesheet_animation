@@ -1,7 +1,10 @@
 use std::f32::consts::PI;
 
+use bevy::reflect::prelude::*;
+
 /// Variety to associate with [Easing]s to tune the acceleration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
 pub enum EasingVariety {
     Quadratic,
     Cubic,
@@ -39,7 +42,8 @@ pub enum EasingVariety {
 ///
 /// - <https://easings.net/>
 /// - <http://robertpenner.com/easing/penner_chapter7_tweening.pdf>
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Debug, Default, PartialEq, Hash)]
 pub enum Easing {
     /// Linear interpolation
     #[default]

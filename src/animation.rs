@@ -1,11 +1,14 @@
 use std::fmt;
 
+use bevy::reflect::prelude::*;
+
 use crate::{clip::ClipId, easing::Easing};
 
 /// An opaque identifier that references an [Animation].
 ///
 /// Returned by [AnimationLibrary::register_animation](crate::prelude::AnimationLibrary::register_animation).
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
 pub struct AnimationId {
     pub(crate) value: usize,
 }
@@ -19,7 +22,8 @@ impl fmt::Display for AnimationId {
 /// Specifies the duration of an [Animation].
 ///
 /// Defaults to `PerFrame(100)`.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Reflect)]
+#[reflect(Debug)]
 pub enum AnimationDuration {
     /// Specifies the duration of each frame in milliseconds
     PerFrame(u32),
@@ -36,7 +40,8 @@ impl Default for AnimationDuration {
 /// Specifies how many times an [Animation] repeats.
 ///
 /// Defaults to `AnimationRepeat::Loop`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
 pub enum AnimationRepeat {
     /// Loops indefinitely
     Loop,
@@ -53,7 +58,8 @@ impl Default for AnimationRepeat {
 /// Specifies the direction of an [Animation].
 ///
 /// Defaults to `AnimationDirection::Forwards`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
 pub enum AnimationDirection {
     /// Frames play from left to right
     Forwards,
@@ -98,7 +104,8 @@ impl Default for AnimationDirection {
 ///
 /// let animation_id = library.register_animation(animation);
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
+#[reflect(Debug)]
 pub struct Animation {
     /// The IDs of the [Clip](crate::prelude::Clip)s that compose this animation
     clip_ids: Vec<ClipId>,

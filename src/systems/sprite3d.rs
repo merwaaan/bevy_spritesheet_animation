@@ -21,7 +21,8 @@ use bevy::{
 use crate::components::sprite3d::Sprite3d;
 
 /// Cached data for the 3D sprites
-#[derive(Resource, Default)]
+#[derive(Resource, Debug, Default, Reflect)]
+#[reflect(Resource, Debug, Default)]
 pub struct Cache {
     /// Materials used by 3D sprites.
     ///
@@ -35,7 +36,8 @@ pub struct Cache {
 }
 
 /// Uniquely identifies a sprite material
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq, Reflect)]
+#[reflect(Debug, Hash, PartialEq)]
 struct MaterialId {
     image: Handle<Image>,
     color: u32,
@@ -51,7 +53,8 @@ impl MaterialId {
 }
 
 /// Uniquely identifies a sprite mesh
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq, Reflect)]
+#[reflect(Debug, Hash, PartialEq)]
 struct MeshId {
     sprite_custom_size: [u32; 2],
     sprite_anchor: [u32; 2],

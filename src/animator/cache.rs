@@ -1,4 +1,4 @@
-use bevy::log::warn;
+use bevy::{log::warn, reflect::prelude::*};
 
 use crate::{
     animation::{AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat},
@@ -10,7 +10,8 @@ use crate::{
 };
 
 /// A pre-computed frame of animation, ready to be played back.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
+#[reflect(Debug)]
 pub struct CacheFrame {
     pub atlas_index: usize,
     pub duration: u32,
@@ -27,7 +28,8 @@ pub struct CacheFrame {
 /// The iterator & animator will also generate extra events that cannot be cached:
 ///  - ClipRepetitionEnd, ClipEnd, AnimationRepetitionEnd on the first frame of the repetitions
 ///  - AnimationEnd after the last frame
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
 pub enum AnimationCacheEvent {
     MarkerHit {
         marker_id: AnimationMarkerId,
@@ -43,6 +45,8 @@ pub enum AnimationCacheEvent {
     },
 }
 
+#[derive(Debug, Reflect)]
+#[reflect(Debug)]
 /// The [AnimationCache] contains pre-computed frames for an animation.
 ///
 /// The idea is to cache for each frame its atlas index, duration and emitted events

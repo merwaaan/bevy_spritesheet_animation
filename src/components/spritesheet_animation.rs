@@ -1,9 +1,10 @@
-use bevy::ecs::component::Component;
+use bevy::{ecs::prelude::*, reflect::prelude::*};
 
 use crate::animation::AnimationId;
 
 // The progress of an animation being played.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Debug, Default, PartialEq, Hash)]
 pub struct AnimationProgress {
     /// The index of the active frame of the animation
     ///
@@ -61,7 +62,8 @@ pub struct AnimationProgress {
 ///     ));
 /// }
 /// ```
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component, Debug)]
 pub struct SpritesheetAnimation {
     /// The ID of the animation to play
     ///

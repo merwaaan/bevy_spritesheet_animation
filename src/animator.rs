@@ -5,8 +5,10 @@ use bevy::{
     ecs::{
         entity::Entity,
         event::EventWriter,
+        reflect::*,
         system::{Query, Resource},
     },
+    reflect::prelude::*,
     sprite::TextureAtlas,
     time::Time,
 };
@@ -22,6 +24,8 @@ use crate::{
 
 use self::{iterator::AnimationIterator, iterator::IteratorFrame};
 
+#[derive(Debug, Reflect)]
+#[reflect(Debug)]
 /// An instance of an animation that is currently being played
 struct AnimationInstance {
     animation_id: AnimationId,
@@ -35,7 +39,8 @@ struct AnimationInstance {
 }
 
 /// The animator is responsible for playing animations as time advances.
-#[derive(Resource, Default)]
+#[derive(Resource, Debug, Default, Reflect)]
+#[reflect(Resource, Debug, Default)]
 pub struct Animator {
     /// Instances of animations currently being played.
     /// Each animation instance is associated to an entity with a [SpritesheetAnimation] component.
