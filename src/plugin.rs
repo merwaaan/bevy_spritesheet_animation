@@ -57,10 +57,13 @@ impl Plugin for SpritesheetAnimationPlugin {
         app
             // The animation library, for creating clips, animations and markers
             .init_resource::<AnimationLibrary>()
+            .register_type::<AnimationLibrary>()
             // The animator responsible for running animations
             .init_resource::<Animator>()
+            .register_type::<Animator>()
             // Cache for 3D sprites
             .init_resource::<sprite3d::Cache>()
+            .register_type::<sprite3d::Cache>()
             // Animations events
             .add_event::<AnimationEvent>()
             // Systems

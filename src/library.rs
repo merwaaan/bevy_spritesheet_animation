@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use bevy::prelude::Resource;
+use bevy::{ecs::reflect::*, prelude::Resource, reflect::prelude::*};
 
 use crate::{
     animator::cache::AnimationCache,
@@ -51,7 +51,8 @@ pub enum LibraryError {
 ///     // ... Assign the animation to a SpritesheetAnimation component ...
 /// }
 /// ```
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Reflect)]
+#[reflect(Resource, Default)]
 pub struct AnimationLibrary {
     /// All the clips
     clips: HashMap<ClipId, Clip>,

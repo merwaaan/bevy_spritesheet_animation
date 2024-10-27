@@ -1,13 +1,17 @@
 use std::fmt;
 
-use bevy::ecs::{entity::Entity, event::Event};
+use bevy::{
+    ecs::{entity::Entity, event::Event},
+    reflect::prelude::*,
+};
 
 use crate::{animation::AnimationId, clip::ClipId};
 
 /// An opaque identifier that references an animation marker.
 ///
 /// Returned by [AnimationLibrary::new_marker](crate::prelude::AnimationLibrary::new_marker).
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
 pub struct AnimationMarkerId {
     pub(crate) value: usize,
 }

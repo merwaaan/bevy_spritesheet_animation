@@ -1,8 +1,9 @@
 use bevy::{
     asset::Handle,
     color::Color,
-    ecs::{bundle::Bundle, component::Component},
+    ecs::prelude::*,
     math::{Rect, Vec2},
+    reflect::prelude::*,
     render::{
         texture::Image,
         view::{InheritedVisibility, ViewVisibility, Visibility},
@@ -16,7 +17,8 @@ use bevy::{
 /// This contains similar fields as Bevy's [Sprite](bevy::sprite::Sprite).
 ///
 /// This is commonly used as a component within [Sprite3dBundle].
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct Sprite3d {
     /// A color to tint the sprite with.
     ///

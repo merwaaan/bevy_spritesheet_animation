@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt};
 
+use bevy::reflect::prelude::*;
+
 use crate::{
     animation::{AnimationDirection, AnimationDuration},
     easing::Easing,
@@ -9,7 +11,8 @@ use crate::{
 /// An opaque identifier that references a [Clip].
 ///
 /// Returned by [AnimationLibrary::register_clip](crate::prelude::AnimationLibrary::register_clip).
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
 pub struct ClipId {
     pub(crate) value: usize,
 }
@@ -72,7 +75,8 @@ impl fmt::Display for ClipId {
 ///
 /// let composite_animation = Animation::from_clips([slow_clip_id, fast_clip_id]);
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
+#[reflect(Debug)]
 pub struct Clip {
     /// Indices into the layout of a TextureAtlas component
     atlas_indices: Vec<usize>,

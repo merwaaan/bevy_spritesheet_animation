@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy::log::warn;
+use bevy::{log::warn, reflect::prelude::*};
 
 use crate::{
     animation::AnimationDirection, clip::ClipId,
@@ -10,7 +10,8 @@ use crate::{
 use super::cache::{AnimationCache, AnimationCacheEvent, CacheFrame};
 
 /// Same as [CacheFrame] but with `animation_repetition`
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
+#[reflect(Debug)]
 pub struct IteratorFrame {
     pub atlas_index: usize,
     pub duration: u32,
@@ -23,7 +24,8 @@ pub struct IteratorFrame {
 /// A partial version of AnimationEvent.
 ///
 /// The animation will promote them to regular AnimationEvents and add the information available at its level.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
 pub enum AnimationIteratorEvent {
     MarkerHit {
         marker_id: AnimationMarkerId,
@@ -43,6 +45,8 @@ pub enum AnimationIteratorEvent {
     },
 }
 
+#[derive(Debug, Reflect)]
+#[reflect(Debug)]
 /// An iterator that advances an animation frame by frame.
 ///
 /// `next()` will produce frames until the end of the animation.
