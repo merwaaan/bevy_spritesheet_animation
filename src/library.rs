@@ -149,6 +149,11 @@ impl AnimationLibrary {
         }
     }
 
+    /// Returns all the clip names registered in the library.
+    pub fn clip_names(&self) -> &HashMap<String, ClipId> {
+        &self.clip_name_lookup
+    }
+
     /// Returns the ID of the clip with the given name if it exists.
     ///
     /// # Arguments
@@ -284,6 +289,11 @@ impl AnimationLibrary {
         }
     }
 
+    /// Returns all the animation names registered in the library.
+    pub fn animation_names(&self) -> &HashMap<String, AnimationId> {
+        &self.animation_name_lookup
+    }
+
     /// Returns the ID of the animation with the given name if it exists.
     ///
     /// # Arguments
@@ -385,6 +395,11 @@ impl AnimationLibrary {
             self.marker_name_lookup.insert(name, marker_id);
             Ok(())
         }
+    }
+
+    /// Returns all the marker names registered in the library.
+    pub fn marker_names(&self) -> &HashMap<String, AnimationMarkerId> {
+        &self.marker_name_lookup
     }
 
     /// Returns the ID of the marker with the given name if it exists.

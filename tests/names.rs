@@ -14,6 +14,7 @@ fn clips() {
 
     assert!(!ctx.library().is_clip_name(clip1_id, "first"));
     assert_eq!(ctx.library().clip_with_name("first"), None);
+    assert_eq!(ctx.library().clip_names().len(), 0);
 
     // Name it
 
@@ -21,6 +22,12 @@ fn clips() {
 
     assert!(ctx.library().is_clip_name(clip1_id, "first"));
     assert_eq!(ctx.library().clip_with_name("first"), Some(clip1_id));
+
+    assert_eq!(ctx.library().clip_names().len(), 1);
+    assert_eq!(
+        ctx.library().clip_names().get("first").copied(),
+        Some(clip1_id)
+    );
 
     // Give it a second name, this is not forbidden
 
@@ -31,6 +38,16 @@ fn clips() {
 
     assert!(ctx.library().is_clip_name(clip1_id, "first again"));
     assert_eq!(ctx.library().clip_with_name("first again"), Some(clip1_id));
+
+    assert_eq!(ctx.library().clip_names().len(), 2);
+    assert_eq!(
+        ctx.library().clip_names().get("first").copied(),
+        Some(clip1_id)
+    );
+    assert_eq!(
+        ctx.library().clip_names().get("first again").copied(),
+        Some(clip1_id)
+    );
 
     // Give it the same names again, this is a no-op
 
@@ -51,6 +68,8 @@ fn clips() {
 
     assert_eq!(ctx.library().clip_with_name("first"), Some(clip1_id));
     assert!(ctx.library().is_clip_name(clip1_id, "first"));
+
+    assert_eq!(ctx.library().clip_names().len(), 2);
 }
 
 #[test]
@@ -64,6 +83,7 @@ fn animations() {
 
     assert!(!ctx.library().is_animation_name(animation1_id, "first"));
     assert_eq!(ctx.library().animation_with_name("first"), None);
+    assert_eq!(ctx.library().animation_names().len(), 0);
 
     // Name it
 
@@ -72,6 +92,12 @@ fn animations() {
     assert!(ctx.library().is_animation_name(animation1_id, "first"));
     assert_eq!(
         ctx.library().animation_with_name("first"),
+        Some(animation1_id)
+    );
+
+    assert_eq!(ctx.library().animation_names().len(), 1);
+    assert_eq!(
+        ctx.library().animation_names().get("first").copied(),
         Some(animation1_id)
     );
 
@@ -93,6 +119,16 @@ fn animations() {
         .is_animation_name(animation1_id, "first again"));
     assert_eq!(
         ctx.library().animation_with_name("first again"),
+        Some(animation1_id)
+    );
+
+    assert_eq!(ctx.library().animation_names().len(), 2);
+    assert_eq!(
+        ctx.library().animation_names().get("first").copied(),
+        Some(animation1_id)
+    );
+    assert_eq!(
+        ctx.library().animation_names().get("first again").copied(),
         Some(animation1_id)
     );
 
@@ -121,6 +157,8 @@ fn animations() {
         Some(animation1_id)
     );
     assert!(ctx.library().is_animation_name(animation1_id, "first"));
+
+    assert_eq!(ctx.library().animation_names().len(), 2);
 }
 
 #[test]
@@ -133,6 +171,7 @@ fn markers() {
 
     assert!(!ctx.library().is_marker_name(marker1, "first"));
     assert_eq!(ctx.library().marker_with_name("first"), None);
+    assert_eq!(ctx.library().marker_names().len(), 0);
 
     // Name it
 
@@ -140,6 +179,12 @@ fn markers() {
 
     assert!(ctx.library().is_marker_name(marker1, "first"));
     assert_eq!(ctx.library().marker_with_name("first"), Some(marker1));
+
+    assert_eq!(ctx.library().marker_names().len(), 1);
+    assert_eq!(
+        ctx.library().marker_names().get("first").copied(),
+        Some(marker1)
+    );
 
     // Give it a second name, this is not forbidden
 
@@ -150,6 +195,16 @@ fn markers() {
 
     assert!(ctx.library().is_marker_name(marker1, "first again"));
     assert_eq!(ctx.library().marker_with_name("first again"), Some(marker1));
+
+    assert_eq!(ctx.library().marker_names().len(), 2);
+    assert_eq!(
+        ctx.library().marker_names().get("first").copied(),
+        Some(marker1)
+    );
+    assert_eq!(
+        ctx.library().marker_names().get("first again").copied(),
+        Some(marker1)
+    );
 
     // Give it the same names again, this is a no-op
 
@@ -169,4 +224,6 @@ fn markers() {
 
     assert_eq!(ctx.library().marker_with_name("first"), Some(marker1));
     assert!(ctx.library().is_marker_name(marker1, "first"));
+
+    assert_eq!(ctx.library().marker_names().len(), 2);
 }
