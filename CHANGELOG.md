@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.3 - 2024-11-11
+
+### Added
+
+- Add `clip_names()`, `animation_names()` and `marker_names()` methods to the library
+
+### Changes
+
+- Add reflection to types and registered resources (by mgi388)
+- Make system sets public (by mgi388)
+
 ## 0.4.2 - 2024-09-02
 
 ### Changed
@@ -59,7 +70,7 @@ To create a variant of a clip, just clone and reconfigure it before registering 
 
 ### Added
 
-- Support Bevy 0.14.0
+- Support Bevy 0.14.0 (by BLumbye)
 - Add a `reset()` method to the SpritesheetAnimation component
 
 ### Fixed
