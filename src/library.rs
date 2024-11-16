@@ -132,11 +132,11 @@ impl AnimationLibrary {
     pub fn name_clip(
         &mut self,
         clip_id: ClipId,
-        name: impl AsRef<str>,
+        name: impl Into<String>,
     ) -> Result<(), LibraryError> {
-        let name = name.as_ref();
+        let name = name.into();
 
-        if let Some(existing_clip_id) = self.clip_with_name(name) {
+        if let Some(existing_clip_id) = self.clip_with_name(&name) {
             // The clip already has this name: no-op
             if existing_clip_id == clip_id {
                 Ok(())
@@ -144,7 +144,7 @@ impl AnimationLibrary {
                 Err(LibraryError::NameAlreadyTaken)
             }
         } else {
-            self.clip_name_lookup.insert(clip_id, name.to_string());
+            self.clip_name_lookup.insert(clip_id, name);
             Ok(())
         }
     }
@@ -293,11 +293,11 @@ impl AnimationLibrary {
     pub fn name_animation(
         &mut self,
         animation_id: AnimationId,
-        name: impl AsRef<str>,
+        name: impl Into<String>,
     ) -> Result<(), LibraryError> {
-        let name = name.as_ref();
+        let name = name.into();
 
-        if let Some(existing_animation_id) = self.animation_with_name(name) {
+        if let Some(existing_animation_id) = self.animation_with_name(&name) {
             // The animation already has this name: no-op
             if existing_animation_id == animation_id {
                 Ok(())
@@ -305,8 +305,7 @@ impl AnimationLibrary {
                 Err(LibraryError::NameAlreadyTaken)
             }
         } else {
-            self.animation_name_lookup
-                .insert(animation_id, name.to_string());
+            self.animation_name_lookup.insert(animation_id, name);
             Ok(())
         }
     }
@@ -425,11 +424,11 @@ impl AnimationLibrary {
     pub fn name_marker(
         &mut self,
         marker_id: AnimationMarkerId,
-        name: impl AsRef<str>,
+        name: impl Into<String>,
     ) -> Result<(), LibraryError> {
-        let name = name.as_ref();
+        let name = name.into();
 
-        if let Some(existing_marker_id) = self.marker_with_name(name) {
+        if let Some(existing_marker_id) = self.marker_with_name(&name) {
             // The marker already has this name: no-op
             if existing_marker_id == marker_id {
                 Ok(())
@@ -437,7 +436,7 @@ impl AnimationLibrary {
                 Err(LibraryError::NameAlreadyTaken)
             }
         } else {
-            self.marker_name_lookup.insert(marker_id, name.to_string());
+            self.marker_name_lookup.insert(marker_id, name);
             Ok(())
         }
     }
