@@ -58,19 +58,19 @@ pub struct AnimationLibrary {
     clips: HashMap<ClipId, Clip>,
 
     /// Name to ID lookup for clips
-    clip_name_lookup: HashMap<String, ClipId>,
+    clip_name_lookup: HashMap<ClipId, String>,
 
     /// All the animations
     animations: HashMap<AnimationId, Animation>,
 
     /// Name to ID lookup for animations
-    animation_name_lookup: HashMap<String, AnimationId>,
+    animation_name_lookup: HashMap<AnimationId, String>,
 
     /// All the markers
     markers: HashSet<AnimationMarkerId>,
 
     /// Name to ID lookup for markers
-    marker_name_lookup: HashMap<String, AnimationMarkerId>,
+    marker_name_lookup: HashMap<AnimationMarkerId, String>,
 
     /// Animation caches, one for each animation.
     /// They contain all the data required to play an animation.
@@ -132,25 +132,25 @@ impl AnimationLibrary {
     pub fn name_clip(
         &mut self,
         clip_id: ClipId,
-        name: impl Into<String>,
+        name: impl AsRef<str>,
     ) -> Result<(), LibraryError> {
-        let name = name.into();
+        let name = name.as_ref();
 
-        if let Some(named_clip_id) = self.clip_name_lookup.get(&name) {
+        if let Some(existing_clip_id) = self.clip_with_name(name) {
             // The clip already has this name: no-op
-            if *named_clip_id == clip_id {
+            if existing_clip_id == clip_id {
                 Ok(())
             } else {
                 Err(LibraryError::NameAlreadyTaken)
             }
         } else {
-            self.clip_name_lookup.insert(name, clip_id);
+            self.clip_name_lookup.insert(clip_id, name.to_string());
             Ok(())
         }
     }
 
     /// Returns all the clip names registered in the library.
-    pub fn clip_names(&self) -> &HashMap<String, ClipId> {
+    pub fn clip_names(&self) -> &HashMap<ClipId, String> {
         &self.clip_name_lookup
     }
 
@@ -159,8 +159,14 @@ impl AnimationLibrary {
     /// # Arguments
     ///
     /// * `name` - the clip name
-    pub fn clip_with_name(&self, name: impl Into<String>) -> Option<ClipId> {
-        self.clip_name_lookup.get(&name.into()).copied()
+    pub fn clip_with_name(&self, name: impl AsRef<str>) -> Option<ClipId> {
+        self.clip_name_lookup.iter().find_map(|(k, v)| {
+            if v.as_str() == name.as_ref() {
+                Some(*k)
+            } else {
+                None
+            }
+        })
     }
 
     /// Returns true if a clip has the given name.
@@ -169,10 +175,10 @@ impl AnimationLibrary {
     ///
     /// * `clip_id` - the ID of the clip to check the name of
     /// * `name` - the name to check
-    pub fn is_clip_name(&self, clip_id: ClipId, name: impl Into<String>) -> bool {
+    pub fn is_clip_name(&self, clip_id: ClipId, name: impl AsRef<str>) -> bool {
         self.clip_name_lookup
-            .get(&name.into())
-            .map(|id| *id == clip_id)
+            .get(&clip_id)
+            .map(|v| v == name.as_ref())
             .unwrap_or(false)
     }
 
@@ -272,25 +278,26 @@ impl AnimationLibrary {
     pub fn name_animation(
         &mut self,
         animation_id: AnimationId,
-        name: impl Into<String>,
+        name: impl AsRef<str>,
     ) -> Result<(), LibraryError> {
-        let name = name.into();
+        let name = name.as_ref();
 
-        if let Some(named_animation_id) = self.animation_name_lookup.get(&name) {
+        if let Some(existing_animation_id) = self.animation_with_name(name) {
             // The animation already has this name: no-op
-            if *named_animation_id == animation_id {
+            if existing_animation_id == animation_id {
                 Ok(())
             } else {
                 Err(LibraryError::NameAlreadyTaken)
             }
         } else {
-            self.animation_name_lookup.insert(name, animation_id);
+            self.animation_name_lookup
+                .insert(animation_id, name.to_string());
             Ok(())
         }
     }
 
     /// Returns all the animation names registered in the library.
-    pub fn animation_names(&self) -> &HashMap<String, AnimationId> {
+    pub fn animation_names(&self) -> &HashMap<AnimationId, String> {
         &self.animation_name_lookup
     }
 
@@ -299,8 +306,16 @@ impl AnimationLibrary {
     /// # Arguments
     ///
     /// * `name` - the animation name
-    pub fn animation_with_name(&self, name: impl Into<String>) -> Option<AnimationId> {
-        self.animation_name_lookup.get(&name.into()).copied()
+    pub fn animation_with_name(&self, name: impl AsRef<str>) -> Option<AnimationId> {
+        self.animation_name_lookup.iter().find_map(
+            |(k, v)| {
+                if v == name.as_ref() {
+                    Some(*k)
+                } else {
+                    None
+                }
+            },
+        )
     }
 
     /// Returns true if an animation has the given name.
@@ -309,10 +324,10 @@ impl AnimationLibrary {
     ///
     /// * `animation_id` - the ID of the animation to check the name of
     /// * `name` - the name to check
-    pub fn is_animation_name(&self, animation_id: AnimationId, name: impl Into<String>) -> bool {
+    pub fn is_animation_name(&self, animation_id: AnimationId, name: impl AsRef<str>) -> bool {
         self.animation_name_lookup
-            .get(&name.into())
-            .map(|id| *id == animation_id)
+            .get(&animation_id)
+            .map(|v| v == name.as_ref())
             .unwrap_or(false)
     }
 
@@ -380,25 +395,25 @@ impl AnimationLibrary {
     pub fn name_marker(
         &mut self,
         marker_id: AnimationMarkerId,
-        name: impl Into<String>,
+        name: impl AsRef<str>,
     ) -> Result<(), LibraryError> {
-        let name = name.into();
+        let name = name.as_ref();
 
-        if let Some(named_marker_id) = self.marker_name_lookup.get(&name) {
+        if let Some(existing_marker_id) = self.marker_with_name(name) {
             // The marker already has this name: no-op
-            if *named_marker_id == marker_id {
+            if existing_marker_id == marker_id {
                 Ok(())
             } else {
                 Err(LibraryError::NameAlreadyTaken)
             }
         } else {
-            self.marker_name_lookup.insert(name, marker_id);
+            self.marker_name_lookup.insert(marker_id, name.to_string());
             Ok(())
         }
     }
 
     /// Returns all the marker names registered in the library.
-    pub fn marker_names(&self) -> &HashMap<String, AnimationMarkerId> {
+    pub fn marker_names(&self) -> &HashMap<AnimationMarkerId, String> {
         &self.marker_name_lookup
     }
 
@@ -407,8 +422,14 @@ impl AnimationLibrary {
     /// # Arguments
     ///
     /// * `name` - the marker name
-    pub fn marker_with_name(&self, name: impl Into<String>) -> Option<AnimationMarkerId> {
-        self.marker_name_lookup.get(&name.into()).copied()
+    pub fn marker_with_name(&self, name: impl AsRef<str>) -> Option<AnimationMarkerId> {
+        self.marker_name_lookup.iter().find_map(|(k, v)| {
+            if v.as_str() == name.as_ref() {
+                Some(*k)
+            } else {
+                None
+            }
+        })
     }
 
     /// Returns true if an animation marker has the given name.
@@ -417,10 +438,10 @@ impl AnimationLibrary {
     ///
     /// * `marker_id` - the ID of the marker to check the name of
     /// * `name` - the name to check
-    pub fn is_marker_name(&self, marker_id: AnimationMarkerId, name: impl Into<String>) -> bool {
+    pub fn is_marker_name(&self, marker_id: AnimationMarkerId, name: impl AsRef<str>) -> bool {
         self.marker_name_lookup
-            .get(&name.into())
-            .map(|id| *id == marker_id)
+            .get(&marker_id)
+            .map(|v| v == name.as_ref())
             .unwrap_or(false)
     }
 
