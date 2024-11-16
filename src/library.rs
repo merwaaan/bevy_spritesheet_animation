@@ -169,6 +169,21 @@ impl AnimationLibrary {
         })
     }
 
+    /// Returns the name of the clip with the given ID if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `clip_id` - the clip id
+    pub fn get_clip_name(&self, clip_id: ClipId) -> Option<&str> {
+        self.clip_name_lookup.iter().find_map(|(k, v)| {
+            if k == &clip_id {
+                Some(v.as_str())
+            } else {
+                None
+            }
+        })
+    }
+
     /// Returns true if a clip has the given name.
     ///
     /// # Arguments
@@ -318,6 +333,21 @@ impl AnimationLibrary {
         )
     }
 
+    /// Returns the name of the animation with the given ID if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `animation_id` - the animation id
+    pub fn get_animation_name(&self, animation_id: AnimationId) -> Option<&str> {
+        self.animation_name_lookup.iter().find_map(|(k, v)| {
+            if k == &animation_id {
+                Some(v.as_str())
+            } else {
+                None
+            }
+        })
+    }
+
     /// Returns true if an animation has the given name.
     ///
     /// # Arguments
@@ -426,6 +456,21 @@ impl AnimationLibrary {
         self.marker_name_lookup.iter().find_map(|(k, v)| {
             if v.as_str() == name.as_ref() {
                 Some(*k)
+            } else {
+                None
+            }
+        })
+    }
+
+    /// Returns the name of the marker with the given ID if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `marker_id` - the marker id
+    pub fn get_marker_name(&self, marker_id: AnimationMarkerId) -> Option<&str> {
+        self.marker_name_lookup.iter().find_map(|(k, v)| {
+            if k == &marker_id {
+                Some(v.as_str())
             } else {
                 None
             }
