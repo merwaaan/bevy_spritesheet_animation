@@ -31,3 +31,6 @@ inherits = "release"
 [[bench]]
 name = "basic"
 harness = false
+
+[lints]
+clippy.type_complexity = "allow"
