@@ -8,11 +8,7 @@ use context::*;
 fn library_available_as_a_resource() {
     let ctx = Context::new();
 
-    assert!(ctx
-        .app
-        .world()
-        .get_resource::<AnimationLibrary>()
-        .is_some());
+    assert!(ctx.app.world().get_resource::<AnimationLibrary>().is_some());
 }
 
 #[test]
