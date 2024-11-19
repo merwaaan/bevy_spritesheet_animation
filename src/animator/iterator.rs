@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use bevy::{log::warn, reflect::prelude::*};
 
@@ -14,7 +14,7 @@ use super::cache::{AnimationCache, AnimationCacheEvent, CacheFrame};
 #[reflect(Debug)]
 pub struct IteratorFrame {
     pub atlas_index: usize,
-    pub duration: u32,
+    pub duration: Duration,
     pub clip_id: ClipId,
     pub clip_repetition: usize,
     pub animation_repetition: usize,

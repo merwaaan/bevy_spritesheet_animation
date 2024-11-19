@@ -1,5 +1,3 @@
-use bevy::{log::warn, reflect::prelude::*};
-
 use crate::{
     animation::{AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat},
     clip::{Clip, ClipId},
@@ -8,13 +6,15 @@ use crate::{
     library::AnimationLibrary,
     CRATE_NAME,
 };
+use bevy::{log::warn, reflect::prelude::*};
+use std::time::Duration;
 
 /// A pre-computed frame of animation, ready to be played back.
 #[derive(Debug, Clone, Reflect)]
 #[reflect(Debug)]
 pub struct CacheFrame {
     pub atlas_index: usize,
-    pub duration: u32,
+    pub duration: Duration,
     pub clip_id: ClipId,
     pub clip_repetition: usize,
     pub events: Vec<AnimationCacheEvent>,
@@ -242,7 +242,7 @@ impl ClipData {
 #[derive(Clone)]
 struct Frame {
     atlas_index: usize,
-    duration: u32,
+    duration: Duration,
     markers: Vec<AnimationMarkerId>,
 }
 
@@ -271,12 +271,12 @@ impl ClipRepetitionFrames {
 
                     Frame {
                         atlas_index: *frame_atlas_index,
-                        duration: frame_duration_ms,
+                        duration: Duration::from_millis(frame_duration_ms as u64),
                         markers,
                     }
                 })
                 // Filter out frames with no duration
-                .filter(|frame| frame.duration > 0)
+                .filter(|frame| !frame.duration.is_zero())
                 .collect(),
         }
     }
@@ -502,7 +502,7 @@ impl AnimationFrames {
     }
 }
 
-fn apply_easing(frame_durations: Vec<&mut u32>, easing: Easing) {
+fn apply_easing(frame_durations: Vec<&mut Duration>, easing: Easing) {
     // Linear easing: there's nothing to do
 
     if matches!(easing, Easing::Linear) {
@@ -511,7 +511,7 @@ fn apply_easing(frame_durations: Vec<&mut u32>, easing: Easing) {
 
     // If the total duration is zero, exit early to prevent arithmetic errors
 
-    let total_duration_ms: u32 = frame_durations.iter().map(|f| **f).sum();
+    let total_duration_ms: u32 = frame_durations.iter().map(|d| d.as_millis() as u32).sum();
 
     if total_duration_ms == 0 {
         warn!("{CRATE_NAME}: zero duration, cannot apply easing");
@@ -537,11 +537,11 @@ fn apply_easing(frame_durations: Vec<&mut u32>, easing: Easing) {
 
         let eased_duration = (eased_time - previous_eased_time) as u32;
 
-        accumulated_time += *frame_duration;
+        accumulated_time += frame_duration.as_millis();
         previous_eased_time = eased_time;
 
         // Update the frame
 
-        *frame_duration = eased_duration;
+        *frame_duration = Duration::from_millis(eased_duration as u64);
     }
 }

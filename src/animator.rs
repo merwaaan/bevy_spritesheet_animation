@@ -1,6 +1,14 @@
 pub mod cache;
 mod iterator;
 
+use self::{iterator::AnimationIterator, iterator::IteratorFrame};
+use crate::{
+    animation::AnimationId,
+    components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
+    events::AnimationEvent,
+    library::AnimationLibrary,
+};
+use bevy::time::Time;
 use bevy::{
     ecs::{
         entity::Entity,
@@ -10,19 +18,9 @@ use bevy::{
     },
     reflect::prelude::*,
     sprite::TextureAtlas,
-    time::Time,
 };
 use iterator::AnimationIteratorEvent;
-use std::collections::HashMap;
-
-use crate::{
-    animation::AnimationId,
-    components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
-    events::AnimationEvent,
-    library::AnimationLibrary,
-};
-
-use self::{iterator::AnimationIterator, iterator::IteratorFrame};
+use std::{collections::HashMap, time::Duration};
 
 #[derive(Debug, Reflect)]
 #[reflect(Debug)]
@@ -35,7 +33,7 @@ struct AnimationInstance {
     current_frame: Option<(IteratorFrame, AnimationProgress)>,
 
     /// Time accumulated since the last frame
-    accumulated_time: u32,
+    accumulated_time: Duration,
 }
 
 /// The animator is responsible for playing animations as time advances.
@@ -54,7 +52,7 @@ impl Animator {
         time: &Time,
         library: &AnimationLibrary,
         event_writer: &mut EventWriter<AnimationEvent>,
-        query: &mut Query<(Entity, &mut SpritesheetAnimation, &mut TextureAtlas)>,
+        query: &mut Query<(Entity, &mut SpritesheetAnimation, Option<&mut TextureAtlas>)>,
     ) {
         // Clear outdated animation instances associated to entities that do not have the component anymore
 
@@ -94,7 +92,7 @@ impl Animator {
                     &mut iterator,
                     &mut entity_animation,
                     &entity,
-                    &mut entity_atlas,
+                    entity_atlas.as_deref_mut(),
                     event_writer,
                 );
 
@@ -104,7 +102,7 @@ impl Animator {
                         animation_id: entity_animation.animation_id,
                         iterator,
                         current_frame: first_frame,
-                        accumulated_time: 0,
+                        accumulated_time: Duration::ZERO,
                     },
                 );
             }
@@ -124,12 +122,12 @@ impl Animator {
                         &mut animation_instance.iterator,
                         &mut entity_animation,
                         &entity,
-                        &mut entity_atlas,
+                        entity_atlas.as_deref_mut(),
                         event_writer,
                     )
                     .inspect(|new_frame| {
                         animation_instance.current_frame = Some(new_frame.clone());
-                        animation_instance.accumulated_time = 0;
+                        animation_instance.accumulated_time = Duration::ZERO;
                     });
                 } else {
                     // Restore to the last valid progress if invalid
@@ -152,7 +150,7 @@ impl Animator {
             // Update the animation
 
             animation_instance.accumulated_time +=
-                (time.delta_seconds() * entity_animation.speed_factor * 1000.0) as u32;
+                Duration::from_secs_f32(time.delta_seconds() * entity_animation.speed_factor);
 
             while let Some(current_frame) = animation_instance
                 .current_frame
@@ -169,7 +167,7 @@ impl Animator {
                     &mut animation_instance.iterator,
                     &mut entity_animation,
                     &entity,
-                    &mut entity_atlas,
+                    entity_atlas.as_deref_mut(),
                     event_writer,
                 )
                 .or_else(|| {
@@ -211,7 +209,7 @@ impl Animator {
         iterator: &mut AnimationIterator,
         animation: &mut SpritesheetAnimation,
         entity: &Entity,
-        atlas: &mut TextureAtlas,
+        maybe_atlas: Option<&mut TextureAtlas>,
         event_writer: &mut EventWriter<AnimationEvent>,
     ) -> Option<(IteratorFrame, AnimationProgress)> {
         let maybe_frame = iterator.next();
@@ -219,9 +217,11 @@ impl Animator {
         if let Some((frame, progress)) = &maybe_frame {
             // Update the sprite
 
-            if atlas.index != frame.atlas_index {
-                // prevents needless "Changed" events
-                atlas.index = frame.atlas_index;
+            if let Some(atlas) = maybe_atlas {
+                if atlas.index != frame.atlas_index {
+                    // prevents needless "Changed" events
+                    atlas.index = frame.atlas_index;
+                }
             }
 
             animation.progress = *progress;
