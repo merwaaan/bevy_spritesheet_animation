@@ -34,7 +34,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         // Add the plugin to enable animations.
         // This makes the AnimationLibrary resource available to your systems.
-        .add_plugins(SpritesheetAnimationPlugin)
+        .add_plugins(SpritesheetAnimationPlugin::default())
         .add_systems(Startup, setup)
         .run();
 }

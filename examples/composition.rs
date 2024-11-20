@@ -10,7 +10,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins.set(ImagePlugin::default_nearest()),
-            SpritesheetAnimationPlugin,
+            SpritesheetAnimationPlugin::default(),
         ))
         .add_systems(Startup, setup)
         .run();

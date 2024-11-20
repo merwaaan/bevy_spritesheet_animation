@@ -18,7 +18,7 @@ pub fn play_animations(
     library: Res<AnimationLibrary>,
     mut animator: ResMut<Animator>,
     mut event_writer: EventWriter<AnimationEvent>,
-    mut query: Query<(Entity, &mut SpritesheetAnimation, &mut TextureAtlas)>,
+    mut query: Query<(Entity, &mut SpritesheetAnimation, Option<&mut TextureAtlas>)>,
 ) {
     animator.update(&time, &library, &mut event_writer, &mut query);
 }

@@ -30,7 +30,7 @@ pub struct Sprite3dSystemSet;
 /// # return; // cannot actually execute this during CI builds as there are no displays
 /// let app = App::new()
 ///     .add_plugins(DefaultPlugins)
-///     .add_plugins(SpritesheetAnimationPlugin);
+///     .add_plugins(SpritesheetAnimationPlugin::default());
 ///
 /// // ...
 /// ```
@@ -50,7 +50,12 @@ pub struct Sprite3dSystemSet;
 ///     // ...
 /// }
 /// ```
-pub struct SpritesheetAnimationPlugin;
+pub struct SpritesheetAnimationPlugin {
+    /// Determines whether to run 3D-related systems.
+    ///
+    /// This allows using the plugin without `bevy_render`, for example in a headless environment with `MinimalPlugin`.
+    pub enable_3d: bool,
+}
 
 impl Plugin for SpritesheetAnimationPlugin {
     fn build(&self, app: &mut App) {
@@ -61,18 +66,22 @@ impl Plugin for SpritesheetAnimationPlugin {
             // The animator responsible for running animations
             .init_resource::<Animator>()
             .register_type::<Animator>()
-            // Cache for 3D sprites
-            .init_resource::<sprite3d::Cache>()
-            .register_type::<sprite3d::Cache>()
             // Animations events
             .add_event::<AnimationEvent>()
             // Systems
             .add_systems(
                 PostUpdate,
-                (
-                    // Main animation system
-                    spritesheet_animation::play_animations.in_set(AnimationSystemSet),
-                    // 3D sprite systems
+                // Main animation system
+                spritesheet_animation::play_animations.in_set(AnimationSystemSet),
+            );
+        if self.enable_3d {
+            app
+                // Cache for 3D sprites
+                .init_resource::<sprite3d::Cache>()
+                .register_type::<sprite3d::Cache>()
+                // 3D sprite systems
+                .add_systems(
+                    PostUpdate,
                     (
                         sprite3d::setup_rendering,
                         sprite3d::sync_when_sprites_change,
@@ -80,7 +89,13 @@ impl Plugin for SpritesheetAnimationPlugin {
                     )
                         .in_set(Sprite3dSystemSet)
                         .after(AnimationSystemSet),
-                ),
-            );
+                );
+        }
+    }
+}
+
+impl Default for SpritesheetAnimationPlugin {
+    fn default() -> Self {
+        Self { enable_3d: true }
     }
 }

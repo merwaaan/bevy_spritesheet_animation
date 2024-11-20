@@ -238,11 +238,14 @@ fn pause_resume() {
     ctx.run(50);
     ctx.check(4, []);
 
-    ctx.run(150);
+    ctx.run(50);
     ctx.check(5, []);
 
-    ctx.run(100);
+    ctx.run(150);
     ctx.check(6, []);
+
+    ctx.run(100);
+    ctx.check(7, []);
 
     // Pause
 
@@ -252,7 +255,7 @@ fn pause_resume() {
 
     for _ in 0..100 {
         ctx.run(100);
-        ctx.check(6, []); // Stays on the same frame
+        ctx.check(7, []); // Stays on the same frame
     }
 
     // Resume
@@ -261,8 +264,17 @@ fn pause_resume() {
         anim.playing = true;
     });
 
+    // wrap
+
     ctx.run(100);
-    ctx.check(7, []);
+    ctx.check(
+        4,
+        [
+            ctx.clip_rep_end(animation_id, clip_id, 0),
+            ctx.clip_end(animation_id, clip_id),
+            ctx.anim_rep_end(animation_id, 0),
+        ],
+    );
 }
 
 #[test]

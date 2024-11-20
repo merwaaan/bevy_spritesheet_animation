@@ -25,7 +25,7 @@ fn create_app() -> App {
                 .into(),
                 ..default()
             }),
-        SpritesheetAnimationPlugin,
+        SpritesheetAnimationPlugin::default(),
     ))
     .finish();
     app
@@ -71,10 +71,7 @@ fn playback(bencher: Bencher, (animation_count, sprite_count): (usize, usize)) {
 
     let mut rng = rand::thread_rng();
     for _ in 0..sprite_count {
-        create_sprite(
-            &mut app,
-            animation_ids.iter().choose(&mut rng).unwrap().clone(),
-        );
+        create_sprite(&mut app, *animation_ids.iter().choose(&mut rng).unwrap());
     }
 
     let mut time = Time::new_with(());
@@ -83,7 +80,7 @@ fn playback(bencher: Bencher, (animation_count, sprite_count): (usize, usize)) {
         Res<AnimationLibrary>,
         ResMut<Animator>,
         EventWriter<AnimationEvent>,
-        Query<(Entity, &mut SpritesheetAnimation, &mut TextureAtlas)>,
+        Query<(Entity, &mut SpritesheetAnimation, Option<&mut TextureAtlas>)>,
     )> = SystemState::new(app.world_mut());
 
     bencher.bench_local(|| {
