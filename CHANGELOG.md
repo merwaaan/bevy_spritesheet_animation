@@ -1,12 +1,25 @@
 # Changelog
 
+## 0.4.4 - 2024-11-20
+
+### Added
+
+- Add `get_clip_name()`, `get_animation_name()` and `get_marker_name()` to `AnimationLibrary` (by mirsella)
+- Add an `enable_3d` option to `SpritesheetAnimationPlugin` (by mirsella).
+  This is especially useful to use this plugin in a headless app without bevy_render.
+  Due to this new field, it is now necessary to use `SpritesheetAnimationPlugin::default()` when configuring the app.
+
+### Fixed
+
+- Fixed some timing bugs due to the internal use of u32 instead of std::time::Duration
+
 ## 0.4.3 - 2024-11-11
 
 ### Added
 
 - Add `clip_names()`, `animation_names()` and `marker_names()` methods to the library
 
-### Changes
+### Changed
 
 - Add reflection to types and registered resources (by mgi388)
 - Make system sets public (by mgi388)
