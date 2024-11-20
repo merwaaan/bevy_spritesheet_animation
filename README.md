@@ -283,6 +283,7 @@ For more examples, browse the [examples/](examples) directory.
 | [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                             |
 | [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations    |
 | [events](examples/events.rs)           | Shows how to react to animations reaching points of interest with events |
+| [headless](examples/headless.rs)       | Shows how to setup a headless Bevy app without rendering                 |
 | [stress](examples/stress.rs)           | Stress test with thousands of animated sprites (either 2D or 3D)         |
 
 # Compatibility
