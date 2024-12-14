@@ -4,13 +4,15 @@ use bevy::{
         event::EventWriter,
         system::{Query, Res, ResMut},
     },
-    sprite::TextureAtlas,
+    sprite::Sprite,
     time::Time,
 };
 
 use crate::{
-    animator::Animator, components::spritesheet_animation::SpritesheetAnimation,
-    events::AnimationEvent, library::AnimationLibrary,
+    animator::Animator,
+    components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
+    events::AnimationEvent,
+    library::AnimationLibrary,
 };
 
 pub fn play_animations(
@@ -18,7 +20,12 @@ pub fn play_animations(
     library: Res<AnimationLibrary>,
     mut animator: ResMut<Animator>,
     mut event_writer: EventWriter<AnimationEvent>,
-    mut query: Query<(Entity, &mut SpritesheetAnimation, Option<&mut TextureAtlas>)>,
+    mut query: Query<(
+        Entity,
+        &mut SpritesheetAnimation,
+        Option<&mut Sprite>,
+        Option<&mut Sprite3d>,
+    )>,
 ) {
     animator.update(&time, &library, &mut event_writer, &mut query);
 }

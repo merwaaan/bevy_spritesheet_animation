@@ -1,7 +1,7 @@
 // This example shows how to create controllable character with multiple animations.
 //
 // - We'll create a few animations for our character (idle, run, shoot) in a setup system
-// - We'll move the character with the keyboard and switch to the appropriate animation in another system
+// - We'll move the character with the keyboard and switch between animations in another system
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -15,18 +15,18 @@ fn main() {
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin::default(),
         ))
-        .add_systems(Startup, setup)
+        .add_systems(Startup, spawn_character)
         .add_systems(Update, control_character)
         .run();
 }
 
-fn setup(
+fn spawn_character(
     mut commands: Commands,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
     // Create the animations
 
@@ -70,19 +70,15 @@ fn setup(
 
     // Spawn the character
 
-    let texture = assets.load("character.png");
+    let image = assets.load("character.png");
 
-    let layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        ..default()
+    };
 
     commands.spawn((
-        SpriteBundle {
-            texture,
-            ..default()
-        },
-        TextureAtlas {
-            layout,
-            ..default()
-        },
+        Sprite::from_atlas_image(image, atlas),
         SpritesheetAnimation::from_id(idle_animation_id),
     ));
 }
@@ -99,9 +95,9 @@ fn control_character(
     mut events: EventReader<AnimationEvent>,
     mut characters: Query<(
         Entity,
-        &mut Transform,
         &mut Sprite,
         &mut SpritesheetAnimation,
+        &mut Transform,
         Option<&Shooting>,
     )>,
 ) {
@@ -109,7 +105,7 @@ fn control_character(
 
     const CHARACTER_SPEED: f32 = 150.0;
 
-    for (entity, mut transform, mut sprite, mut animation, shooting) in &mut characters {
+    for (entity, mut sprite, mut animation, mut transform, shooting) in &mut characters {
         // Except if they're shooting, in which case we wait for the animation to end
 
         if shooting.is_some() {
@@ -140,7 +136,7 @@ fn control_character(
 
             // Move
 
-            transform.translation -= Vec3::X * time.delta_seconds() * CHARACTER_SPEED;
+            transform.translation -= Vec3::X * time.delta_secs() * CHARACTER_SPEED;
             sprite.flip_x = true;
         }
         // Move right
@@ -155,7 +151,7 @@ fn control_character(
 
             // Move
 
-            transform.translation += Vec3::X * time.delta_seconds() * CHARACTER_SPEED;
+            transform.translation += Vec3::X * time.delta_secs() * CHARACTER_SPEED;
             sprite.flip_x = false;
         }
         // Idle

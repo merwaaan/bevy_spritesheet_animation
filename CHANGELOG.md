@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.0 - 2024-12-14
+
+### Added
+
+- Add support for Bevy 0.15
+
+### Removed
+
+- Remove `Sprite3dBundle` and `Sprite3dBundle`.
+  Thanks to required components, simply adding a `Sprite3d` component will just work.
+
 ## 1.0.0 - 2024-11-20
 
 ### Added
@@ -11,7 +22,7 @@
 
 ### Fixed
 
-- Fixed some timing bugs due to the internal use of u32 instead of std::time::Duration
+- Fix some timing bugs due to the internal use of u32 instead of std::time::Duration
 
 ## 0.4.3 - 2024-11-11
 

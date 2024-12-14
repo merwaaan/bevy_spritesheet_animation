@@ -1,14 +1,16 @@
 pub mod cache;
 mod iterator;
 
-use self::{iterator::AnimationIterator, iterator::IteratorFrame};
 use crate::{
     animation::AnimationId,
-    components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
+    animator::iterator::{AnimationIterator, IteratorFrame},
+    components::{
+        sprite3d::Sprite3d,
+        spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
+    },
     events::AnimationEvent,
     library::AnimationLibrary,
 };
-use bevy::time::Time;
 use bevy::{
     ecs::{
         entity::Entity,
@@ -17,7 +19,8 @@ use bevy::{
         system::{Query, Resource},
     },
     reflect::prelude::*,
-    sprite::TextureAtlas,
+    sprite::Sprite,
+    time::Time,
 };
 use iterator::AnimationIteratorEvent;
 use std::{collections::HashMap, time::Duration};
@@ -52,7 +55,12 @@ impl Animator {
         time: &Time,
         library: &AnimationLibrary,
         event_writer: &mut EventWriter<AnimationEvent>,
-        query: &mut Query<(Entity, &mut SpritesheetAnimation, Option<&mut TextureAtlas>)>,
+        query: &mut Query<(
+            Entity,
+            &mut SpritesheetAnimation,
+            Option<&mut Sprite>,
+            Option<&mut Sprite3d>,
+        )>,
     ) {
         // Clear outdated animation instances associated to entities that do not have the component anymore
 
@@ -61,7 +69,9 @@ impl Animator {
 
         // Run animations for all the entities
 
-        for (entity, mut entity_animation, mut entity_atlas) in query.iter_mut() {
+        for (entity, mut entity_animation, mut maybe_entity_sprite, mut maybe_entity_3dsprite) in
+            query.iter_mut()
+        {
             // Create a new animation instance if:
             let needs_new_animation_instance = match self.animation_instances.get(&entity) {
                 // The entity has an animation instance already but it switched animation
@@ -92,7 +102,8 @@ impl Animator {
                     &mut iterator,
                     &mut entity_animation,
                     &entity,
-                    entity_atlas.as_deref_mut(),
+                    maybe_entity_sprite.as_deref_mut(),
+                    maybe_entity_3dsprite.as_deref_mut(),
                     event_writer,
                 );
 
@@ -122,7 +133,8 @@ impl Animator {
                         &mut animation_instance.iterator,
                         &mut entity_animation,
                         &entity,
-                        entity_atlas.as_deref_mut(),
+                        maybe_entity_sprite.as_deref_mut(),
+                        maybe_entity_3dsprite.as_deref_mut(),
                         event_writer,
                     )
                     .inspect(|new_frame| {
@@ -150,7 +162,7 @@ impl Animator {
             // Update the animation
 
             animation_instance.accumulated_time +=
-                Duration::from_secs_f32(time.delta_seconds() * entity_animation.speed_factor);
+                Duration::from_secs_f32(time.delta_secs() * entity_animation.speed_factor);
 
             while let Some(current_frame) = animation_instance
                 .current_frame
@@ -167,7 +179,8 @@ impl Animator {
                     &mut animation_instance.iterator,
                     &mut entity_animation,
                     &entity,
-                    entity_atlas.as_deref_mut(),
+                    maybe_entity_sprite.as_deref_mut(),
+                    maybe_entity_3dsprite.as_deref_mut(),
                     event_writer,
                 )
                 .or_else(|| {
@@ -209,17 +222,24 @@ impl Animator {
         iterator: &mut AnimationIterator,
         animation: &mut SpritesheetAnimation,
         entity: &Entity,
-        maybe_atlas: Option<&mut TextureAtlas>,
+        maybe_sprite: Option<&mut Sprite>,
+        maybe_3dsprite: Option<&mut Sprite3d>,
         event_writer: &mut EventWriter<AnimationEvent>,
     ) -> Option<(IteratorFrame, AnimationProgress)> {
         let maybe_frame = iterator.next();
 
         if let Some((frame, progress)) = &maybe_frame {
             // Update the sprite
+            // (we compare the indices to prevent needless "Changed" events)
 
-            if let Some(atlas) = maybe_atlas {
+            if let Some(atlas) = maybe_sprite.and_then(|sprite| sprite.texture_atlas.as_mut()) {
                 if atlas.index != frame.atlas_index {
-                    // prevents needless "Changed" events
+                    atlas.index = frame.atlas_index;
+                }
+            }
+
+            if let Some(atlas) = maybe_3dsprite.and_then(|sprite| sprite.texture_atlas.as_mut()) {
+                if atlas.index != frame.atlas_index {
                     atlas.index = frame.atlas_index;
                 }
             }

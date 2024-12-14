@@ -74,6 +74,7 @@ impl Plugin for SpritesheetAnimationPlugin {
                 // Main animation system
                 spritesheet_animation::play_animations.in_set(AnimationSystemSet),
             );
+
         if self.enable_3d {
             app
                 // Cache for 3D sprites

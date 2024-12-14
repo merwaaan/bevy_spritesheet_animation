@@ -473,18 +473,15 @@ impl Spritesheet {
     ///
     ///     // ... omitted: create an animation ...
     ///
-    ///     let layout = atlas_layouts.add(spritesheet.atlas_layout(100, 200));
+    ///     let image = assets.load("character.png");
+    ///
+    ///     let atlas = TextureAtlas {
+    ///         layout: atlas_layouts.add(spritesheet.atlas_layout(100, 200)),
+    ///         ..default()
+    ///     };
     ///
     ///     commands.spawn((
-    ///         SpriteBundle {
-    ///             texture: assets.load("character.png"),
-    ///             ..default()
-    ///         },
-    ///         TextureAtlas {
-    ///             layout,
-    ///             ..default()
-    ///         },
-    ///         // Add a SpritesheetAnimation component that references our animation
+    ///         Sprite::from_atlas_image(image, atlas),
     ///         SpritesheetAnimation::from_id(animation_id),
     ///     ));
     /// }

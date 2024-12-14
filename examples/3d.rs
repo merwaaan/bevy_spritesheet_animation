@@ -13,12 +13,12 @@ fn main() {
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin::default(),
         ))
-        .add_systems(Startup, setup)
+        .add_systems(Startup, spawn_sprites)
         .add_systems(Update, (update_on_keypress, orbit, draw_gizmos))
         .run();
 }
 
-fn setup(
+fn spawn_sprites(
     mut commands: Commands,
     mut library: ResMut<AnimationLibrary>,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
@@ -26,10 +26,10 @@ fn setup(
 ) {
     // 3D sprites require a 3D camera
 
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 1000.0, 4000.0).looking_at(Vec3::ZERO, Dir3::Y),
-        ..default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0.0, 1000.0, 4000.0).looking_at(Vec3::ZERO, Dir3::Y),
+    ));
 
     // Create an animation as usual
 
@@ -43,39 +43,45 @@ fn setup(
 
     let animation_id = library.register_animation(animation);
 
-    // Create an image and an atlas layout like you would for any Bevy sprite
+    // Create an image and a texture atlas like you would for any Bevy sprite
 
-    let texture = assets.load("character.png");
+    let image = assets.load("character.png");
 
-    let atlas_layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
+        ..default()
+    };
 
     // Spawn 3D sprites
 
     // A few 3D sprites orbiting around the center with various parameters
 
-    let sprite_builders = [
-        Sprite3dBuilder::from_image(texture.clone()),
-        Sprite3dBuilder::from_image(texture.clone()).with_flip(true, false),
-        Sprite3dBuilder::from_image(texture.clone()).with_flip(false, true),
-        Sprite3dBuilder::from_image(texture.clone()).with_flip(true, true),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomLeft),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomCenter),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::BottomRight),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::CenterLeft),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::Center),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::CenterRight),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::TopLeft),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::TopCenter),
-        Sprite3dBuilder::from_image(texture.clone()).with_anchor(Anchor::TopRight),
-        Sprite3dBuilder::from_image(texture.clone()).with_custom_size(Vec2::new(100.0, 400.0)),
+    let sprites = [
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_flip(true, false),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_flip(false, true),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_flip(true, true),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BottomLeft),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BottomCenter),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BottomRight),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::CenterLeft),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::Center),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::CenterRight),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TopLeft),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TopCenter),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TopRight),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone())
+            .with_custom_size(Vec2::new(100.0, 400.0)),
     ];
 
-    for (i, builder) in sprite_builders.iter().enumerate() {
+    let sprite_count = sprites.len();
+
+    for (i, sprite) in sprites.into_iter().enumerate() {
         commands.spawn((
-            builder.clone().with_atlas(atlas_layout.clone()).build(),
+            sprite,
             SpritesheetAnimation::from_id(animation_id),
             Orbit {
-                start_angle: i as f32 * std::f32::consts::TAU / sprite_builders.len() as f32,
+                start_angle: i as f32 * std::f32::consts::TAU / sprite_count as f32,
             },
         ));
     }
@@ -83,20 +89,15 @@ fn setup(
     // A non-animated 3D sprite in the center
 
     commands.spawn(
-        Sprite3dBuilder::from_image(texture.clone())
-            .with_atlas(atlas_layout.clone())
-            .with_color(Color::linear_rgb(1.0, 0.0, 0.0))
-            .build(),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone())
+            .with_color(Color::linear_rgb(1.0, 0.0, 0.0)),
     );
 
     // Help text
 
-    commands.spawn(TextBundle::from_section(
-        "C: random colors\nX: flip on X\nY: flip on Y\nA: random anchors\nS: random sizes\nR: reset",
-        TextStyle {
-            font_size: 30.0,
-            ..default()
-        },
+    commands.spawn((Text(
+        "C: random colors\nX: flip on X\nY: flip on Y\nA: random anchors\nS: random sizes\nR: reset".to_owned()),
+        TextFont::from_font_size(30.0)
     ));
 }
 
@@ -166,8 +167,8 @@ struct Orbit {
 
 fn orbit(time: Res<Time>, mut query: Query<(&Orbit, &mut Transform)>) {
     for (orbit, mut transform) in &mut query {
-        transform.translation.x = (orbit.start_angle + time.elapsed_seconds()).cos() * 1500.0;
-        transform.translation.z = (orbit.start_angle + time.elapsed_seconds()).sin() * 1500.0;
+        transform.translation.x = (orbit.start_angle + time.elapsed_secs()).cos() * 1500.0;
+        transform.translation.z = (orbit.start_angle + time.elapsed_secs()).sin() * 1500.0;
     }
 }
 

@@ -16,17 +16,17 @@ fn main() {
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin::default(),
         ))
-        .add_systems(Startup, setup)
+        .add_systems(Startup, spawn_animations)
         .run();
 }
 
-fn setup(
+fn spawn_animations(
     mut commands: Commands,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
     // Create a clip
 
@@ -38,9 +38,12 @@ fn setup(
 
     // Load assets for the sprites
 
-    let texture = assets.load("ball.png");
+    let image = assets.load("ball.png");
 
-    let layout = atlas_layouts.add(spritesheet.atlas_layout(100, 20));
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(spritesheet.atlas_layout(100, 20)),
+        ..default()
+    };
 
     // Create an animated sprite for each parameter set
 
@@ -109,16 +112,9 @@ fn setup(
 
         commands
             .spawn((
-                SpriteBundle {
-                    texture: texture.clone(),
-                    transform: Transform::from_translation(grid_position(6, 6, index)),
-                    ..default()
-                },
-                TextureAtlas {
-                    layout: layout.clone(),
-                    ..default()
-                },
+                Sprite::from_atlas_image(image.clone(), atlas.clone()),
                 SpritesheetAnimation::from_id(animation_id),
+                Transform::from_translation(grid_position(6, 6, index)),
             ))
             // Add a label describing the parameters
             .with_children(|builder| {
@@ -129,18 +125,12 @@ fn setup(
                 direction.inspect(|x| description.push_str(&format!("direction: {:?}\n", x)));
                 easing.inspect(|x| description.push_str(&format!("easing: {:?}\n", x)));
 
-                builder.spawn(Text2dBundle {
-                    text: Text::from_section(
-                        &description,
-                        TextStyle {
-                            font_size: 15.0,
-                            color: Color::WHITE,
-                            ..default()
-                        },
-                    ),
-                    transform: Transform::from_xyz(0.0, -50.0, 0.0),
-                    ..default()
-                });
+                builder.spawn((
+                    Text2d(description),
+                    TextColor(Color::WHITE),
+                    TextFont::from_font_size(15.0),
+                    Transform::from_xyz(0.0, -50.0, 0.0),
+                ));
             });
     }
 }

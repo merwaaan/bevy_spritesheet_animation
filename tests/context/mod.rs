@@ -13,7 +13,7 @@ use bevy_spritesheet_animation::prelude::*;
 
 pub struct Context {
     pub app: App,
-    pub sprite: Entity,
+    pub sprite_entity: Entity,
 }
 
 impl Context {
@@ -55,7 +55,7 @@ impl Context {
 
         let assets = app.world().get_resource::<AssetServer>().unwrap();
 
-        let texture = assets.load("character.png");
+        let image = assets.load("character.png");
 
         let mut atlas_layouts = app
             .world_mut()
@@ -70,21 +70,20 @@ impl Context {
             None,
         ));
 
+        let atlas = TextureAtlas {
+            layout,
+            ..default()
+        };
+
         let sprite = app
             .world_mut()
-            .spawn((
-                SpriteBundle {
-                    texture,
-                    ..default()
-                },
-                TextureAtlas {
-                    layout,
-                    ..default()
-                },
-            ))
+            .spawn(Sprite::from_atlas_image(image, atlas))
             .id();
 
-        Self { app, sprite }
+        Self {
+            app,
+            sprite_entity: sprite,
+        }
     }
 
     pub fn library(&mut self) -> Mut<'_, AnimationLibrary> {
@@ -97,7 +96,7 @@ impl Context {
     pub fn add_animation_to_sprite(&mut self, animation_id: AnimationId) {
         self.app
             .world_mut()
-            .entity_mut(self.sprite)
+            .entity_mut(self.sprite_entity)
             .insert(SpritesheetAnimation::from_id(animation_id));
     }
 
@@ -135,7 +134,15 @@ impl Context {
     ) {
         // Check the current atlas index of the sprite
 
-        let atlas = self.get_sprite_atlas(self.sprite);
+        let entity_ref = self.app.world().entity(self.sprite_entity);
+
+        let atlas = entity_ref
+            .get::<Sprite>()
+            .and_then(|sprite| sprite.texture_atlas.as_ref())
+            .or(entity_ref
+                .get::<Sprite3d>()
+                .and_then(|sprite| sprite.texture_atlas.as_ref()))
+            .unwrap();
 
         assert_eq!(atlas.index, expected_atlas_index);
 
@@ -149,7 +156,7 @@ impl Context {
 
         let mut events: HashSet<AnimationEvent> = HashSet::new();
 
-        for event in events_resources.get_reader().read(&events_resources) {
+        for event in events_resources.get_cursor().read(&events_resources) {
             events.insert(*event);
         }
 
@@ -160,19 +167,10 @@ impl Context {
         let mut sprite_animation = self
             .app
             .world_mut()
-            .get_mut::<SpritesheetAnimation>(self.sprite)
+            .get_mut::<SpritesheetAnimation>(self.sprite_entity)
             .unwrap();
 
         f(&mut sprite_animation);
-    }
-
-    fn get_sprite_atlas(&self, entity: Entity) -> TextureAtlas {
-        self.app
-            .world()
-            .entity(entity)
-            .get::<TextureAtlas>()
-            .unwrap()
-            .clone()
     }
 
     pub fn update_sprite_animation<F: FnMut(&mut SpritesheetAnimation) -> ()>(
@@ -182,7 +180,7 @@ impl Context {
         let mut sprite_animation = self
             .app
             .world_mut()
-            .get_mut::<SpritesheetAnimation>(self.sprite)
+            .get_mut::<SpritesheetAnimation>(self.sprite_entity)
             .unwrap();
 
         builder(&mut sprite_animation);
@@ -197,7 +195,7 @@ impl Context {
         clip_repetition: usize,
     ) -> AnimationEvent {
         AnimationEvent::MarkerHit {
-            entity: self.sprite,
+            entity: self.sprite_entity,
             marker_id,
             animation_id,
             animation_repetition,
@@ -213,7 +211,7 @@ impl Context {
         clip_repetition: usize,
     ) -> AnimationEvent {
         AnimationEvent::ClipRepetitionEnd {
-            entity: self.sprite,
+            entity: self.sprite_entity,
             animation_id,
             clip_id,
             clip_repetition,
@@ -222,7 +220,7 @@ impl Context {
 
     pub fn clip_end(&self, animation_id: AnimationId, clip_id: ClipId) -> AnimationEvent {
         AnimationEvent::ClipEnd {
-            entity: self.sprite,
+            entity: self.sprite_entity,
             animation_id,
             clip_id,
         }
@@ -234,7 +232,7 @@ impl Context {
         animation_repetition: usize,
     ) -> AnimationEvent {
         AnimationEvent::AnimationRepetitionEnd {
-            entity: self.sprite,
+            entity: self.sprite_entity,
             animation_id,
             animation_repetition,
         }
@@ -242,7 +240,7 @@ impl Context {
 
     pub fn anim_end(&self, animation_id: AnimationId) -> AnimationEvent {
         AnimationEvent::AnimationEnd {
-            entity: self.sprite,
+            entity: self.sprite_entity,
             animation_id,
         }
     }

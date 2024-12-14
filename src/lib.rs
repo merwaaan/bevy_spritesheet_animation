@@ -2,7 +2,7 @@
 //!
 //!# Features
 //!
-//! - Animate 2D and [3D sprites](crate::prelude::Sprite3dBundle)! 🎉
+//! - Animate 2D and [3D sprites](crate::prelude::Sprite3d)! 🎉
 //! - A single Bevy [component](crate::prelude::SpritesheetAnimation) to add to your entities to play animations.
 //! - Tunable parameters: [duration](crate::prelude::AnimationDuration), [repetitions](crate::prelude::AnimationRepeat), [direction](crate::prelude::AnimationDirection), [easing](crate::prelude::Easing).
 //! - [Composable animations](crate::prelude::Animation) from multiple clips.
@@ -55,26 +55,21 @@
 //!     //
 //!     // See the `composition` example for more details.
 //!
-//!     // Spawn an animated sprite using Bevy's built-in SpriteBundle
+//!     // Spawn an animated sprite with a SpritesheetAnimation component that references our animation
 //!
-//!     let texture = assets.load("character.png");
+//!     let image = assets.load("character.png");
 //!
-//!     let layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+//!     let atlas = TextureAtlas {
+//!         layout:atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
+//!         ..default()
+//!     };
 //!
 //!     commands.spawn((
-//!         SpriteBundle {
-//!             texture,
-//!             ..default()
-//!         },
-//!         TextureAtlas {
-//!             layout,
-//!             ..default()
-//!         },
-//!         // Add a SpritesheetAnimation component that references our animation
+//!         Sprite::from_atlas_image(image, atlas),
 //!         SpritesheetAnimation::from_id(animation_id),
 //!     ));
 //!
-//!     commands.spawn(Camera2dBundle::default());
+//!     commands.spawn(Camera2d);
 //! }
 //! ```
 
@@ -96,10 +91,7 @@ pub mod prelude {
             Animation, AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat,
         },
         clip::{Clip, ClipId},
-        components::{
-            sprite3d::{Sprite3d, Sprite3dBuilder, Sprite3dBundle},
-            spritesheet_animation::SpritesheetAnimation,
-        },
+        components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
         easing::{Easing, EasingVariety},
         events::{AnimationEvent, AnimationMarkerId},
         library::{AnimationLibrary, LibraryError},

@@ -12,8 +12,8 @@ fn main() {
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin::default(),
         ))
-        .add_systems(Startup, setup)
-        .add_systems(Update, keyboard)
+        .add_systems(Startup, spawn_character)
+        .add_systems(Update, control_animation)
         .run();
 }
 
@@ -23,13 +23,13 @@ struct AllAnimations {
     animation2_id: AnimationId,
 }
 
-fn setup(
+fn spawn_character(
     mut commands: Commands,
     mut library: ResMut<AnimationLibrary>,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
     // Create two animations
 
@@ -48,19 +48,15 @@ fn setup(
 
     // Spawn an animated sprite
 
-    let texture = assets.load("character.png");
+    let image = assets.load("character.png");
 
-    let layout = atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96));
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        ..default()
+    };
 
     commands.spawn((
-        SpriteBundle {
-            texture,
-            ..default()
-        },
-        TextureAtlas {
-            layout,
-            ..default()
-        },
+        Sprite::from_atlas_image(image, atlas),
         SpritesheetAnimation::from_id(animation1_id),
         // Store the two animation IDs in a component for convenience
         AllAnimations {
@@ -71,16 +67,13 @@ fn setup(
 
     // Help text
 
-    commands.spawn(TextBundle::from_section(
-        "P: play/pause\nR: reset animation\n0/1/2/3/4/5: switch to frame x\nS: switch animation",
-        TextStyle {
-            font_size: 30.0,
-            ..default()
-        },
+    commands.spawn((Text(
+        "P: play/pause\nR: reset animation\n0/1/2/3/4/5: switch to frame x\nS: switch animation".to_owned()),
+        TextFont::from_font_size(30.0)
     ));
 }
 
-fn keyboard(
+fn control_animation(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut sprites: Query<(&mut SpritesheetAnimation, &AllAnimations)>,
 ) {

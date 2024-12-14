@@ -12,17 +12,17 @@ fn main() {
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin::default(),
         ))
-        .add_systems(Startup, setup)
+        .add_systems(Startup, spawn_character)
         .run();
 }
 
-fn setup(
+fn spawn_character(
     mut commands: Commands,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
     // Compose an animation from multiple clips
     //
@@ -60,19 +60,15 @@ fn setup(
 
     // Spawn a sprite that uses the animation
 
-    let texture = assets.load("character.png");
+    let image = assets.load("character.png");
 
-    let layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        ..default()
+    };
 
     commands.spawn((
-        SpriteBundle {
-            texture,
-            ..default()
-        },
-        TextureAtlas {
-            layout,
-            ..default()
-        },
+        Sprite::from_atlas_image(image, atlas),
         SpritesheetAnimation::from_id(animation_id),
     ));
 }

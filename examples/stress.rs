@@ -47,11 +47,11 @@ fn main() {
             PerfUiPlugin,
         ))
         .insert_resource(cli)
-        .add_systems(Startup, setup)
+        .add_systems(Startup, spawn_sprites)
         .run();
 }
 
-fn setup(
+fn spawn_sprites(
     mut commands: Commands,
     mut library: ResMut<AnimationLibrary>,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
@@ -61,11 +61,11 @@ fn setup(
     // Spawn a camera
 
     match cli.mode {
-        Mode::TwoD => commands.spawn(Camera2dBundle::default()),
-        Mode::ThreeD => commands.spawn(Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 1000.0, 4000.0).looking_at(Vec3::ZERO, Dir3::Y),
-            ..default()
-        }),
+        Mode::TwoD => commands.spawn(Camera2d),
+        Mode::ThreeD => commands.spawn((
+            Camera3d::default(),
+            Transform::from_xyz(0.0, 1000.0, 4000.0).looking_at(Vec3::ZERO, Dir3::Y),
+        )),
     };
 
     // Create clips from a spritesheet
@@ -112,9 +112,12 @@ fn setup(
 
     // Spawn a lot of sprites, each with a random animation assigned
 
-    let texture = assets.load("character.png");
+    let image = assets.load("character.png");
 
-    let atlas_layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        ..default()
+    };
 
     for _ in 0..cli.sprites {
         let animation = animation_ids.choose(&mut rng).unwrap();
@@ -123,23 +126,14 @@ fn setup(
 
         match cli.mode {
             Mode::TwoD => commands.spawn((
-                SpriteBundle {
-                    texture: texture.clone(),
-                    transform,
-                    ..default()
-                },
-                TextureAtlas {
-                    layout: atlas_layout.clone(),
-                    ..default()
-                },
+                Sprite::from_atlas_image(image.clone(), atlas.clone()),
                 SpritesheetAnimation::from_id(*animation),
+                transform,
             )),
             Mode::ThreeD => commands.spawn((
-                Sprite3dBuilder::from_image(texture.clone())
-                    .with_atlas(atlas_layout.clone())
-                    .with_transform(transform)
-                    .build(),
+                Sprite3d::from_atlas_image(image.clone(), atlas.clone()),
                 SpritesheetAnimation::from_id(*animation),
+                transform,
             )),
         };
     }
@@ -148,7 +142,7 @@ fn setup(
 
     commands.spawn((
         PerfUiRoot {
-            // set a fixed width to make all the bars line up
+            // Set a fixed width to make all the bars line up
             values_col_width: Some(160.0),
             ..Default::default()
         },

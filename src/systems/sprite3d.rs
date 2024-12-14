@@ -13,9 +13,8 @@ use bevy::{
         alpha::AlphaMode,
         mesh::{Mesh, PrimitiveTopology},
         render_asset::RenderAssetUsages,
-        texture::Image,
     },
-    sprite::{TextureAtlas, TextureAtlasLayout},
+    sprite::TextureAtlasLayout,
 };
 
 use crate::components::sprite3d::Sprite3d;
@@ -96,52 +95,38 @@ pub fn setup_rendering(
         (
             Entity,
             &Sprite3d,
-            &TextureAtlas,
-            &Handle<Image>,
-            Option<&Handle<Mesh>>,
-            Option<&Handle<StandardMaterial>>,
+            Option<&Mesh3d>,
+            Option<&MeshMaterial3d<StandardMaterial>>,
         ),
-        Or<(Without<Handle<Mesh>>, Without<Handle<StandardMaterial>>)>,
+        Or<(Without<Mesh3d>, Without<MeshMaterial3d<StandardMaterial>>)>,
     >,
 ) {
-    for (entity, sprite, atlas, image_handle, maybe_mesh_handle, maybe_material_handle) in &sprites
-    {
+    for (entity, sprite, maybe_mesh, maybe_material) in &sprites {
         // Add a mesh to the entity if it does not have one yet
 
-        if let Some(image) = images.get(image_handle) {
-            // (we have to wait for the image to be loaded to access its dimensions)
-
-            if maybe_mesh_handle.is_none() {
-                let mesh_handle = get_or_create_mesh(
-                    sprite,
-                    image,
-                    atlas,
-                    &atlas_layouts,
-                    &mut meshes,
-                    &mut cache,
-                );
-
-                commands.entity(entity).insert(mesh_handle);
-            }
+        if maybe_mesh.is_none() {
+            try_get_or_create_mesh(sprite, &images, &atlas_layouts, &mut meshes, &mut cache)
+                .inspect(|mesh_handle| {
+                    commands.entity(entity).insert(Mesh3d(mesh_handle.clone()));
+                });
         }
 
         // Add a material to the entity if it does not have one yet
 
-        if maybe_material_handle.is_none() {
-            // let material_handle =
-            //     get_or_create_material(image_handle, &sprite.color, &mut cache, &mut materials);
-
-            // commands.entity(entity).insert(material_handle);
-
+        if maybe_material.is_none() {
             let material = StandardMaterial {
-                base_color_texture: Some(image_handle.clone()),
+                base_color_texture: Some(sprite.image.clone()),
                 base_color: sprite.color,
                 unlit: true,
                 alpha_mode: AlphaMode::Blend,
                 ..default()
             };
 
-            commands.entity(entity).insert(materials.add(material));
+            let material_handle = materials.add(material);
+
+            commands
+                .entity(entity)
+                .insert(MeshMaterial3d(material_handle));
         }
     }
 }
@@ -158,41 +143,38 @@ pub fn sync_when_sprites_change(
         (
             Entity,
             &Sprite3d,
-            &TextureAtlas,
-            &Handle<Image>,
-            &Handle<Mesh>,
-            &Handle<StandardMaterial>,
+            &Mesh3d,
+            &MeshMaterial3d<StandardMaterial>,
         ),
         Changed<Sprite3d>,
     >,
 ) {
-    for (entity, sprite, atlas, image_handle, mesh_handle, material_handle) in &sprites {
+    for (entity, sprite, mesh, material) in &sprites {
         // Update the mesh if it changed
 
-        if let Some(image) = images.get(image_handle) {
-            let new_mesh_handle = get_or_create_mesh(
-                sprite,
-                image,
-                atlas,
-                &atlas_layouts,
-                &mut meshes,
-                &mut cache,
-            );
+        try_get_or_create_mesh(sprite, &images, &atlas_layouts, &mut meshes, &mut cache).inspect(
+            |new_mesh_handle| {
+                if mesh.0 != *new_mesh_handle {
+                    commands.entity(entity).remove::<Mesh3d>();
 
-            if mesh_handle != &new_mesh_handle {
-                commands.entity(entity).remove::<Handle<Mesh>>();
-                commands.entity(entity).insert(new_mesh_handle);
-            }
-        }
-
+                    commands
+                        .entity(entity)
+                        .insert(Mesh3d(new_mesh_handle.clone()));
+                }
+            },
+        );
         // Update the material if it changed
 
-        let new_material_handle =
-            get_or_create_material(sprite, image_handle, &mut materials, &mut cache);
+        let new_material_handle = get_or_create_material(sprite, &mut materials, &mut cache);
 
-        if material_handle != &new_material_handle {
-            commands.entity(entity).remove::<Handle<StandardMaterial>>();
-            commands.entity(entity).insert(new_material_handle);
+        if material.0 != new_material_handle {
+            commands
+                .entity(entity)
+                .remove::<MeshMaterial3d<StandardMaterial>>();
+
+            commands
+                .entity(entity)
+                .insert(MeshMaterial3d(new_material_handle));
         }
     }
 }
@@ -204,52 +186,37 @@ pub fn sync_when_atlases_change(
     atlas_layouts: Res<Assets<TextureAtlasLayout>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut cache: ResMut<Cache>,
-    sprites: Query<
-        (
-            Entity,
-            &Sprite3d,
-            &TextureAtlas,
-            &Handle<Image>,
-            &Handle<Mesh>,
-        ),
-        Changed<TextureAtlas>,
-    >,
+    sprites: Query<(Entity, &Sprite3d, &Mesh3d), Changed<Sprite3d>>,
 ) {
-    for (entity, sprite, atlas, image_handle, mesh_handle) in &sprites {
-        if let Some(image) = images.get(image_handle) {
-            let new_mesh_handle = get_or_create_mesh(
-                sprite,
-                image,
-                atlas,
-                &atlas_layouts,
-                &mut meshes,
-                &mut cache,
-            );
-
-            if mesh_handle != &new_mesh_handle {
-                commands.entity(entity).remove::<Handle<Mesh>>();
-                commands.entity(entity).insert(new_mesh_handle);
-            }
-        }
+    for (entity, sprite, mesh) in &sprites {
+        try_get_or_create_mesh(sprite, &images, &atlas_layouts, &mut meshes, &mut cache).inspect(
+            |new_mesh_handle| {
+                if mesh.0 != *new_mesh_handle {
+                    commands.entity(entity).remove::<Mesh3d>();
+                    commands
+                        .entity(entity)
+                        .insert(Mesh3d(new_mesh_handle.clone()));
+                }
+            },
+        );
     }
 }
 
 // Retrieves a material from the cache or create a new one
 fn get_or_create_material(
     sprite: &Sprite3d,
-    image_handle: &Handle<Image>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
     cache: &mut Cache,
 ) -> Handle<StandardMaterial> {
-    let material_id = MaterialId::new(sprite, image_handle);
+    let material_id = MaterialId::new(sprite, &sprite.image);
 
     cache
         .materials
         .get(&material_id)
         .cloned()
         .unwrap_or_else(|| {
-            let material_handle = materials.add(StandardMaterial {
-                base_color_texture: Some(image_handle.clone()),
+            let material_handle: Handle<StandardMaterial> = materials.add(StandardMaterial {
+                base_color_texture: Some(sprite.image.clone()),
                 base_color: sprite.color,
                 unlit: true,
                 alpha_mode: AlphaMode::Blend,
@@ -265,123 +232,134 @@ fn get_or_create_material(
 }
 
 // Retrieves a mesh from the cache or create a new one
-fn get_or_create_mesh(
+fn try_get_or_create_mesh(
     sprite: &Sprite3d,
-    image: &Image,
-    atlas: &TextureAtlas,
+    images: &Res<Assets<Image>>,
     atlas_layouts: &Res<Assets<TextureAtlasLayout>>,
     meshes: &mut ResMut<Assets<Mesh>>,
     cache: &mut Cache,
-) -> Handle<Mesh> {
-    let atlas_layout = atlas_layouts
-        .get(&atlas.layout)
-        .expect("cannot get 3D sprite's atlas layout");
+) -> Option<Handle<Mesh>> {
+    // We have to wait for the image to be loaded to access its dimensions
 
-    let atlas_rect = atlas_layout
-        .textures
-        .get(atlas.index)
-        .expect("cannot get 3D sprite's atlas rect");
+    images.get(&sprite.image).map(|sprite_image| {
+        sprite.texture_atlas.as_ref().map(|sprite_atlas| {
+            let atlas_layout = atlas_layouts
+                .get(&sprite_atlas.layout)
+                .expect("cannot get 3D sprite's atlas layout");
 
-    let mesh_id = MeshId::new(sprite, image, atlas_rect);
+            let atlas_rect = atlas_layout
+                .textures
+                .get(sprite_atlas.index)
+                .expect("cannot get 3D sprite's atlas rect");
 
-    cache.meshes.get(&mesh_id).cloned().unwrap_or_else(|| {
-        let mut mesh = Mesh::new(
-            PrimitiveTopology::TriangleList, // Needed to support raycasting
-            RenderAssetUsages::default(),
-        );
+            let mesh_id = MeshId::new(sprite, sprite_image, atlas_rect);
 
-        // Vertices
+            cache.meshes.get(&mesh_id).cloned().unwrap_or_else(|| {
+                let mut mesh = Mesh::new(
+                    PrimitiveTopology::TriangleList, // Needed to support raycasting
+                    RenderAssetUsages::default(),
+                );
 
-        let size = match sprite.custom_size {
-            Some(size) => size,
-            None => image.size_f32(),
-        };
+                // Vertices
 
-        let half = size / 2.0;
+                let size = match sprite.custom_size {
+                    Some(size) => size,
+                    None => sprite_image.size_f32(),
+                };
 
-        let offset = sprite.anchor.as_vec() * size;
+                let half = size / 2.0;
 
-        mesh.insert_attribute(
-            Mesh::ATTRIBUTE_POSITION,
-            vec![
-                // Triangle 1
-                [
-                    // bottom left
-                    -half.x - offset.x,
-                    -half.y - offset.y,
-                    0.0,
-                ],
-                [
-                    // bottom right
-                    half.x - offset.x,
-                    -half.y - offset.y,
-                    0.0,
-                ],
-                [
-                    // top left
-                    -half.x - offset.x,
-                    half.y - offset.y,
-                    0.0,
-                ],
-                // Triangle 2
-                [
-                    // bottom right
-                    half.x - offset.x,
-                    -half.y - offset.y,
-                    0.0,
-                ],
-                [
-                    // top right
-                    half.x - offset.x,
-                    half.y - offset.y,
-                    0.0,
-                ],
-                [
-                    // top left
-                    -half.x - offset.x,
-                    half.y - offset.y,
-                    0.0,
-                ],
-            ],
-        );
+                let offset = sprite.anchor.as_vec() * size;
 
-        // Texture coordinates
+                mesh.insert_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    vec![
+                        // Triangle 1
+                        [
+                            // bottom left
+                            -half.x - offset.x,
+                            -half.y - offset.y,
+                            0.0,
+                        ],
+                        [
+                            // bottom right
+                            half.x - offset.x,
+                            -half.y - offset.y,
+                            0.0,
+                        ],
+                        [
+                            // top left
+                            -half.x - offset.x,
+                            half.y - offset.y,
+                            0.0,
+                        ],
+                        // Triangle 2
+                        [
+                            // bottom right
+                            half.x - offset.x,
+                            -half.y - offset.y,
+                            0.0,
+                        ],
+                        [
+                            // top right
+                            half.x - offset.x,
+                            half.y - offset.y,
+                            0.0,
+                        ],
+                        [
+                            // top left
+                            -half.x - offset.x,
+                            half.y - offset.y,
+                            0.0,
+                        ],
+                    ],
+                );
 
-        let atlas_size = atlas_layout.size.as_vec2();
+                // Texture coordinates
 
-        let mut uvs = vec![
-            // Triangle 1
-            (UVec2::new(atlas_rect.min.x, atlas_rect.max.y).as_vec2() / atlas_size).to_array(),
-            (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size).to_array(),
-            (UVec2::new(atlas_rect.min.x, atlas_rect.min.y).as_vec2() / atlas_size).to_array(),
-            // Triangle 2
-            (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size).to_array(),
-            (UVec2::new(atlas_rect.max.x, atlas_rect.min.y).as_vec2() / atlas_size).to_array(),
-            (UVec2::new(atlas_rect.min.x, atlas_rect.min.y).as_vec2() / atlas_size).to_array(),
-        ];
+                let atlas_size = atlas_layout.size.as_vec2();
 
-        if sprite.flip_x {
-            uvs.swap(0, 1);
-            uvs.swap(5, 4);
-            uvs[2] = uvs[5];
-            uvs[3] = uvs[1];
-        }
+                let mut uvs = vec![
+                    // Triangle 1
+                    (UVec2::new(atlas_rect.min.x, atlas_rect.max.y).as_vec2() / atlas_size)
+                        .to_array(),
+                    (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size)
+                        .to_array(),
+                    (UVec2::new(atlas_rect.min.x, atlas_rect.min.y).as_vec2() / atlas_size)
+                        .to_array(),
+                    // Triangle 2
+                    (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size)
+                        .to_array(),
+                    (UVec2::new(atlas_rect.max.x, atlas_rect.min.y).as_vec2() / atlas_size)
+                        .to_array(),
+                    (UVec2::new(atlas_rect.min.x, atlas_rect.min.y).as_vec2() / atlas_size)
+                        .to_array(),
+                ];
 
-        if sprite.flip_y {
-            uvs.swap(0, 2);
-            uvs.swap(3, 4);
-            uvs[1] = uvs[3];
-            uvs[5] = uvs[2];
-        }
+                if sprite.flip_x {
+                    uvs.swap(0, 1);
+                    uvs.swap(5, 4);
+                    uvs[2] = uvs[5];
+                    uvs[3] = uvs[1];
+                }
 
-        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+                if sprite.flip_y {
+                    uvs.swap(0, 2);
+                    uvs.swap(3, 4);
+                    uvs[1] = uvs[3];
+                    uvs[5] = uvs[2];
+                }
 
-        let mesh_handle = meshes.add(mesh);
+                mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
 
-        cache.meshes.insert(mesh_id, mesh_handle.clone());
+                let mesh_handle = meshes.add(mesh);
 
-        mesh_handle
-    })
+                cache.meshes.insert(mesh_id, mesh_handle.clone());
+
+                mesh_handle
+            })
+        })
+    })?
 }
 
 pub(crate) fn remove_dropped_standard_materials(

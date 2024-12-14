@@ -46,18 +46,14 @@ pub struct AnimationProgress {
 ///     let animation_id = library.register_animation(animation);
 ///
 ///     // ... omitted: load a texture and an atlas layout ...
-///     # let texture = assets.load("fake");
-///     # let layout = layouts.add(TextureAtlasLayout::new_empty(UVec2::ONE));
+///     # let image = assets.load("fake");
+///     # let atlas = TextureAtlas {
+///     #    layout: layouts.add(TextureAtlasLayout::new_empty(UVec2::ONE)),
+///     #    ..default()
+///     # };
 ///
 ///     commands.spawn((
-///         SpriteBundle {
-///             texture: texture.clone(),
-///             ..default()
-///         },
-///         TextureAtlas {
-///             layout: layout.clone(),
-///             ..default()
-///         },
+///         Sprite::from_atlas_image(image, atlas),
 ///         SpritesheetAnimation::from_id(animation_id),
 ///     ));
 /// }

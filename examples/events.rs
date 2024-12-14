@@ -21,7 +21,6 @@ use std::collections::HashSet;
 use bevy::{
     color::palettes::css::{DEEP_PINK, GRAY, YELLOW},
     prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_spritesheet_animation::prelude::*;
 
@@ -31,21 +30,26 @@ fn main() {
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin::default(),
         ))
-        .add_systems(Startup, setup)
-        .add_systems(Update, show_triggered_events)
-        .add_systems(Update, spawn_visual_effects)
-        .add_systems(Update, animate_bullets)
-        .add_systems(Update, animate_footsteps)
+        .add_systems(Startup, (spawn_character, create_ui))
+        .add_systems(
+            Update,
+            (
+                show_triggered_events,
+                spawn_visual_effects,
+                animate_bullets,
+                animate_footsteps,
+            ),
+        )
         .run();
 }
 
-fn setup(
+fn spawn_character(
     mut commands: Commands,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
     // Create a running clip
 
@@ -88,58 +92,45 @@ fn setup(
 
     // Spawn a sprite using the animation
 
-    let texture = assets.load("character.png");
+    let image = assets.load("character.png");
 
-    let layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        ..default()
+    };
 
     commands.spawn((
-        SpriteBundle {
-            texture,
-            ..default()
-        },
-        TextureAtlas {
-            layout,
-            ..default()
-        },
+        Sprite::from_atlas_image(image, atlas),
         SpritesheetAnimation::from_id(animation_id),
     ));
+}
 
-    // Setup the UI
-
+fn create_ui(mut commands: Commands) {
     commands
         // Full-screen container
-        .spawn(NodeBundle {
-            style: Style {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                margin: UiRect::all(Val::Px(10.0)),
-                flex_direction: FlexDirection::Column,
-                ..default()
-            },
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
             ..default()
         })
         .with_children(|parent| {
             let mut add_event = |event_type: EventType| {
                 parent
                     // Row
-                    .spawn(NodeBundle {
-                        style: Style {
-                            margin: UiRect::all(Val::Px(5.0)),
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
+                    .spawn(Node {
+                        margin: UiRect::all(Val::Px(10.0)),
+                        align_items: AlignItems::Center,
                         ..default()
                     })
                     .with_children(|parent| {
                         // Colored square
 
                         parent.spawn((
-                            NodeBundle {
-                                style: Style {
-                                    width: Val::Px(50.0),
-                                    height: Val::Px(50.0),
-                                    ..default()
-                                },
+                            Node {
+                                width: Val::Px(50.0),
+                                height: Val::Px(50.0),
+                                margin: UiRect::right(Val::Px(10.0)),
                                 ..default()
                             },
                             event_type,
@@ -148,17 +139,8 @@ fn setup(
                         // Event name
 
                         parent.spawn((
-                            TextBundle::from_section(
-                                format!("{event_type:?}"),
-                                TextStyle {
-                                    font_size: 30.0,
-                                    ..default()
-                                },
-                            )
-                            .with_style(Style {
-                                margin: UiRect::left(Val::Px(10.0)),
-                                ..default()
-                            }),
+                            Text(format!("{event_type:?}")),
+                            TextFont::from_font_size(30.0),
                             Label,
                         ));
                     });
@@ -172,7 +154,7 @@ fn setup(
         });
 }
 
-// Component attached to the square to be highlighted when the same event is received
+// Component attached to a UI square to be highlighted when the given event type is received
 #[derive(Debug, Component, Clone, Copy, PartialEq, Eq, Hash)]
 enum EventType {
     MarkerHit,
@@ -182,7 +164,6 @@ enum EventType {
     End,
 }
 
-// Updates the colored squares
 fn show_triggered_events(
     mut events: EventReader<AnimationEvent>,
     mut squares: Query<(&mut BackgroundColor, &EventType)>,
@@ -237,12 +218,9 @@ fn spawn_visual_effects(
 
                 if library.is_marker_name(*marker_id, "foot touches ground") {
                     commands.spawn((
-                        MaterialMesh2dBundle {
-                            mesh: Mesh2dHandle(meshes.add(Circle { radius: 1.0 })),
-                            material: materials.add(Color::WHITE),
-                            transform: Transform::from_xyz(0.0, -30.0, -1.0),
-                            ..default()
-                        },
+                        Mesh2d(meshes.add(Circle { radius: 1.0 })),
+                        MeshMaterial2d(materials.add(ColorMaterial::default())),
+                        Transform::from_xyz(0.0, -30.0, -1.0),
                         Footstep,
                     ));
                 }
@@ -251,12 +229,9 @@ fn spawn_visual_effects(
 
                 if library.is_marker_name(*marker_id, "bullet goes out") {
                     commands.spawn((
-                        MaterialMesh2dBundle {
-                            mesh: Mesh2dHandle(meshes.add(Circle { radius: 3.0 })),
-                            material: materials.add(Color::from(YELLOW)),
-                            transform: Transform::from_xyz(20.0, 15.0, 0.0),
-                            ..default()
-                        },
+                        Mesh2d(meshes.add(Circle { radius: 3.0 })),
+                        MeshMaterial2d(materials.add(Color::from(YELLOW))),
+                        Transform::from_xyz(20.0, 15.0, 0.0),
                         Bullet,
                     ));
                 }
@@ -269,7 +244,6 @@ fn spawn_visual_effects(
 #[derive(Component)]
 struct Bullet;
 
-// Updates the bullets
 fn animate_bullets(
     time: Res<Time>,
     mut commands: Commands,
@@ -278,7 +252,7 @@ fn animate_bullets(
     for (entity, mut transform) in &mut bullets {
         // Move horizontally
 
-        transform.translation.x += time.delta_seconds() * 400.0;
+        transform.translation.x += time.delta_secs() * 400.0;
 
         // Despawn when far away
 
@@ -291,24 +265,23 @@ fn animate_bullets(
 #[derive(Component)]
 struct Footstep;
 
-// Updates the footsteps
 fn animate_footsteps(
     time: Res<Time>,
     mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut footsteps: Query<(Entity, &mut Transform, &Handle<ColorMaterial>), With<Footstep>>,
+    mut footsteps: Query<(Entity, &mut Transform, &MeshMaterial2d<ColorMaterial>), With<Footstep>>,
 ) {
     for (entity, mut transform, material_handle) in &mut footsteps {
         // Grow
 
-        transform.scale += time.delta_seconds() * Vec3::splat(100.0);
+        transform.scale += time.delta_secs() * Vec3::splat(100.0);
 
         // Fade away
 
         if let Some(material) = materials.get_mut(material_handle) {
             material
                 .color
-                .set_alpha(material.color.alpha() - time.delta_seconds() * 4.0);
+                .set_alpha(material.color.alpha() - time.delta_secs() * 4.0);
 
             // Despawn when transparent
 

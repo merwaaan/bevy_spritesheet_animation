@@ -1,6 +1,7 @@
-use bevy::prelude::*;
+use bevy::math::Vec3;
 use rand::Rng;
 
+// TODO would be nicer to use the actual size
 const DEFAULT_WINDOW_WIDTH: f32 = 1280.0;
 const DEFAULT_WINDOW_HEIGHT: f32 = 720.0;
 
@@ -24,7 +25,7 @@ pub fn grid_position(columns: u32, rows: u32, n: usize) -> Vec3 {
     )
 }
 
-/// Returns a random on-screen position
+/// Returns a random screen-space position
 pub fn random_position() -> Vec3 {
     let mut rng = rand::thread_rng();
 

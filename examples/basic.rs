@@ -12,12 +12,15 @@ fn main() {
         // Add the plugin to enable animations.
         // This makes the AnimationLibrary resource available to your systems.
         .add_plugins(SpritesheetAnimationPlugin::default())
-        .add_systems(Startup, (setup, spawn_sprite.after(setup)))
+        .add_systems(
+            Startup,
+            (create_animation, spawn_sprite.after(create_animation)),
+        )
         .run();
 }
 
-fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
-    commands.spawn(Camera2dBundle::default());
+fn create_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+    commands.spawn(Camera2d);
 
     // Create a clip that references some frames from a spritesheet
 
@@ -53,28 +56,21 @@ fn spawn_sprite(
 ) {
     // Retrieve our animation from the library
 
-    let animation_id = library.animation_with_name("walk");
+    if let Some(animation_id) = library.animation_with_name("walk") {
+        // Create an image and a texture atlas like you would for any Bevy sprite
 
-    if let Some(id) = animation_id {
-        // Create an image and an atlas layout like you would for any Bevy sprite
+        let image = assets.load("character.png");
 
-        let texture = assets.load("character.png");
+        let atlas = TextureAtlas {
+            layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+            ..default()
+        };
 
-        let layout = atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96));
-
-        // Spawn a sprite with Bevy's built-in SpriteBundle
+        // Spawn a sprite with a SpritesheetAnimation component that references our animation
 
         commands.spawn((
-            SpriteBundle {
-                texture,
-                ..default()
-            },
-            TextureAtlas {
-                layout,
-                ..default()
-            },
-            //  Add a SpritesheetAnimation component that references our animation
-            SpritesheetAnimation::from_id(id),
+            Sprite::from_atlas_image(image, atlas),
+            SpritesheetAnimation::from_id(animation_id),
         ));
     }
 }

@@ -3,7 +3,7 @@
 [![Build](https://github.com/merwaaan/bevy_spritesheet_animation/actions/workflows/build.yml/badge.svg)](https://github.com/merwaaan/bevy_spritesheet_animation/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for animating sprites that are backed by spritesheets.
+bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easily animating 2D and 3D sprites.
 
 ![An animated character walking from the left to the right and shooting their gun](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example.gif)
 
@@ -23,7 +23,7 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for anima
 
 1. Add the [SpritesheetAnimationPlugin](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/plugin/struct.SpritesheetAnimationPlugin.html) to your app
 2. Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to create new clips and animations
-3. Add a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) component to your entity
+3. Add [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) components to your entities
 
 ```rust
 use bevy::prelude::*;
@@ -66,26 +66,23 @@ fn setup(
     //
     // See the `composition` example for more details.
 
-    // Spawn a sprite using Bevy's built-in SpriteBundle
+    // Spawn a Bevy built-in Sprite
 
-    let texture = assets.load("character.png");
+    let image = assets.load("character.png");
 
-    let layout = atlas_layouts.add(spritesheet.atlas_layout(96, 96));
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
+        ..default()
+    };
 
     commands.spawn((
-        SpriteBundle {
-            texture,
-            ..default()
-        },
-        TextureAtlas {
-            layout,
-            ..default()
-        },
+        Sprite::from_atlas_image(image, atlas),
+
         // Add a SpritesheetAnimation component that references our newly created animation
         SpritesheetAnimation::from_id(animation_id),
     ));
 
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 }
 ```
 
@@ -100,12 +97,12 @@ Simple animations may contain a single clip while more complex animations may co
 
 Parameters like [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html) and [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html) can be specified.
 
-Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to register new clips.
+Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to register a new clip.
 
 The clip can then be referenced in any number of animations.
 
 ```rust
-fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+fn create_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
 
     // Create a clip that uses some frames from a spritesheet
 
@@ -129,14 +126,14 @@ fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
 
 In its simplest form, an animation is composed of a single clip that loops endlessly.
 
-However, you're free to compose more sophisticated animations by chaining multiple clips and tuning their parameters.
+However, you may compose more sophisticated animations by chaining multiple clips and tuning their parameters separately.
 
-Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to register new animation.
+Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to register a new animation.
 
 The animation can then be referenced in any number of SpritesheetAnimation component.
 
 ```rust
-fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+fn create_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
 
     // ... omitted: create and register a few clips
 
@@ -152,17 +149,10 @@ fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
 
     // Assign the animation to an entity with the SpritesheetAnimation component
 
-    // ... omitted: load the sprite's texture and create an atlas
+    // ... omitted: load the sprite's image and create an atlas
 
     commands.spawn((
-        SpriteBundle {
-            texture,
-            ..default()
-        },
-        TextureAtlas {
-            layout,
-            ..default()
-        },
+        Sprite::from_atlas_image(image, atlas),
         SpritesheetAnimation::from_id(animation_id),
     ));
 }
@@ -178,7 +168,7 @@ You can then assign them to many entities.
 Do not create the same clip/animation for each entity that plays it.
 
 ```rust
-fn spawn_enemies(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+fn spawn_characters(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
 
     // Creating identical animations gives more work to the plugin and degrades performance!
 
@@ -190,7 +180,7 @@ fn spawn_enemies(mut commands: Commands, mut library: ResMut<AnimationLibrary>) 
         let animation_id = library.register_animation();
 
         commands.spawn((
-            SpriteBundle { /* .... */ },
+            Sprite::from_atlas_image(/* .... */),
             SpritesheetAnimation::from_id(animation_id),
         ));
     }
@@ -201,10 +191,10 @@ fn spawn_enemies(mut commands: Commands, mut library: ResMut<AnimationLibrary>) 
 
 Instead, create clips/animations once and then reference them when needed.
 
-For instance, you can create all your animations in a setup system, give them unique names and then assign them to entities at a later stage.
+For instance, you can create all your animations in a setup system, give them unique names and then assign them to entities, immediately or at a later stage.
 
 ```rust
-fn create_animation(mut library: ResMut<AnimationLibrary>) {
+fn spawn_characters(mut library: ResMut<AnimationLibrary>) {
     let clip = Clip::from_frames([1, 2, 3]);
     let clip_id = library.register_clip(clip);
 
@@ -235,7 +225,7 @@ fn spawn_enemies(mut commands: Commands, library: Res<AnimationLibrary>) {
     if let Some(animation_id) = libray.animation_with_name("enemy running") {
         for _ in 0..100 {
             commands.spawn((
-                SpriteBundle { /* .... */ },
+                Sprite::from_atlas_image(/* .... */),
                 SpritesheetAnimation::from_id(animation_id),
             ));
         }
@@ -249,9 +239,7 @@ fn spawn_enemies(mut commands: Commands, library: Res<AnimationLibrary>) {
 
 This crate also makes it easy to integrate 3D sprites into your games, which is not supported by Bevy out of the box.
 
-[Sprite3dBundle](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3dBundle.html) contains all the necesary components to enable 3D sprites. Use [Sprite3dBuilder](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3dBuilder.html) to easily create one of those.
-
-Animating a 3D sprite is the same as animating 2D sprites: simply attach a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) component to your entity.
+Animating a 3D sprite is the same as animating 2D sprites: simply spawn a [Sprite3d](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3d.html) instead of Bevy's built-in Sprite and attach a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) component to the entity.
 
 ```rust
 fn spawn_character(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
@@ -283,13 +271,14 @@ For more examples, browse the [examples/](examples) directory.
 | [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                             |
 | [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations    |
 | [events](examples/events.rs)           | Shows how to react to animations reaching points of interest with events |
-| [headless](examples/headless.rs)       | Shows how to setup a headless Bevy app without rendering                 |
+| [headless](examples/headless.rs)       | Shows how to run animations in a headless Bevy app without rendering     |
 | [stress](examples/stress.rs)           | Stress test with thousands of animated sprites (either 2D or 3D)         |
 
 # Compatibility
 
 | bevy | bevy_spritesheet_animation |
 | ---- | -------------------------- |
+| 0.15 | 2.0.0                      |
 | 0.14 | 0.2.0                      |
 | 0.13 | 0.1.0                      |
 

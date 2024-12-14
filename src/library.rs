@@ -220,8 +220,8 @@ impl AnimationLibrary {
     /// fn f(
     ///     mut commands: Commands,
     ///     mut library: AnimationLibrary,
-    ///     # texture: Handle<Image>,
-    ///     # layout: Handle<TextureAtlasLayout>
+    ///     # image: Handle<Image>,
+    ///     # atlas: TextureAtlas
     ///     // ...
     /// ) {
     ///     let clip = Clip::from_frames([4, 5, 6]);
@@ -235,17 +235,10 @@ impl AnimationLibrary {
     ///
     ///     // The animation can then be assigned to an entity
     ///
-    ///     // ... omitted: load a texture and create an atlas layout for the sprite ...
+    ///     // ... omitted: load an image and create a texture atlas for the sprite ...
     ///
     ///     commands.spawn((
-    ///         SpriteBundle {
-    ///             texture: texture.clone(),
-    ///             ..default()
-    ///         },
-    ///         TextureAtlas {
-    ///             layout: layout.clone(),
-    ///            ..default()
-    ///         },
+    ///         Sprite::from_atlas_image(image, atlas),
     ///         SpritesheetAnimation::from_id(animation_id)
     ///     ));
     /// }

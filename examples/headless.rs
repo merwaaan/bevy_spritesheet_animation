@@ -14,13 +14,13 @@ fn main() {
             MinimalPlugins,
             SpritesheetAnimationPlugin { enable_3d: false },
         ))
-        .add_systems(Startup, setup)
-        .add_systems(Update, handle_animations_events)
+        .add_systems(Startup, spawn_animation)
+        .add_systems(Update, log_animations_events)
         .run();
 }
 
-fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
-    commands.spawn(Camera2dBundle::default());
+fn spawn_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+    commands.spawn(Camera2d);
 
     // Create a clip that references some frames from a spritesheet
 
@@ -40,18 +40,15 @@ fn setup(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
 
     library.name_animation(animation_id, "walk").unwrap();
 
-    // Spawn a sprite with Bevy's built-in SpriteBundle
+    // Spawn an entity with a SpritesheetAnimation component that references our animation
+    //
+    // We dont even need a Sprite since its only used for bevy_render (and we aren't rendering anything)
 
-    commands.spawn((
-        // We dont even need a TextureAtlas since its only used for bevy_render (and we aren't rendering anything)
-
-        // Add a SpritesheetAnimation component that references our animation
-        SpritesheetAnimation::from_id(animation_id),
-    ));
+    commands.spawn(SpritesheetAnimation::from_id(animation_id));
 }
 
-fn handle_animations_events(mut events: EventReader<AnimationEvent>) {
+fn log_animations_events(mut events: EventReader<AnimationEvent>) {
     for event in events.read() {
-        dbg!(event);
+        println!("{:?}", event);
     }
 }
