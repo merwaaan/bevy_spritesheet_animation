@@ -86,6 +86,7 @@ impl Plugin for SpritesheetAnimationPlugin {
                         sprite3d::setup_rendering,
                         sprite3d::sync_when_sprites_change,
                         sprite3d::sync_when_atlases_change,
+                        sprite3d::remove_dropped_standard_materials,
                     )
                         .in_set(Sprite3dSystemSet)
                         .after(AnimationSystemSet),

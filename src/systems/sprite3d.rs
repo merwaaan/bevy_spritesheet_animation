@@ -383,3 +383,14 @@ fn get_or_create_mesh(
         mesh_handle
     })
 }
+
+pub(crate) fn remove_dropped_standard_materials(
+    mut cache: ResMut<Cache>,
+    mut standard_material_events: EventReader<AssetEvent<StandardMaterial>>,
+) {
+    for event in standard_material_events.read() {
+        if let AssetEvent::Removed { id } = event {
+            cache.materials.retain(|_, handle| handle.id() != *id);
+        }
+    }
+}
