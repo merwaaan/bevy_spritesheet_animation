@@ -7,6 +7,12 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easil
 
 ![An animated character walking from the left to the right and shooting their gun](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example.gif)
 
+> [!TIP]
+> This crate supports the latest [Bevy 0.15](https://bevyengine.org/news/bevy-0-15/). Please check the [compatibility table](#compatibility) to see which version of this crate to use with older Bevy versions.
+
+> [!NOTE]
+> This crate is under active development. Please regularly check the [CHANGELOG](CHANGELOG.md) for recent changes.
+
 # Features
 
 - Animate 2D and [3D sprites](#3d-sprites)! 🎉
@@ -15,9 +21,6 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easil
 - [Composable animations](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html) from multiple clips.
 - [Events](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/events/enum.AnimationEvent.html) to react to animations ending or reaching specific points.
 - A [convenient API](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/spritesheet/struct.Spritesheet.html) to select frames in spritesheets.
-
-> [!TIP]
-> This crate is under active development. Please regularly check the [CHANGELOG](CHANGELOG.md) for recent changes.
 
 # Quick start
 
