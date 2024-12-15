@@ -1,6 +1,6 @@
 [package]
 name = "bevy_spritesheet_animation"
-version = "1.0.0"
+version = "2.0.0"
 description = "A Bevy plugin for animating sprites"
 repository = "https://github.com/merwaaan/bevy_spritesheet_animation"
 readme = "README.md"
