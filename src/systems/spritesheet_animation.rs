@@ -6,6 +6,7 @@ use bevy::{
     },
     sprite::Sprite,
     time::Time,
+    ui::widget::ImageNode,
 };
 
 use crate::{
@@ -25,6 +26,7 @@ pub fn play_animations(
         &mut SpritesheetAnimation,
         Option<&mut Sprite>,
         Option<&mut Sprite3d>,
+        Option<&mut ImageNode>,
     )>,
 ) {
     animator.update(&time, &library, &mut event_writer, &mut query);

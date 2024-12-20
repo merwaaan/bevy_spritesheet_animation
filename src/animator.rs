@@ -21,6 +21,7 @@ use bevy::{
     reflect::prelude::*,
     sprite::Sprite,
     time::Time,
+    ui::widget::ImageNode,
 };
 use iterator::AnimationIteratorEvent;
 use std::{collections::HashMap, time::Duration};
@@ -60,6 +61,7 @@ impl Animator {
             &mut SpritesheetAnimation,
             Option<&mut Sprite>,
             Option<&mut Sprite3d>,
+            Option<&mut ImageNode>,
         )>,
     ) {
         // Clear outdated animation instances associated to entities that do not have the component anymore
@@ -69,8 +71,13 @@ impl Animator {
 
         // Run animations for all the entities
 
-        for (entity, mut entity_animation, mut maybe_entity_sprite, mut maybe_entity_3dsprite) in
-            query.iter_mut()
+        for (
+            entity,
+            mut entity_animation,
+            mut maybe_entity_sprite,
+            mut maybe_entity_3dsprite,
+            mut maybe_entity_image_node,
+        ) in query.iter_mut()
         {
             // Create a new animation instance if:
             let needs_new_animation_instance = match self.animation_instances.get(&entity) {
@@ -104,6 +111,7 @@ impl Animator {
                     &entity,
                     maybe_entity_sprite.as_deref_mut(),
                     maybe_entity_3dsprite.as_deref_mut(),
+                    maybe_entity_image_node.as_deref_mut(),
                     event_writer,
                 );
 
@@ -135,6 +143,7 @@ impl Animator {
                         &entity,
                         maybe_entity_sprite.as_deref_mut(),
                         maybe_entity_3dsprite.as_deref_mut(),
+                        maybe_entity_image_node.as_deref_mut(),
                         event_writer,
                     )
                     .inspect(|new_frame| {
@@ -181,6 +190,7 @@ impl Animator {
                     &entity,
                     maybe_entity_sprite.as_deref_mut(),
                     maybe_entity_3dsprite.as_deref_mut(),
+                    maybe_entity_image_node.as_deref_mut(),
                     event_writer,
                 )
                 .or_else(|| {
@@ -224,6 +234,7 @@ impl Animator {
         entity: &Entity,
         maybe_sprite: Option<&mut Sprite>,
         maybe_3dsprite: Option<&mut Sprite3d>,
+        maybe_image_node: Option<&mut ImageNode>,
         event_writer: &mut EventWriter<AnimationEvent>,
     ) -> Option<(IteratorFrame, AnimationProgress)> {
         let maybe_frame = iterator.next();
@@ -239,6 +250,12 @@ impl Animator {
             }
 
             if let Some(atlas) = maybe_3dsprite.and_then(|sprite| sprite.texture_atlas.as_mut()) {
+                if atlas.index != frame.atlas_index {
+                    atlas.index = frame.atlas_index;
+                }
+            }
+
+            if let Some(atlas) = maybe_image_node.and_then(|image| image.texture_atlas.as_mut()) {
                 if atlas.index != frame.atlas_index {
                     atlas.index = frame.atlas_index;
                 }
