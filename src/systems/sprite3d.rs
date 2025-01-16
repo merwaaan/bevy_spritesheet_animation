@@ -40,6 +40,7 @@ pub struct Cache {
 struct MaterialId {
     image: Handle<Image>,
     color: u32,
+    unlit: bool,
 }
 
 impl MaterialId {
@@ -47,6 +48,7 @@ impl MaterialId {
         Self {
             image: image_handle.clone_weak(),
             color: sprite.color.to_linear().as_u32(),
+            unlit: sprite.unlit,
         }
     }
 }
@@ -117,7 +119,7 @@ pub fn setup_rendering(
             let material = StandardMaterial {
                 base_color_texture: Some(sprite.image.clone()),
                 base_color: sprite.color,
-                unlit: true,
+                unlit: sprite.unlit,
                 alpha_mode: AlphaMode::Blend,
                 ..default()
             };
@@ -218,7 +220,7 @@ fn get_or_create_material(
             let material_handle: Handle<StandardMaterial> = materials.add(StandardMaterial {
                 base_color_texture: Some(sprite.image.clone()),
                 base_color: sprite.color,
-                unlit: true,
+                unlit: sprite.unlit,
                 alpha_mode: AlphaMode::Blend,
                 ..default()
             });

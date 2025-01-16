@@ -48,12 +48,17 @@ pub struct Sprite3d {
 
     /// The position of the sprite's origin
     pub anchor: Anchor,
+
+    /// If the sprite should interact with light.
+    pub unlit: bool,
 }
 
 impl Sprite3d {
     pub fn from_image(image: Handle<Image>) -> Self {
         Self {
             image,
+            // unlit sprites is default behaviour
+            unlit: true,
             ..Default::default()
         }
     }
@@ -61,6 +66,8 @@ impl Sprite3d {
     pub fn from_atlas_image(image: Handle<Image>, atlas: TextureAtlas) -> Self {
         Self {
             image,
+            // unlit sprites is default behaviour
+            unlit: true,
             texture_atlas: Some(atlas),
             ..Default::default()
         }
@@ -84,6 +91,11 @@ impl Sprite3d {
 
     pub fn with_anchor(mut self, anchor: impl Into<Anchor>) -> Self {
         self.anchor = anchor.into();
+        self
+    }
+
+    pub fn with_unlit(mut self, unlit: bool) -> Self {
+        self.unlit = unlit;
         self
     }
 }
