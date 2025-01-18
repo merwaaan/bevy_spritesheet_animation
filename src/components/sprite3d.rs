@@ -20,7 +20,7 @@ use bevy::{
 /// The library requires the sprite's texture to be loaded before setting everything up.
 /// If the texture has already been loaded (for example, in a loading stage), the sprite will appear on the next update.
 /// Otherwise, the actual rendering will be delayed and the sprite will not be visible during a few frames.
-#[derive(Component, Default, Debug, Reflect)]
+#[derive(Component, Debug, Reflect)]
 #[require(Transform, Visibility)]
 #[reflect(Component, Debug)]
 pub struct Sprite3d {
@@ -49,16 +49,44 @@ pub struct Sprite3d {
     /// The position of the sprite's origin
     pub anchor: Anchor,
 
-    /// If the sprite should interact with light.
+    /// The sprite's alpha mode.
+    ///
+    /// - `Mask(0.5)` (default) only allows fully opaque or fully transparent pixels
+    ///   (cutoff at `0.5`).
+    /// - `Blend` allows partially transparent pixels (slightly more expensive).
+    /// - Use any other value to achieve desired blending effect.
+    pub alpha_mode: AlphaMode,
+
+    /// Whether the sprite should be rendered as unlit.
+    /// `false` (default) allows for lighting.
     pub unlit: bool,
+
+    /// An emissive colour, if the sprite should emit light.
+    /// `LinearRgba::Black` (default) does nothing.
+    pub emissive: LinearRgba,
+}
+
+impl Default for Sprite3d {
+    fn default() -> Self {
+        Self {
+            image: Default::default(),
+            texture_atlas: Default::default(),
+            color: Default::default(),
+            flip_x: Default::default(),
+            flip_y: Default::default(),
+            custom_size: Default::default(),
+            anchor: Default::default(),
+            alpha_mode: AlphaMode::Mask(0.5),
+            unlit: true,
+            emissive: LinearRgba::BLACK,
+        }
+    }
 }
 
 impl Sprite3d {
     pub fn from_image(image: Handle<Image>) -> Self {
         Self {
             image,
-            // unlit sprites is default behaviour
-            unlit: true,
             ..Default::default()
         }
     }
@@ -66,11 +94,24 @@ impl Sprite3d {
     pub fn from_atlas_image(image: Handle<Image>, atlas: TextureAtlas) -> Self {
         Self {
             image,
-            // unlit sprites is default behaviour
-            unlit: true,
             texture_atlas: Some(atlas),
             ..Default::default()
         }
+    }
+
+    pub fn with_alpha_mode(mut self, alpha_mode: AlphaMode) -> Self {
+        self.alpha_mode = alpha_mode;
+        self
+    }
+
+    pub fn with_unlit(mut self, unlit: bool) -> Self {
+        self.unlit = unlit;
+        self
+    }
+
+    pub fn with_emissive(mut self, emissive: LinearRgba) -> Self {
+        self.emissive = emissive;
+        self
     }
 
     pub fn with_color(mut self, color: impl Into<Color>) -> Self {
@@ -91,11 +132,6 @@ impl Sprite3d {
 
     pub fn with_anchor(mut self, anchor: impl Into<Anchor>) -> Self {
         self.anchor = anchor.into();
-        self
-    }
-
-    pub fn with_unlit(mut self, unlit: bool) -> Self {
-        self.unlit = unlit;
         self
     }
 }
