@@ -168,6 +168,9 @@ pub fn setup_rendering(
                 unlit: sprite.unlit,
                 alpha_mode: sprite.alpha_mode,
                 emissive: sprite.emissive,
+                // TODO
+                // these are sensible values for 3d rendering,
+                // but could be extended to public API
                 perceptual_roughness: 0.5,
                 reflectance: 0.15,
                 ..default()
@@ -271,6 +274,9 @@ fn get_or_create_material(
                 unlit: sprite.unlit,
                 alpha_mode: sprite.alpha_mode,
                 emissive: sprite.emissive,
+                // TODO
+                // these are sensible values for 3d rendering,
+                // but could be extended to public API
                 perceptual_roughness: 0.5,
                 reflectance: 0.15,
                 ..default()

@@ -58,7 +58,7 @@ pub struct Sprite3d {
     pub alpha_mode: AlphaMode,
 
     /// Whether the sprite should be rendered as unlit.
-    /// `false` (default) allows for lighting.
+    /// `true` (default) disables lighting.
     pub unlit: bool,
 
     /// An emissive colour, if the sprite should emit light.
