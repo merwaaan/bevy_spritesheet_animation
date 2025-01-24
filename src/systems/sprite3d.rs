@@ -13,11 +13,12 @@ use bevy::{
         alpha::AlphaMode,
         mesh::{Mesh, PrimitiveTopology},
         render_asset::RenderAssetUsages,
+        render_resource::Face,
     },
     sprite::TextureAtlasLayout,
 };
 
-use crate::components::sprite3d::Sprite3d;
+use crate::prelude::Sprite3d;
 
 /// Cached data for the 3D sprites
 #[derive(Resource, Debug, Default, Reflect)]
@@ -40,7 +41,49 @@ pub struct Cache {
 struct MaterialId {
     image: Handle<Image>,
     color: u32,
+    alpha_mode: HashableAlphaMode,
     unlit: bool,
+    emissive: HashableLinearRgba,
+}
+
+#[derive(Eq, PartialEq, Debug, Reflect)]
+struct HashableAlphaMode(AlphaMode);
+
+impl Hash for HashableAlphaMode {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self.0 {
+            AlphaMode::Opaque => 0.hash(state),
+            AlphaMode::Mask(f) => {
+                1.hash(state);
+                f.to_bits().hash(state);
+            }
+            AlphaMode::Blend => 2.hash(state),
+            AlphaMode::Premultiplied => 3.hash(state),
+            AlphaMode::Add => 4.hash(state),
+            AlphaMode::Multiply => 5.hash(state),
+            AlphaMode::AlphaToCoverage => 6.hash(state),
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Debug, Reflect)]
+struct HashableLinearRgba([u8; 4]);
+
+impl HashableLinearRgba {
+    fn new(c: LinearRgba) -> Self {
+        Self([
+            (c.red * 255.) as u8,
+            (c.green * 255.) as u8,
+            (c.blue * 255.) as u8,
+            (c.alpha * 255.) as u8,
+        ])
+    }
+}
+
+impl Hash for HashableLinearRgba {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
+    }
 }
 
 impl MaterialId {
@@ -48,7 +91,9 @@ impl MaterialId {
         Self {
             image: image_handle.clone_weak(),
             color: sprite.color.to_linear().as_u32(),
+            alpha_mode: HashableAlphaMode(sprite.alpha_mode),
             unlit: sprite.unlit,
+            emissive: HashableLinearRgba::new(sprite.emissive),
         }
     }
 }
@@ -116,15 +161,20 @@ pub fn setup_rendering(
         // Add a material to the entity if it does not have one yet
 
         if maybe_material.is_none() {
-            let material = StandardMaterial {
+            let material_handle = materials.add(StandardMaterial {
                 base_color_texture: Some(sprite.image.clone()),
                 base_color: sprite.color,
+                cull_mode: Some(Face::Back),
                 unlit: sprite.unlit,
-                alpha_mode: AlphaMode::Blend,
+                alpha_mode: sprite.alpha_mode,
+                emissive: sprite.emissive,
+                // TODO
+                // these are sensible values for 3d rendering,
+                // but could be extended to public API
+                perceptual_roughness: 0.5,
+                reflectance: 0.15,
                 ..default()
-            };
-
-            let material_handle = materials.add(material);
+            });
 
             commands
                 .entity(entity)
@@ -220,8 +270,15 @@ fn get_or_create_material(
             let material_handle: Handle<StandardMaterial> = materials.add(StandardMaterial {
                 base_color_texture: Some(sprite.image.clone()),
                 base_color: sprite.color,
+                cull_mode: Some(Face::Back),
                 unlit: sprite.unlit,
-                alpha_mode: AlphaMode::Blend,
+                alpha_mode: sprite.alpha_mode,
+                emissive: sprite.emissive,
+                // TODO
+                // these are sensible values for 3d rendering,
+                // but could be extended to public API
+                perceptual_roughness: 0.5,
+                reflectance: 0.15,
                 ..default()
             });
 
@@ -314,6 +371,18 @@ fn try_get_or_create_mesh(
                             half.y - offset.y,
                             0.0,
                         ],
+                    ],
+                );
+
+                mesh.insert_attribute(
+                    Mesh::ATTRIBUTE_NORMAL,
+                    vec![
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
                     ],
                 );
 
