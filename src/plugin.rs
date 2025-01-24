@@ -5,6 +5,7 @@ use bevy::{
 
 use crate::{
     animator::Animator,
+    components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
     events::AnimationEvent,
     library::AnimationLibrary,
     systems::{sprite3d, spritesheet_animation},
@@ -66,6 +67,7 @@ impl Plugin for SpritesheetAnimationPlugin {
             // The animator responsible for running animations
             .init_resource::<Animator>()
             .register_type::<Animator>()
+            .register_type::<SpritesheetAnimation>()
             // Animations events
             .add_event::<AnimationEvent>()
             // Systems
@@ -80,6 +82,7 @@ impl Plugin for SpritesheetAnimationPlugin {
                 // Cache for 3D sprites
                 .init_resource::<sprite3d::Cache>()
                 .register_type::<sprite3d::Cache>()
+                .register_type::<Sprite3d>()
                 // 3D sprite systems
                 .add_systems(
                     PostUpdate,
