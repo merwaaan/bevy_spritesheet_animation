@@ -15,7 +15,7 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easil
 
 # Features
 
-- Animate 2D sprites, [3D sprites](#3d-sprites) and UI images! 🎉
+- Animate 2D sprites, [3D sprites](#3d-sprites), UI images and custom cursor icons! 🎉
 - A single Bevy [component](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) to add to your entities to play animations.
 - Tunable parameters: [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html), [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html).
 - [Composable animations](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html) from multiple clips.
@@ -256,7 +256,37 @@ fn spawn_character(mut commands: Commands, mut library: ResMut<AnimationLibrary>
             .with_atlas(atlas_layout)
             .with_anchor(Anchor::BottomRight)
             .build(),
-        SpritesheetAnimation::from_id(animation_id)
+        SpritesheetAnimation::from_id(animation_id),
+    ));
+}
+```
+
+## Custom cursor icons
+
+You can animate custom cursor icons using this crate.
+
+You need to enable the optional `custom_cursor` feature.
+
+```toml
+[dependencies]
+bevy = { version = "...", features = ["...", "custom_cursor"] }
+bevy_spritesheet_animation = { version = "...", features = ["custom_cursor"] }
+```
+
+When you spawn your cursor icon entity, add a `SpritesheetAnimation` component as usual to play an animation.
+
+```rust
+fn spawn_cursor_icon(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+    // ...
+
+    let animation_id = library.register_animation(animation);
+
+    commands.spawn((
+        CursorIcon::Custom(CustomCursor::Image(CustomCursorImage {
+            // ...
+        })),
+
+        SpritesheetAnimation::from_id(animation_id),
     ));
 }
 ```
