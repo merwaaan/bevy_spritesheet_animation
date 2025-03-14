@@ -69,6 +69,14 @@ fn clips() {
     assert_eq!(ctx.library().get_clip_name(clip1_id), Some("first"));
 
     assert_eq!(ctx.library().clip_names().len(), 1);
+
+    // Deregister it, and check that the name is removed
+    ctx.library().deregister_clip(clip1_id);
+
+    assert!(!ctx.library().is_clip_name(clip1_id, "first"));
+    assert_eq!(ctx.library().get_clip_name(clip1_id), None);
+    assert_eq!(ctx.library().clip_with_name("first"), None);
+    assert_eq!(ctx.library().clip_names().len(), 0);
 }
 
 #[test]
@@ -166,6 +174,14 @@ fn animations() {
     );
 
     assert_eq!(ctx.library().animation_names().len(), 1);
+
+    // Deregister it, and check that the name is removed
+    ctx.library().deregister_animation(animation1_id);
+
+    assert!(!ctx.library().is_animation_name(animation1_id, "first"));
+    assert_eq!(ctx.library().get_animation_name(animation1_id), None);
+    assert_eq!(ctx.library().animation_with_name("first"), None);
+    assert_eq!(ctx.library().animation_names().len(), 0);
 }
 
 #[test]

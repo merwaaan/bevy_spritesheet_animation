@@ -105,6 +105,26 @@ impl AnimationLibrary {
         id
     }
 
+    /// Deregisters a clip from the library.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use bevy_spritesheet_animation::prelude::*;
+    /// # let mut library = AnimationLibrary::default();
+    /// let clip = Clip::from_frames([1, 2, 3]);
+    ///
+    /// let clip_id = library.register_clip(clip);
+    ///
+    /// library.deregister_clip(clip_id);
+    ///
+    /// assert!(library.get_clip(clip_id).is_none());
+    /// ```
+    pub fn deregister_clip(&mut self, clip_id: ClipId) {
+        self.clips.remove(&clip_id);
+        self.clip_names.remove(&clip_id);
+    }
+
     /// Associates a unique name to a clip.
     ///
     /// The clip ID can then later be queried from that name with [AnimationLibrary::clip_with_name].
@@ -254,6 +274,53 @@ impl AnimationLibrary {
             .insert(id, Arc::new(AnimationCache::new(id, self)));
 
         id
+    }
+
+    /// Deregisters an animation from the library.
+    ///
+    /// This also deregisters all the clips associated with the animation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use bevy::prelude::*;
+    /// # use bevy_spritesheet_animation::prelude::*;
+    /// fn f(
+    ///     mut commands: Commands,
+    ///     mut library: AnimationLibrary,
+    ///     # image: Handle<Image>,
+    ///     # atlas: TextureAtlas
+    ///     // ...
+    /// ) {
+    ///     let clip = Clip::from_frames([4, 5, 6]);
+    ///
+    ///     let clip_id = library.register_clip(clip);
+    ///
+    ///     let animation = Animation::from_clip(clip_id)
+    ///         .with_duration(AnimationDuration::PerRepetition(1500));
+    ///
+    ///     let animation_id = library.register_animation(animation);
+    ///
+    ///     // Later, when finished with the animation, deregister it.
+    ///
+    ///     library.deregister_animation(animation_id);
+    ///
+    ///     // The animation and its clips are no longer available in the library.
+    ///     assert!(library.get_animation(animation_id).is_none());
+    ///     assert!(library.get_clip(clip_id).is_none());
+    /// }
+    /// ```
+    pub fn deregister_animation(&mut self, animation_id: AnimationId) {
+        let maybe_animation = self.animations.remove(&animation_id);
+
+        if let Some(animation) = maybe_animation {
+            for clip_id in animation.clip_ids() {
+                self.deregister_clip(*clip_id);
+            }
+        }
+
+        self.animation_caches.remove(&animation_id);
+        self.animation_names.remove(&animation_id);
     }
 
     /// Associates a unique name to an animation.
