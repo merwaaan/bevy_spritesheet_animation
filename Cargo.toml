@@ -11,6 +11,10 @@ edition = "2021"
 resolver = "2"
 exclude = ["assets/example.gif", "assets/example3d.gif"]
 
+[features]
+default = []
+custom_cursor = ["bevy/bevy_winit", "bevy/custom_cursor"]
+
 [dependencies]
 bevy = { version = "0.15.0", default-features = false, features = [
   "bevy_pbr",
