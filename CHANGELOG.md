@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.0 - 2025-03-14
+
+### Added
+
+- Add `deregister_clip()` and `deregister_animation()` to `AnimationLibrary` (by mgi388).
+- Add an `unlit` property to `Sprite3d` (by Microwonk).
+- Add support for ImageNode (by mgi388).
+
+### Fixed
+
+- Fixed the lighting of 3D sprites (by Microwonk).
+- Fixed `SpritesheetAnimation` and `Sprite3d` not being registered (by mgi388).
+
 ## 2.0.0 - 2024-12-14
 
 ### Added
