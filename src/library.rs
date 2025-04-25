@@ -561,3 +561,54 @@ impl AnimationLibrary {
         self.animation_caches.get(&animation_id).unwrap().clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn animation_ids_should_be_unique_after_deregistration() {
+        let mut library = AnimationLibrary::default();
+
+        // First animation registration.
+        let clip1 = Clip::from_frames(vec![0]);
+        let clip_id1 = library.register_clip(clip1);
+        let anim1 = Animation::from_clip(clip_id1);
+        let anim_id1 = library.register_animation(anim1);
+
+        // Deregister the animation and its clips.
+        library.deregister_animation(anim_id1);
+
+        // Second animation registration should get a unique ID.
+        let clip2 = Clip::from_frames(vec![1]);
+        let clip_id2 = library.register_clip(clip2);
+        let anim2 = Animation::from_clip(clip_id2);
+        let anim_id2 = library.register_animation(anim2);
+
+        assert_ne!(
+            anim_id1, anim_id2,
+            "Each animation should receive a unique ID even after deregistration"
+        );
+    }
+
+    #[test]
+    fn clip_ids_should_be_unique_after_deregistration() {
+        let mut library = AnimationLibrary::default();
+
+        // First clip registration.
+        let clip1 = Clip::from_frames(vec![0]);
+        let clip_id1 = library.register_clip(clip1);
+
+        // Deregister the clip.
+        library.deregister_clip(clip_id1);
+
+        // Second clip registration should get a unique ID.
+        let clip2 = Clip::from_frames(vec![1]);
+        let clip_id2 = library.register_clip(clip2);
+
+        assert_ne!(
+            clip_id1, clip_id2,
+            "Each clip should receive a unique ID even after deregistration"
+        );
+    }
+}
