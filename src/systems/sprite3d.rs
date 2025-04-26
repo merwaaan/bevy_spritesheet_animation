@@ -5,7 +5,7 @@ use bevy::{
     ecs::{
         entity::Entity,
         query::Changed,
-        system::{Commands, Query, Res, ResMut, Resource},
+        system::{Commands, Query, Res, ResMut},
     },
     pbr::StandardMaterial,
     prelude::*,
@@ -15,7 +15,6 @@ use bevy::{
         render_asset::RenderAssetUsages,
         render_resource::Face,
     },
-    sprite::TextureAtlasLayout,
 };
 
 use crate::prelude::Sprite3d;

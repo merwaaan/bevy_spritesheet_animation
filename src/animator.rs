@@ -13,11 +13,8 @@ use crate::{
 };
 use bevy::{
     ecs::{
-        entity::Entity,
-        event::EventWriter,
-        query::QueryData,
-        reflect::*,
-        system::{Query, Resource},
+        entity::Entity, event::EventWriter, query::QueryData, reflect::*, resource::Resource,
+        system::Query,
     },
     reflect::prelude::*,
     sprite::Sprite,
@@ -178,26 +175,26 @@ impl Animator {
 
                             // Emit the end events if the animation just ended
 
-                            event_writer.send(AnimationEvent::ClipRepetitionEnd {
+                            event_writer.write(AnimationEvent::ClipRepetitionEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 clip_id: current_frame.0.clip_id,
                                 clip_repetition: current_frame.0.clip_repetition,
                             });
 
-                            event_writer.send(AnimationEvent::ClipEnd {
+                            event_writer.write(AnimationEvent::ClipEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 clip_id: current_frame.0.clip_id,
                             });
 
-                            event_writer.send(AnimationEvent::AnimationRepetitionEnd {
+                            event_writer.write(AnimationEvent::AnimationRepetitionEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 animation_repetition: current_frame.0.animation_repetition,
                             });
 
-                            event_writer.send(AnimationEvent::AnimationEnd {
+                            event_writer.write(AnimationEvent::AnimationEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                             });
@@ -271,7 +268,7 @@ impl Animator {
         event_writer: &mut EventWriter<AnimationEvent>,
     ) {
         animation_events.iter().for_each(|event| {
-            event_writer.send(
+            event_writer.write(
                 // Promote AnimationIteratorEvents to regular AnimationEvents
                 match event {
                     AnimationIteratorEvent::MarkerHit {
