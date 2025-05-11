@@ -1,6 +1,10 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::Arc,
+    sync::{
+        // TODO: Use bevy_platform when updated to Bevy 0.16.
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
 };
 
 use bevy::{ecs::reflect::*, prelude::Resource, reflect::prelude::*};
@@ -75,6 +79,8 @@ pub struct AnimationLibrary {
     /// Animation caches, one for each animation.
     /// They contain all the data required to play an animation.
     animation_caches: HashMap<AnimationId, Arc<AnimationCache>>,
+
+    next_id: AtomicUsize,
 }
 
 impl AnimationLibrary {
@@ -97,7 +103,7 @@ impl AnimationLibrary {
     /// ```
     pub fn register_clip(&mut self, clip: Clip) -> ClipId {
         let id = ClipId {
-            value: self.clips.len(),
+            value: self.next_id.fetch_add(1, Ordering::Relaxed),
         };
 
         self.clips.insert(id, clip);
@@ -265,7 +271,7 @@ impl AnimationLibrary {
     /// ```
     pub fn register_animation(&mut self, animation: Animation) -> AnimationId {
         let id = AnimationId {
-            value: self.animations.len(),
+            value: self.next_id.fetch_add(1, Ordering::Relaxed),
         };
 
         self.animations.insert(id, animation);
@@ -450,7 +456,7 @@ impl AnimationLibrary {
     /// ```
     pub fn new_marker(&mut self) -> AnimationMarkerId {
         let id = AnimationMarkerId {
-            value: self.markers.len(),
+            value: self.next_id.fetch_add(1, Ordering::Relaxed),
         };
 
         self.markers.insert(id);
@@ -559,5 +565,56 @@ impl AnimationLibrary {
         // In practice, this cannot fail as the library is the sole creator of IDs
         // and the cache is created when registering the animation
         self.animation_caches.get(&animation_id).unwrap().clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn animation_ids_should_be_unique_after_deregistration() {
+        let mut library = AnimationLibrary::default();
+
+        // First animation registration.
+        let clip1 = Clip::from_frames(vec![0]);
+        let clip_id1 = library.register_clip(clip1);
+        let anim1 = Animation::from_clip(clip_id1);
+        let anim_id1 = library.register_animation(anim1);
+
+        // Deregister the animation and its clips.
+        library.deregister_animation(anim_id1);
+
+        // Second animation registration should get a unique ID.
+        let clip2 = Clip::from_frames(vec![1]);
+        let clip_id2 = library.register_clip(clip2);
+        let anim2 = Animation::from_clip(clip_id2);
+        let anim_id2 = library.register_animation(anim2);
+
+        assert_ne!(
+            anim_id1, anim_id2,
+            "Each animation should receive a unique ID even after deregistration"
+        );
+    }
+
+    #[test]
+    fn clip_ids_should_be_unique_after_deregistration() {
+        let mut library = AnimationLibrary::default();
+
+        // First clip registration.
+        let clip1 = Clip::from_frames(vec![0]);
+        let clip_id1 = library.register_clip(clip1);
+
+        // Deregister the clip.
+        library.deregister_clip(clip_id1);
+
+        // Second clip registration should get a unique ID.
+        let clip2 = Clip::from_frames(vec![1]);
+        let clip_id2 = library.register_clip(clip2);
+
+        assert_ne!(
+            clip_id1, clip_id2,
+            "Each clip should receive a unique ID even after deregistration"
+        );
     }
 }

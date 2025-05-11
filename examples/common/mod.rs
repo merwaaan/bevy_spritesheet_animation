@@ -27,11 +27,11 @@ pub fn grid_position(columns: u32, rows: u32, n: usize) -> Vec3 {
 
 /// Returns a random screen-space position
 pub fn random_position() -> Vec3 {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     Vec3::new(
-        rng.gen_range(-DEFAULT_WINDOW_WIDTH / 2.0..DEFAULT_WINDOW_WIDTH / 2.0),
-        rng.gen_range(-DEFAULT_WINDOW_WIDTH / 2.0..DEFAULT_WINDOW_HEIGHT / 2.0),
+        rng.random_range(-DEFAULT_WINDOW_WIDTH / 2.0..DEFAULT_WINDOW_WIDTH / 2.0),
+        rng.random_range(-DEFAULT_WINDOW_WIDTH / 2.0..DEFAULT_WINDOW_HEIGHT / 2.0),
         0.0,
     )
 }
