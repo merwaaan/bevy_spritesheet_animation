@@ -19,7 +19,6 @@ use bevy::{
         reflect::*,
         system::{Query, Resource},
     },
-    log::warn,
     reflect::prelude::*,
     sprite::Sprite,
     time::Time,
@@ -188,23 +187,10 @@ impl Animator {
                 let frame_duration = cf_data_tuple.0.duration;
 
                 if animation_instance.accumulated_time >= frame_duration {
-                    // Check for zero duration frames to prevent potential infinite loops
-                    // if accumulated_time is also zero or doesn't advance.
-                    if frame_duration.is_zero() {
-                        // If frame_duration is zero, we must advance.
-                        // We don't subtract from accumulated_time to prevent it from getting stuck if it's also zero.
-                        // Or, log a warning and ensure progress.
-                        warn!(
-                            "Animation frame has zero duration for animation_id: {:?}, frame index: {:?}. Advancing.",
-                            animation_instance.animation_id, cf_data_tuple.1.frame
-                        );
-                        // No time subtraction, just move to next frame.
-                    } else {
-                        animation_instance.accumulated_time -= frame_duration;
-                    }
+                    animation_instance.accumulated_time -= frame_duration;
 
                     // Store current frame info before advancing, for end events
-                    let last_played_frame_data = cf_data_tuple.0.clone(); // Clone IteratorFrame
+                    let last_played_frame_data = cf_data_tuple.0.clone();
 
                     // Fetch the next frame
 
