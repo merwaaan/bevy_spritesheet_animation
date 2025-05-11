@@ -198,10 +198,6 @@ impl Animator {
                     animation_instance.current_frame =
                         Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
                             .or_else(|| {
-                                // The animation is over
-
-                                // Emit the end events if the animation just ended
-
                                 event_writer.write(AnimationEvent::ClipRepetitionEnd {
                                     entity: item.entity,
                                     animation_id: animation_instance.animation_id,
