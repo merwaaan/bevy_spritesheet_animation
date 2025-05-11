@@ -79,10 +79,31 @@ impl Animator {
         // Run animations for all the entities
 
         for mut item in query.iter_mut() {
+            let current_component_animation_id = item.spritesheet_animation.animation_id;
+            let mut previous_accumulated_time = Duration::ZERO;
+            let mut is_directional_change_of_same_type = false;
+
+            // Check if this is a change of AnimationId for an existing instance
+            if let Some(existing_instance) = self.animation_instances.get(&item.entity) {
+                if existing_instance.animation_id != current_component_animation_id {
+                    // AnimationId has changed. Let's see if it's a grouped change.
+                    let old_animation_data = library.get_animation(existing_instance.animation_id);
+                    let new_animation_data = library.get_animation(current_component_animation_id);
+
+                    if old_animation_data.animation_group_key.is_some() && // Both must have a key
+                       old_animation_data.animation_group_key == new_animation_data.animation_group_key
+                    {
+                        // It's a change within the same animation group (e.g., different direction)
+                        is_directional_change_of_same_type = true;
+                        previous_accumulated_time = existing_instance.accumulated_time;
+                    }
+                }
+            }
+
             // Create a new animation instance if:
             let needs_new_animation_instance = match self.animation_instances.get(&item.entity) {
                 // The entity has an animation instance already but it switched animation
-                Some(instance) => instance.animation_id != item.spritesheet_animation.animation_id,
+                Some(instance) => instance.animation_id != current_component_animation_id,
                 // The entity has no animation instance yet
                 None => true,
             };
@@ -90,7 +111,7 @@ impl Animator {
             if needs_new_animation_instance {
                 // Create a new iterator for this animation
 
-                let cache = library.get_animation_cache(item.spritesheet_animation.animation_id);
+                let cache = library.get_animation_cache(current_component_animation_id);
 
                 let mut iterator = AnimationIterator::new(cache.clone());
 
@@ -105,15 +126,21 @@ impl Animator {
 
                 // Create the instance and immediately play the first frame
 
-                let first_frame = Self::play_frame(&mut iterator, &mut item, event_writer);
+                let first_frame_data = Self::play_frame(&mut iterator, &mut item, event_writer);
+
+                let accumulated_time_for_new_instance = if is_directional_change_of_same_type {
+                    previous_accumulated_time
+                } else {
+                    Duration::ZERO
+                };
 
                 self.animation_instances.insert(
                     item.entity,
                     AnimationInstance {
-                        animation_id: item.spritesheet_animation.animation_id,
+                        animation_id: current_component_animation_id,
                         iterator,
-                        current_frame: first_frame,
-                        accumulated_time: Duration::ZERO,
+                        current_frame: first_frame_data,
+                        accumulated_time: accumulated_time_for_new_instance,
                     },
                 );
             }
@@ -122,28 +149,24 @@ impl Animator {
 
             // Apply manual progress updates
 
-            if animation_instance
-                .current_frame
-                .as_ref()
-                .filter(|frame| item.spritesheet_animation.progress != frame.1)
-                .is_some()
+            if let Some((ref _current_iterator_frame, current_iterator_actual_progress)) =
+                animation_instance.current_frame
             {
-                if animation_instance
-                    .iterator
-                    .to(item.spritesheet_animation.progress)
-                {
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
-                        .inspect(|new_frame| {
-                            animation_instance.current_frame = Some(new_frame.clone());
-                            animation_instance.accumulated_time = Duration::ZERO;
-                        });
-                } else {
-                    // Restore to the last valid progress if invalid
-                    item.spritesheet_animation.progress = animation_instance
-                        .current_frame
-                        .as_ref()
-                        .map(|(_, progress)| *progress)
-                        .unwrap_or_default()
+                if item.spritesheet_animation.progress != current_iterator_actual_progress {
+                    // User manually changed item.spritesheet_animation.progress
+                    if animation_instance
+                        .iterator
+                        .to(item.spritesheet_animation.progress)
+                    {
+                        Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
+                            .inspect(|new_frame_data| {
+                                animation_instance.current_frame = Some(new_frame_data.clone());
+                                animation_instance.accumulated_time = Duration::ZERO;
+                            });
+                    } else {
+                        // Restore to the last valid progress if user set an invalid one
+                        item.spritesheet_animation.progress = current_iterator_actual_progress;
+                    }
                 }
             }
 
@@ -161,50 +184,54 @@ impl Animator {
                 time.delta_secs() * item.spritesheet_animation.speed_factor,
             );
 
-            while let Some(current_frame) = animation_instance
-                .current_frame
-                .as_ref()
-                .filter(|frame| animation_instance.accumulated_time > frame.0.duration)
-            {
-                // Consume the elapsed time
+            while let Some(cf_data_tuple) = animation_instance.current_frame.as_ref() {
+                let frame_duration = cf_data_tuple.0.duration;
 
-                animation_instance.accumulated_time -= current_frame.0.duration;
+                if animation_instance.accumulated_time >= frame_duration {
+                    animation_instance.accumulated_time -= frame_duration;
 
-                // Fetch the next frame
+                    // Store current frame info before advancing, for end events
+                    let last_played_frame_data = cf_data_tuple.0.clone();
 
-                animation_instance.current_frame =
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
-                        .or_else(|| {
-                            // The animation is over
+                    // Fetch the next frame
 
-                            // Emit the end events if the animation just ended
+                    animation_instance.current_frame =
+                        Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
+                            .or_else(|| {
+                                event_writer.write(AnimationEvent::ClipRepetitionEnd {
+                                    entity: item.entity,
+                                    animation_id: animation_instance.animation_id,
+                                    clip_id: last_played_frame_data.clip_id,
+                                    clip_repetition: last_played_frame_data.clip_repetition,
+                                });
 
-                            event_writer.write(AnimationEvent::ClipRepetitionEnd {
-                                entity: item.entity,
-                                animation_id: animation_instance.animation_id,
-                                clip_id: current_frame.0.clip_id,
-                                clip_repetition: current_frame.0.clip_repetition,
+                                event_writer.write(AnimationEvent::ClipEnd {
+                                    entity: item.entity,
+                                    animation_id: animation_instance.animation_id,
+                                    clip_id: last_played_frame_data.clip_id,
+                                });
+
+                                event_writer.write(AnimationEvent::AnimationRepetitionEnd {
+                                    entity: item.entity,
+                                    animation_id: animation_instance.animation_id,
+                                    animation_repetition: last_played_frame_data
+                                        .animation_repetition,
+                                });
+
+                                event_writer.write(AnimationEvent::AnimationEnd {
+                                    entity: item.entity,
+                                    animation_id: animation_instance.animation_id,
+                                });
+
+                                None
                             });
 
-                            event_writer.write(AnimationEvent::ClipEnd {
-                                entity: item.entity,
-                                animation_id: animation_instance.animation_id,
-                                clip_id: current_frame.0.clip_id,
-                            });
-
-                            event_writer.write(AnimationEvent::AnimationRepetitionEnd {
-                                entity: item.entity,
-                                animation_id: animation_instance.animation_id,
-                                animation_repetition: current_frame.0.animation_repetition,
-                            });
-
-                            event_writer.write(AnimationEvent::AnimationEnd {
-                                entity: item.entity,
-                                animation_id: animation_instance.animation_id,
-                            });
-
-                            None
-                        });
+                    if animation_instance.current_frame.is_none() {
+                        break; // Animation finished, exit while loop
+                    }
+                } else {
+                    break; // Not enough accumulated_time for the current frame
+                }
             }
         }
     }
