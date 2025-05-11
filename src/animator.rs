@@ -11,6 +11,8 @@ use crate::{
     events::AnimationEvent,
     library::AnimationLibrary,
 };
+#[cfg(feature = "custom_cursor")]
+use bevy::winit::cursor::{CursorIcon, CustomCursor};
 use bevy::{
     ecs::{
         entity::Entity, event::EventWriter, query::QueryData, reflect::*, resource::Resource,
@@ -56,6 +58,8 @@ pub struct SpritesheetAnimationQuery {
     sprite: Option<&'static mut Sprite>,
     sprite3d: Option<&'static mut Sprite3d>,
     image_node: Option<&'static mut ImageNode>,
+    #[cfg(feature = "custom_cursor")]
+    cursor_icon: Option<&'static mut CursorIcon>,
 }
 
 impl Animator {
@@ -240,6 +244,28 @@ impl Animator {
                 .image_node
                 .as_deref_mut()
                 .and_then(|image| image.texture_atlas.as_mut())
+            {
+                if atlas.index != frame.atlas_index {
+                    atlas.index = frame.atlas_index;
+                }
+            }
+
+            #[cfg(feature = "custom_cursor")]
+            if let Some(atlas) = item
+                .cursor_icon
+                .as_deref_mut()
+                .and_then(|cursor_icon| {
+                    if let CursorIcon::Custom(CustomCursor::Image {
+                        ref mut texture_atlas,
+                        ..
+                    }) = *cursor_icon
+                    {
+                        Some(texture_atlas)
+                    } else {
+                        None
+                    }
+                })
+                .and_then(|atlas| atlas.as_mut())
             {
                 if atlas.index != frame.atlas_index {
                     atlas.index = frame.atlas_index;
