@@ -118,6 +118,9 @@ pub struct Animation {
     direction: Option<AnimationDirection>,
     /// The optional easing of this animation
     easing: Option<Easing>,
+    /// An optional key to group animations that are variants (e.g., different directions)
+    /// of the same conceptual animation.
+    pub animation_group_key: Option<String>,
 }
 
 impl Animation {
@@ -129,6 +132,7 @@ impl Animation {
             repetitions: None,
             direction: None,
             easing: None,
+            animation_group_key: None,
         }
     }
 
@@ -140,6 +144,7 @@ impl Animation {
             repetitions: None,
             direction: None,
             easing: None,
+            animation_group_key: None,
         }
     }
 
@@ -208,6 +213,16 @@ impl Animation {
 
     pub fn set_easing(&mut self, easing: Easing) -> &mut Self {
         self.easing = Some(easing);
+        self
+    }
+
+    pub fn with_group_key(mut self, key: impl Into<String>) -> Self {
+        self.animation_group_key = Some(key.into());
+        self
+    }
+
+    pub fn set_group_key(&mut self, key: impl Into<String>) -> &mut Self {
+        self.animation_group_key = Some(key.into());
         self
     }
 }
