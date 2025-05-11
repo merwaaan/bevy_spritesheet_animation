@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use bevy::{log::warn, math::UVec2, sprite::TextureAtlasLayout};
+use bevy::{image::TextureAtlasLayout, log::warn, math::UVec2};
 
 use crate::CRATE_NAME;
 

@@ -1,6 +1,7 @@
 use bevy::{
     app::{App, Plugin, PostUpdate},
-    prelude::{IntoSystemConfigs, SystemSet},
+    ecs::schedule::IntoScheduleConfigs as _,
+    prelude::SystemSet,
 };
 
 use crate::{
