@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.0 - 2025-05-11
+
+### Added
+
+- Add support for Bevy 0.16.0 (by mgi388)
+- Add support for animated cursor icons (by mgi388)
+
+### Fixed
+
+- Fix wrong IDs being returned for new clips and animations after deregistering some (by mgi388)
+
 ## 2.1.0 - 2025-03-14
 
 ### Added
@@ -10,8 +21,8 @@
 
 ### Fixed
 
-- Fixed the lighting of 3D sprites (by Microwonk).
-- Fixed `SpritesheetAnimation` and `Sprite3d` not being registered (by mgi388).
+- Fix the lighting of 3D sprites (by Microwonk).
+- Fix `SpritesheetAnimation` and `Sprite3d` not being registered (by mgi388).
 
 ## 2.0.0 - 2024-12-14
 
@@ -107,7 +118,7 @@ To create a variant of a clip, just clone and reconfigure it before registering 
 
 ### Added
 
-- Support Bevy 0.14.0 (by BLumbye)
+- Add support Bevy 0.14.0 (by BLumbye)
 - Add a `reset()` method to the SpritesheetAnimation component
 
 ### Fixed

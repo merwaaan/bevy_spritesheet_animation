@@ -8,7 +8,7 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easil
 ![An animated character walking from the left to the right and shooting their gun](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example.gif)
 
 > [!TIP]
-> This crate supports the latest [Bevy 0.15](https://bevyengine.org/news/bevy-0-15/). Please check the [compatibility table](#compatibility) to see which version of this crate to use with older Bevy versions.
+> This crate supports the latest [Bevy 0.16](https://bevyengine.org/news/bevy-0-16/). Please check the [compatibility table](#compatibility) to see which version of this crate to use with older Bevy versions.
 
 > [!NOTE]
 > This crate is under active development. Please regularly check the [CHANGELOG](CHANGELOG.md) for recent changes.
@@ -311,6 +311,7 @@ For more examples, browse the [examples/](examples) directory.
 
 | bevy | bevy_spritesheet_animation |
 | ---- | -------------------------- |
+| 0.16 | 3.0.0                      |
 | 0.15 | 2.0.0                      |
 | 0.14 | 0.2.0                      |
 | 0.13 | 0.1.0                      |
