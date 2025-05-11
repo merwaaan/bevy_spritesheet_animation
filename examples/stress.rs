@@ -12,7 +12,7 @@
 #[path = "./common/mod.rs"]
 pub mod common;
 
-use bevy::prelude::*;
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_spritesheet_animation::prelude::*;
 use clap::{Parser, ValueEnum};
 use common::random_position;
@@ -43,7 +43,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin::default(),
-            bevy::diagnostic::FrameTimeDiagnosticsPlugin,
+            bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
             PerfUiPlugin,
         ))
         .insert_resource(cli)
@@ -143,7 +143,7 @@ fn spawn_sprites(
     commands.spawn((
         PerfUiRoot {
             // Set a fixed width to make all the bars line up
-            values_col_width: Some(160.0),
+            values_col_width: 160.0,
             ..Default::default()
         },
         PerfUiWidgetBar::new(PerfUiEntryFPS::default()),
