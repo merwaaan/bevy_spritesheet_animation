@@ -17,7 +17,7 @@ use bevy_spritesheet_animation::prelude::*;
 use clap::{Parser, ValueEnum};
 use common::random_position;
 use iyes_perf_ui::prelude::*;
-use rand::{seq::SliceRandom, Rng};
+use rand::{seq::IndexedRandom as _, Rng};
 
 #[derive(ValueEnum, Clone)]
 enum Mode {
@@ -90,7 +90,7 @@ fn spawn_sprites(
 
     // Create 100 animations from those clips, each with random parameters
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let animation_directions = [
         AnimationDirection::Forwards,
@@ -100,11 +100,11 @@ fn spawn_sprites(
 
     let animation_ids: Vec<AnimationId> = (0..100)
         .map(|_| {
-            let clip_id = clip_ids.choose(&mut rng).unwrap().clone();
+            let clip_id = *clip_ids.choose(&mut rng).unwrap();
 
             let animation = Animation::from_clip(clip_id)
-                .with_duration(AnimationDuration::PerFrame(rng.gen_range(100..1000)))
-                .with_direction(animation_directions.choose(&mut rng).unwrap().clone());
+                .with_duration(AnimationDuration::PerFrame(rng.random_range(100..1000)))
+                .with_direction(*animation_directions.choose(&mut rng).unwrap());
 
             library.register_animation(animation)
         })

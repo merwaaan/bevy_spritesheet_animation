@@ -26,7 +26,7 @@ approx = "0.5.1"
 bevy = { version = "0.15.0", default-features = true }
 clap = { version = "4.5.16", features = ["derive"] }
 iyes_perf_ui = { git = "https://github.com/IyesGames/iyes_perf_ui.git", rev = "d8f3cbb2ec486b85a86b21e1aa32dcebd26ac884" }
-rand = "0.8.5"
+rand = "0.9"
 
 [profile.test]
 inherits = "release"
