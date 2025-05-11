@@ -119,7 +119,7 @@ pub struct Animation {
     /// The optional easing of this animation
     easing: Option<Easing>,
     /// An optional key to group animations that are variants (e.g., different directions)
-    /// of the same conceptual animation. This won't reset the frame time when only
+    /// of the same conceptual animation. This won't reset the current frame duration when only
     /// switching between animations with the same key.
     pub animation_group_key: Option<String>,
 }
