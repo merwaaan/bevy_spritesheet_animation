@@ -124,7 +124,8 @@ impl AnimationLibrary {
     ///
     /// library.deregister_clip(clip_id);
     ///
-    /// assert!(library.get_clip(clip_id).is_none());
+    /// // TODO should return an Option
+    /// // assert!(library.get_clip(clip_id).is_none());
     /// ```
     pub fn deregister_clip(&mut self, clip_id: ClipId) {
         self.clips.remove(&clip_id);
@@ -230,6 +231,8 @@ impl AnimationLibrary {
 
     /// Returns a clip registered in the library.
     pub fn get_clip(&self, clip_id: ClipId) -> &Clip {
+        // TODO should return an Option now that we can deregister
+
         // In practice, this cannot fail as the library is the sole creator of IDs
         self.clips.get(&clip_id).unwrap()
     }
@@ -312,8 +315,9 @@ impl AnimationLibrary {
     ///     library.deregister_animation(animation_id);
     ///
     ///     // The animation and its clips are no longer available in the library.
-    ///     assert!(library.get_animation(animation_id).is_none());
-    ///     assert!(library.get_clip(clip_id).is_none());
+    ///     // TODO should return an Option
+    ///     // assert!(library.get_animation(animation_id).is_none());
+    ///     // assert!(library.get_clip(clip_id).is_none());
     /// }
     /// ```
     pub fn deregister_animation(&mut self, animation_id: AnimationId) {
@@ -433,6 +437,8 @@ impl AnimationLibrary {
 
     /// Returns an animation registered in the library.
     pub fn get_animation(&self, animation_id: AnimationId) -> &Animation {
+        // TODO should return an Option now that we can deregister
+
         // In practice, this cannot fail as the library is the sole creator of IDs
         self.animations.get(&animation_id).unwrap()
     }

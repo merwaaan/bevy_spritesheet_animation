@@ -12,12 +12,12 @@
 #[path = "./common/mod.rs"]
 pub mod common;
 
-use bevy::prelude::*;
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_spritesheet_animation::prelude::*;
 use clap::{Parser, ValueEnum};
 use common::random_position;
 use iyes_perf_ui::prelude::*;
-use rand::{seq::SliceRandom, Rng};
+use rand::{seq::IndexedRandom as _, Rng};
 
 #[derive(ValueEnum, Clone)]
 enum Mode {
@@ -43,7 +43,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin::default(),
-            bevy::diagnostic::FrameTimeDiagnosticsPlugin,
+            bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
             PerfUiPlugin,
         ))
         .insert_resource(cli)
@@ -90,7 +90,7 @@ fn spawn_sprites(
 
     // Create 100 animations from those clips, each with random parameters
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let animation_directions = [
         AnimationDirection::Forwards,
@@ -100,11 +100,11 @@ fn spawn_sprites(
 
     let animation_ids: Vec<AnimationId> = (0..100)
         .map(|_| {
-            let clip_id = clip_ids.choose(&mut rng).unwrap().clone();
+            let clip_id = *clip_ids.choose(&mut rng).unwrap();
 
             let animation = Animation::from_clip(clip_id)
-                .with_duration(AnimationDuration::PerFrame(rng.gen_range(100..1000)))
-                .with_direction(animation_directions.choose(&mut rng).unwrap().clone());
+                .with_duration(AnimationDuration::PerFrame(rng.random_range(100..1000)))
+                .with_direction(*animation_directions.choose(&mut rng).unwrap());
 
             library.register_animation(animation)
         })
@@ -143,7 +143,7 @@ fn spawn_sprites(
     commands.spawn((
         PerfUiRoot {
             // Set a fixed width to make all the bars line up
-            values_col_width: Some(160.0),
+            values_col_width: 160.0,
             ..Default::default()
         },
         PerfUiWidgetBar::new(PerfUiEntryFPS::default()),
