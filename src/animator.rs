@@ -129,17 +129,6 @@ impl Animator {
                 let first_frame_data = Self::play_frame(&mut iterator, &mut item, event_writer);
 
                 let accumulated_time_for_new_instance = if is_directional_change_of_same_type {
-                    // If it's a grouped directional change, carry over the accumulated time.
-                    // Ensure the carried-over time isn't nonsensically larger than the new frame's duration,
-                    // though the while loop below should handle advancing immediately if it is.
-                    if let Some((ref frame, _)) = first_frame_data {
-                        if previous_accumulated_time > frame.duration && !frame.duration.is_zero() {
-                            // If previous time already exceeds new frame's duration,
-                            // it means we should have ticked. Let the while loop handle it.
-                            // Or, cap it: previous_accumulated_time.min(frame.duration)
-                            // For simplicity, let's just carry it over. The while loop will tick.
-                        }
-                    }
                     previous_accumulated_time
                 } else {
                     Duration::ZERO
