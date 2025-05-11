@@ -5,7 +5,7 @@ pub mod common;
 
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_spritesheet_animation::prelude::*;
-use rand::{seq::SliceRandom, Rng};
+use rand::{seq::IndexedRandom as _, Rng};
 
 fn main() {
     App::new()
@@ -102,7 +102,7 @@ fn spawn_sprites(
 }
 
 fn update_on_keypress(keyboard: Res<ButtonInput<KeyCode>>, mut sprites: Query<&mut Sprite3d>) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     for mut sprite in &mut sprites {
         // Random color
@@ -143,8 +143,8 @@ fn update_on_keypress(keyboard: Res<ButtonInput<KeyCode>>, mut sprites: Query<&m
 
         if keyboard.just_pressed(KeyCode::KeyS) {
             sprite.custom_size = Some(Vec2::new(
-                rng.gen_range(100.0..1000.0),
-                rng.gen_range(100.0..1000.0),
+                rng.random_range(100.0..1000.0),
+                rng.random_range(100.0..1000.0),
             ));
         }
 
