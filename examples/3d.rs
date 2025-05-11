@@ -108,7 +108,7 @@ fn update_on_keypress(keyboard: Res<ButtonInput<KeyCode>>, mut sprites: Query<&m
         // Random color
 
         if keyboard.just_pressed(KeyCode::KeyC) {
-            sprite.color = Color::linear_rgb(rng.gen(), rng.gen(), rng.gen());
+            sprite.color = Color::linear_rgb(rng.random(), rng.random(), rng.random());
         }
 
         // Flip
