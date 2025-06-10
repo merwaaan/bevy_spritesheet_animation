@@ -12,7 +12,7 @@
 #[path = "./common/mod.rs"]
 pub mod common;
 
-use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
+use bevy::prelude::*;
 use bevy_spritesheet_animation::prelude::*;
 use clap::{Parser, ValueEnum};
 use common::random_position;
