@@ -255,10 +255,12 @@ impl Animator {
                 .cursor_icon
                 .as_deref_mut()
                 .and_then(|cursor_icon| {
-                    if let CursorIcon::Custom(CustomCursor::Image {
-                        ref mut texture_atlas,
-                        ..
-                    }) = *cursor_icon
+                    if let CursorIcon::Custom(CustomCursor::Image(
+                        bevy::winit::cursor::CustomCursorImage {
+                            ref mut texture_atlas,
+                            ..
+                        },
+                    )) = *cursor_icon
                     {
                         Some(texture_atlas)
                     } else {
