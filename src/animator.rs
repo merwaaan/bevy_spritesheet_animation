@@ -82,7 +82,11 @@ impl Animator {
             // Create a new animation instance if:
             let needs_new_animation_instance = match self.animation_instances.get(&item.entity) {
                 // The entity has an animation instance already but it switched animation
-                Some(instance) => instance.animation_id != item.spritesheet_animation.animation_id,
+                Some(instance) => {
+                    instance.animation_id != item.spritesheet_animation.animation_id
+                        || instance.current_frame.is_none()
+                            && item.spritesheet_animation.progress.frame == 0
+                }
                 // The entity has no animation instance yet
                 None => true,
             };
