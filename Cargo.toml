@@ -7,8 +7,8 @@ readme = "README.md"
 license = "MIT"
 keywords = ["bevy", "sprite", "animation"]
 categories = ["game-development"]
-edition = "2021"
-resolver = "2"
+edition = "2024"
+resolver = "3"
 exclude = ["assets/example.gif", "assets/example3d.gif"]
 
 [features]
@@ -18,8 +18,8 @@ custom_cursor = ["bevy/bevy_winit", "bevy/custom_cursor"]
 [dependencies]
 bevy = { version = "0.16.0", default-features = false, features = [
   "bevy_log",
-  "bevy_pbr",
   "bevy_sprite",
+  "bevy_pbr",
   "bevy_ui",
 ] }
 
