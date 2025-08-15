@@ -1,15 +1,15 @@
+#[cfg(feature = "3d")]
+use crate::components::sprite3d::Sprite3d;
+#[cfg(feature = "3d")]
+use crate::systems::sprite3d;
+use crate::{
+    animator::Animator, components::spritesheet_animation::SpritesheetAnimation,
+    events::AnimationEvent, library::AnimationLibrary, systems::spritesheet_animation,
+};
 use bevy::{
     app::{App, Plugin, PostUpdate},
     ecs::schedule::IntoScheduleConfigs as _,
     prelude::SystemSet,
-};
-
-use crate::{
-    animator::Animator,
-    components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
-    events::AnimationEvent,
-    library::AnimationLibrary,
-    systems::{sprite3d, spritesheet_animation},
 };
 
 /// Set for systems that update the animation state.
@@ -32,7 +32,7 @@ pub struct Sprite3dSystemSet;
 /// # return; // cannot actually execute this during CI builds as there are no displays
 /// let app = App::new()
 ///     .add_plugins(DefaultPlugins)
-///     .add_plugins(SpritesheetAnimationPlugin::default());
+///     .add_plugins(SpritesheetAnimationPlugin);
 ///
 /// // ...
 /// ```
@@ -52,12 +52,8 @@ pub struct Sprite3dSystemSet;
 ///     // ...
 /// }
 /// ```
-pub struct SpritesheetAnimationPlugin {
-    /// Determines whether to run 3D-related systems.
-    ///
-    /// This allows using the plugin without `bevy_render`, for example in a headless environment with `MinimalPlugin`.
-    pub enable_3d: bool,
-}
+#[derive(Default)]
+pub struct SpritesheetAnimationPlugin;
 
 impl Plugin for SpritesheetAnimationPlugin {
     fn build(&self, app: &mut App) {
@@ -78,30 +74,23 @@ impl Plugin for SpritesheetAnimationPlugin {
                 spritesheet_animation::play_animations.in_set(AnimationSystemSet),
             );
 
-        if self.enable_3d {
-            app
-                // Cache for 3D sprites
-                .init_resource::<sprite3d::Cache>()
-                .register_type::<sprite3d::Cache>()
-                .register_type::<Sprite3d>()
-                // 3D sprite systems
-                .add_systems(
-                    PostUpdate,
-                    (
-                        sprite3d::setup_rendering,
-                        sprite3d::sync_when_sprites_change,
-                        sprite3d::sync_when_atlases_change,
-                        sprite3d::remove_dropped_standard_materials,
-                    )
-                        .in_set(Sprite3dSystemSet)
-                        .after(AnimationSystemSet),
-                );
-        }
-    }
-}
-
-impl Default for SpritesheetAnimationPlugin {
-    fn default() -> Self {
-        Self { enable_3d: true }
+        #[cfg(feature = "3d")]
+        app
+            // Cache for 3D sprites
+            .init_resource::<sprite3d::Cache>()
+            .register_type::<sprite3d::Cache>()
+            .register_type::<Sprite3d>()
+            // 3D sprite systems
+            .add_systems(
+                PostUpdate,
+                (
+                    sprite3d::setup_rendering,
+                    sprite3d::sync_when_sprites_change,
+                    sprite3d::sync_when_atlases_change,
+                    sprite3d::remove_dropped_standard_materials,
+                )
+                    .in_set(Sprite3dSystemSet)
+                    .after(AnimationSystemSet),
+            );
     }
 }

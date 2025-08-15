@@ -14,7 +14,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins.set(ImagePlugin::default_nearest()),
-            SpritesheetAnimationPlugin::default(),
+            SpritesheetAnimationPlugin,
         ))
         .add_systems(Startup, spawn_animations)
         .run();

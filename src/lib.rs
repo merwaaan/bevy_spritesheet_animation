@@ -24,7 +24,7 @@
 //!         .add_plugins(DefaultPlugins)
 //!         // Add the plugin to enable animations.
 //!         // This makes the AnimationLibrary resource available to your systems.
-//!         .add_plugins(SpritesheetAnimationPlugin::default())
+//!         .add_plugins(SpritesheetAnimationPlugin)
 //!         .add_systems(Startup, setup);
 //!
 //!     // ...
@@ -91,13 +91,16 @@ pub mod prelude {
             Animation, AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat,
         },
         clip::{Clip, ClipId},
-        components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
+        components::spritesheet_animation::SpritesheetAnimation,
         easing::{Easing, EasingVariety},
         events::{AnimationEvent, AnimationMarkerId},
         library::{AnimationLibrary, LibraryError},
         plugin::SpritesheetAnimationPlugin,
         spritesheet::Spritesheet,
     };
+
+    #[cfg(feature = "3d")]
+    pub use super::components::sprite3d::Sprite3d;
 }
 
 const CRATE_NAME: &str = "bevy_spritesheet_animation";

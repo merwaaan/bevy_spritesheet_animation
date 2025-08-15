@@ -12,13 +12,13 @@ resolver = "2"
 exclude = ["assets/example.gif", "assets/example3d.gif"]
 
 [features]
-default = []
+default = ["3d"]
 custom_cursor = ["bevy/bevy_winit", "bevy/custom_cursor"]
+3d = ["bevy/bevy_pbr"]
 
 [dependencies]
 bevy = { version = "0.16.0", default-features = false, features = [
   "bevy_log",
-  "bevy_pbr",
   "bevy_sprite",
   "bevy_ui",
 ] }

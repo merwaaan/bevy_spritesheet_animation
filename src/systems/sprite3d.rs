@@ -1,5 +1,5 @@
-use std::{collections::HashMap, hash::Hash};
-
+#[cfg(feature = "3d")]
+use crate::prelude::Sprite3d;
 use bevy::{
     asset::{Assets, Handle},
     ecs::{
@@ -16,8 +16,7 @@ use bevy::{
         render_resource::Face,
     },
 };
-
-use crate::prelude::Sprite3d;
+use std::{collections::HashMap, hash::Hash};
 
 /// Cached data for the 3D sprites
 #[derive(Resource, Debug, Default, Reflect)]

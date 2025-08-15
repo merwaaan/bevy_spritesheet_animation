@@ -42,7 +42,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins.set(ImagePlugin::default_nearest()),
-            SpritesheetAnimationPlugin::default(),
+            SpritesheetAnimationPlugin,
             bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
             PerfUiPlugin,
         ))
