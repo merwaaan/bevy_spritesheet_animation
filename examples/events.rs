@@ -212,31 +212,28 @@ fn spawn_visual_effects(
     mut events: EventReader<AnimationEvent>,
 ) {
     for event in events.read() {
-        match event {
-            AnimationEvent::MarkerHit { marker_id, .. } => {
-                // Spawn a shockwave at each footstep
+        if let AnimationEvent::MarkerHit { marker_id, .. } = event {
+            // Spawn a shockwave at each footstep
 
-                if library.is_marker_name(*marker_id, "foot touches ground") {
-                    commands.spawn((
-                        Mesh2d(meshes.add(Circle { radius: 1.0 })),
-                        MeshMaterial2d(materials.add(ColorMaterial::default())),
-                        Transform::from_xyz(0.0, -30.0, -1.0),
-                        Footstep,
-                    ));
-                }
-
-                // Spawn a bullet when firing
-
-                if library.is_marker_name(*marker_id, "bullet goes out") {
-                    commands.spawn((
-                        Mesh2d(meshes.add(Circle { radius: 3.0 })),
-                        MeshMaterial2d(materials.add(Color::from(YELLOW))),
-                        Transform::from_xyz(20.0, 15.0, 0.0),
-                        Bullet,
-                    ));
-                }
+            if library.is_marker_name(*marker_id, "foot touches ground") {
+                commands.spawn((
+                    Mesh2d(meshes.add(Circle { radius: 1.0 })),
+                    MeshMaterial2d(materials.add(ColorMaterial::default())),
+                    Transform::from_xyz(0.0, -30.0, -1.0),
+                    Footstep,
+                ));
             }
-            _ => (),
+
+            // Spawn a bullet when firing
+
+            if library.is_marker_name(*marker_id, "bullet goes out") {
+                commands.spawn((
+                    Mesh2d(meshes.add(Circle { radius: 3.0 })),
+                    MeshMaterial2d(materials.add(Color::from(YELLOW))),
+                    Transform::from_xyz(20.0, 15.0, 0.0),
+                    Bullet,
+                ));
+            }
         }
     }
 }

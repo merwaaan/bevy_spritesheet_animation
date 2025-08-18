@@ -128,10 +128,10 @@ fn control_character(
         else if keyboard.pressed(KeyCode::ArrowLeft) {
             // Set the animation
 
-            if let Some(run_animation_id) = library.animation_with_name("run") {
-                if animation.animation_id != run_animation_id {
-                    animation.switch(run_animation_id);
-                }
+            if let Some(run_animation_id) = library.animation_with_name("run")
+                && animation.animation_id != run_animation_id
+            {
+                animation.switch(run_animation_id);
             }
 
             // Move
@@ -143,10 +143,10 @@ fn control_character(
         else if keyboard.pressed(KeyCode::ArrowRight) {
             // Set the animation
 
-            if let Some(run_animation_id) = library.animation_with_name("run") {
-                if animation.animation_id != run_animation_id {
-                    animation.switch(run_animation_id);
-                }
+            if let Some(run_animation_id) = library.animation_with_name("run")
+                && animation.animation_id != run_animation_id
+            {
+                animation.switch(run_animation_id);
             }
 
             // Move
@@ -158,10 +158,10 @@ fn control_character(
         else {
             // Set the animation
 
-            if let Some(idle_animation_id) = library.animation_with_name("idle") {
-                if animation.animation_id != idle_animation_id {
-                    animation.switch(idle_animation_id);
-                }
+            if let Some(idle_animation_id) = library.animation_with_name("idle")
+                && animation.animation_id != idle_animation_id
+            {
+                animation.switch(idle_animation_id);
             }
         }
     }
@@ -172,17 +172,14 @@ fn control_character(
     // Check out the `events` examples for more details.
 
     for event in events.read() {
-        match event {
-            AnimationEvent::AnimationRepetitionEnd {
-                entity,
-                animation_id,
-                ..
-            } => {
-                if library.is_animation_name(*animation_id, "shoot") {
-                    commands.entity(*entity).remove::<Shooting>();
-                }
-            }
-            _ => (),
+        if let AnimationEvent::AnimationRepetitionEnd {
+            entity,
+            animation_id,
+            ..
+        } = event
+            && library.is_animation_name(*animation_id, "shoot")
+        {
+            commands.entity(*entity).remove::<Shooting>();
         }
     }
 }

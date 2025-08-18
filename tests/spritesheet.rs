@@ -137,7 +137,7 @@ fn atlas_layout() {
     assert_eq!(layout1.size, UVec2::new(200, 600));
     assert_eq!(layout1.textures.len(), 6);
 
-    assert_eq!(layout1.textures.get(0), Some(&URect::new(0, 0, 100, 200)));
+    assert_eq!(layout1.textures.first(), Some(&URect::new(0, 0, 100, 200)));
     assert_eq!(layout1.textures.get(1), Some(&URect::new(100, 0, 200, 200)));
 
     assert_eq!(layout1.textures.get(2), Some(&URect::new(0, 200, 100, 400)));

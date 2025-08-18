@@ -147,7 +147,7 @@ impl Iterator for AnimationIterator {
         // Retrieve the appropriate frame set from the cache
 
         let cached_frames = if let Some(frames_pong) = &self.cache.frames_pong {
-            if self.next_frame_progress.repetition % 2 == 0 {
+            if self.next_frame_progress.repetition.is_multiple_of(2) {
                 // Regular frames for even PingPong repetitions
                 &self.cache.frames
             } else {

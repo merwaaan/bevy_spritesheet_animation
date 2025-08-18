@@ -5,7 +5,7 @@ use std::{
 
 use bevy::{
     prelude::*,
-    render::{settings::WgpuSettings, RenderPlugin},
+    render::{RenderPlugin, settings::WgpuSettings},
     time::TimeUpdateStrategy,
     winit::WinitPlugin,
 };
@@ -118,8 +118,7 @@ impl Context {
             .world_mut()
             .get_resource_mut::<TimeUpdateStrategy>();
 
-        if let Some(TimeUpdateStrategy::ManualInstant(ref mut last_instant)) =
-            time_strategy.as_deref_mut()
+        if let Some(TimeUpdateStrategy::ManualInstant(last_instant)) = time_strategy.as_deref_mut()
         {
             *last_instant += Duration::from_millis(ms as u64);
         }
@@ -163,7 +162,7 @@ impl Context {
         assert_eq!(events, HashSet::from_iter(expected_events));
     }
 
-    pub fn get_sprite<F: FnMut(&mut SpritesheetAnimation) -> ()>(&mut self, mut f: F) {
+    pub fn get_sprite<F: FnMut(&mut SpritesheetAnimation)>(&mut self, mut f: F) {
         let mut sprite_animation = self
             .app
             .world_mut()
@@ -173,10 +172,7 @@ impl Context {
         f(&mut sprite_animation);
     }
 
-    pub fn update_sprite_animation<F: FnMut(&mut SpritesheetAnimation) -> ()>(
-        &mut self,
-        mut builder: F,
-    ) {
+    pub fn update_sprite_animation<F: FnMut(&mut SpritesheetAnimation)>(&mut self, mut builder: F) {
         let mut sprite_animation = self
             .app
             .world_mut()
@@ -243,5 +239,11 @@ impl Context {
             entity: self.sprite_entity,
             animation_id,
         }
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
     }
 }

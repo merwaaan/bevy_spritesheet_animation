@@ -5,7 +5,7 @@ pub mod common;
 
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_spritesheet_animation::prelude::*;
-use rand::{seq::IndexedRandom as _, Rng};
+use rand::{Rng, seq::IndexedRandom as _};
 
 fn main() {
     App::new()
@@ -136,7 +136,7 @@ fn update_on_keypress(keyboard: Res<ButtonInput<KeyCode>>, mut sprites: Query<&m
                 Anchor::TopRight,
             ];
 
-            sprite.anchor = ANCHORS.choose(&mut rng).unwrap().clone();
+            sprite.anchor = *ANCHORS.choose(&mut rng).unwrap();
         }
 
         // Random size
