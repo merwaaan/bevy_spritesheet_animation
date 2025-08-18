@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.1.0 - 2025-08-18
+
+### Changed
+
+- Replace the `enable_3D` option of `SpritesheetAnimationPlugin` with the `3d` cargo feature (by mirsella)
+- Bump the Rust edition from 2021 to 2024
+
+### Fixed
+
+- Fix CursorIcon::Custom usage (by mirsella)
+- Fix SpritesheetAnimation::reset not restarting animation (by mirsella)
+
 ## 3.0.0 - 2025-05-11
 
 ### Added
