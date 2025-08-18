@@ -35,7 +35,7 @@ impl Context {
                     .into(),
                     ..default()
                 }),
-            SpritesheetAnimationPlugin::default(),
+            SpritesheetAnimationPlugin,
         ))
         // Insert a manual update strategy to control time
         .insert_resource(TimeUpdateStrategy::ManualInstant(Instant::now()));
