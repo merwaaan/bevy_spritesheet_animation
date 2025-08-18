@@ -197,7 +197,7 @@ Instead, create clips/animations once and then reference them when needed.
 For instance, you can create all your animations in a setup system, give them unique names and then assign them to entities, immediately or at a later stage.
 
 ```rust
-fn spawn_characters(mut library: ResMut<AnimationLibrary>) {
+fn create_animation(mut library: ResMut<AnimationLibrary>) {
     let clip = Clip::from_frames([1, 2, 3]);
     let clip_id = library.register_clip(clip);
 
