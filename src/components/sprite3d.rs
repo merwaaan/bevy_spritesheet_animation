@@ -58,6 +58,11 @@ pub struct Sprite3d {
     /// An emissive colour, if the sprite should emit light.
     /// `LinearRgba::Black` (default) does nothing.
     pub emissive: LinearRgba,
+
+    /// Whether the sprite should be rendered as double-sided.
+    /// `true` adds a second set of indices, describing the same indices
+    /// in reverse order.
+    pub double_sided: bool,
 }
 
 impl Default for Sprite3d {
@@ -73,6 +78,7 @@ impl Default for Sprite3d {
             alpha_mode: AlphaMode::Mask(0.5),
             unlit: true,
             emissive: LinearRgba::BLACK,
+            double_sided: false,
         }
     }
 }
@@ -127,5 +133,10 @@ impl Sprite3d {
     pub fn with_anchor(mut self, anchor: impl Into<Anchor>) -> Self {
         self.anchor = anchor.into();
         self
+    }
+
+    pub fn double_sided(mut self, ds: bool) -> Self {
+        self.double_sided = ds;
+	self
     }
 }
