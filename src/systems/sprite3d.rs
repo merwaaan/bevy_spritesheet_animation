@@ -11,7 +11,7 @@ use bevy::{
     prelude::*,
     render::{
         alpha::AlphaMode,
-        mesh::{Mesh, PrimitiveTopology},
+        mesh::{Indices, Mesh, PrimitiveTopology},
         render_asset::RenderAssetUsages,
         render_resource::Face,
     },
@@ -331,7 +331,7 @@ fn try_get_or_create_mesh(
                 mesh.insert_attribute(
                     Mesh::ATTRIBUTE_POSITION,
                     vec![
-                        // Triangle 1
+                        // Rectangle 1
                         [
                             // bottom left
                             -half.x - offset.x,
@@ -350,17 +350,19 @@ fn try_get_or_create_mesh(
                             half.y - offset.y,
                             0.0,
                         ],
-                        // Triangle 2
+                        // top right
+                        [half.x - offset.x, half.y - offset.y, 0.0],
+                        // Rectangle 2
                         [
-                            // bottom right
-                            half.x - offset.x,
+                            // bottom left
+                            -half.x - offset.x,
                             -half.y - offset.y,
                             0.0,
                         ],
                         [
-                            // top right
+                            // bottom right
                             half.x - offset.x,
-                            half.y - offset.y,
+                            -half.y - offset.y,
                             0.0,
                         ],
                         [
@@ -369,6 +371,8 @@ fn try_get_or_create_mesh(
                             half.y - offset.y,
                             0.0,
                         ],
+                        // top right
+                        [half.x - offset.x, half.y - offset.y, 0.0],
                     ],
                 );
 
@@ -379,8 +383,10 @@ fn try_get_or_create_mesh(
                         [0.0, 0.0, 1.0],
                         [0.0, 0.0, 1.0],
                         [0.0, 0.0, 1.0],
-                        [0.0, 0.0, 1.0],
-                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, -1.0],
+                        [0.0, 0.0, -1.0],
+                        [0.0, 0.0, -1.0],
+                        [0.0, 0.0, -1.0],
                     ],
                 );
 
@@ -389,37 +395,47 @@ fn try_get_or_create_mesh(
                 let atlas_size = atlas_layout.size.as_vec2();
 
                 let mut uvs = vec![
-                    // Triangle 1
+                    // Rectangle 1
                     (UVec2::new(atlas_rect.min.x, atlas_rect.max.y).as_vec2() / atlas_size)
                         .to_array(),
                     (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size)
                         .to_array(),
                     (UVec2::new(atlas_rect.min.x, atlas_rect.min.y).as_vec2() / atlas_size)
                         .to_array(),
-                    // Triangle 2
-                    (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size)
-                        .to_array(),
                     (UVec2::new(atlas_rect.max.x, atlas_rect.min.y).as_vec2() / atlas_size)
                         .to_array(),
+                    // Rectangle 2
+                    (UVec2::new(atlas_rect.min.x, atlas_rect.max.y).as_vec2() / atlas_size)
+                        .to_array(),
+                    (UVec2::new(atlas_rect.max.x, atlas_rect.max.y).as_vec2() / atlas_size)
+                        .to_array(),
                     (UVec2::new(atlas_rect.min.x, atlas_rect.min.y).as_vec2() / atlas_size)
+                        .to_array(),
+                    (UVec2::new(atlas_rect.max.x, atlas_rect.min.y).as_vec2() / atlas_size)
                         .to_array(),
                 ];
 
                 if sprite.flip_x {
                     uvs.swap(0, 1);
-                    uvs.swap(5, 4);
-                    uvs[2] = uvs[5];
-                    uvs[3] = uvs[1];
+                    uvs.swap(2, 3);
+                    uvs.swap(4, 5);
+                    uvs.swap(6, 7);
                 }
 
                 if sprite.flip_y {
-                    uvs.swap(0, 2);
-                    uvs.swap(3, 4);
-                    uvs[1] = uvs[3];
-                    uvs[5] = uvs[2];
+                    uvs.swap(0, 3);
+                    uvs.swap(2, 1);
+                    uvs.swap(4, 6);
+                    uvs.swap(5, 7);
                 }
 
                 mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+
+                mesh.insert_indices(Indices::U32(if sprite.double_sided {
+                    vec![0, 1, 2, 1, 3, 2, 5, 4, 6, 7, 5, 6]
+                } else {
+                    vec![0, 1, 2, 1, 3, 2]
+                }));
 
                 let mesh_handle = meshes.add(mesh);
 
