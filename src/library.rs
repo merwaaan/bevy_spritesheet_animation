@@ -12,7 +12,7 @@ use bevy::{ecs::reflect::*, prelude::Resource, reflect::prelude::*};
 use crate::{
     animator::cache::AnimationCache,
     clip::{Clip, ClipId},
-    events::AnimationMarkerId,
+    messages::AnimationMarkerId,
     prelude::{Animation, AnimationId},
 };
 
@@ -445,10 +445,10 @@ impl AnimationLibrary {
 
     /// Creates a new animation marker and returns a unique ID to refer to it.
     ///
-    /// The marker can then be inserted into [Clip]s and an [AnimationEvent::MarkerHit](crate::prelude::AnimationEvent::MarkerHit) event
+    /// The marker can then be inserted into [Clip]s and an [AnimationMessage::MarkerHit](crate::prelude::AnimationMessage::MarkerHit) message
     /// will be emitted whenever an animation reaches it.
     ///
-    /// For more details, see the documentation of [AnimationEvent](crate::prelude::AnimationEvent).
+    /// For more details, see the documentation of [AnimationMessage](crate::prelude::AnimationMessage).
     ///
     /// # Example
     ///

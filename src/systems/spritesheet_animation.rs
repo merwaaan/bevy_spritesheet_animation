@@ -1,6 +1,6 @@
 use bevy::{
     ecs::{
-        event::EventWriter,
+        message::MessageWriter,
         system::{Query, Res, ResMut},
     },
     time::Time,
@@ -8,16 +8,16 @@ use bevy::{
 
 use crate::{
     animator::{Animator, SpritesheetAnimationQuery},
-    events::AnimationEvent,
     library::AnimationLibrary,
+    messages::AnimationMessage,
 };
 
 pub fn play_animations(
     time: Res<Time>,
     library: Res<AnimationLibrary>,
     mut animator: ResMut<Animator>,
-    mut event_writer: EventWriter<AnimationEvent>,
+    mut message_writer: MessageWriter<AnimationMessage>,
     mut query: Query<SpritesheetAnimationQuery>,
 ) {
-    animator.update(&time, &library, &mut event_writer, &mut query);
+    animator.update(&time, &library, &mut message_writer, &mut query);
 }

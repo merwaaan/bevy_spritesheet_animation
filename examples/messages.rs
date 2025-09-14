@@ -1,4 +1,4 @@
-// This example shows how to react to animations reaching points of interest with events.
+// This example shows how to react to animations reaching points of interest with messages.
 //
 // - We'll create a few animations for our character (idle, run, shoot) in a setup system
 //
@@ -6,8 +6,8 @@
 //      - when a character's foot touches the ground
 //      - when the character shoots their gun
 //
-// - We'll setup a UI that shows all the animation events that exist.
-//   Events received at each update will be highlighted.
+// - We'll setup a UI that shows all the animation messages that exist.
+//   Messages received at each update will be highlighted.
 //
 // - We'll spawn special effects when a marker is hit:
 //      - A bullet when the character shoots their gun
@@ -34,7 +34,7 @@ fn main() {
         .add_systems(
             Update,
             (
-                show_triggered_events,
+                show_triggered_messages,
                 spawn_visual_effects,
                 animate_bullets,
                 animate_footsteps,
@@ -115,7 +115,7 @@ fn create_ui(mut commands: Commands) {
             ..default()
         })
         .with_children(|parent| {
-            let mut add_event = |event_type: EventType| {
+            let mut add_message = |message_type: MessageType| {
                 parent
                     // Row
                     .spawn(Node {
@@ -133,30 +133,30 @@ fn create_ui(mut commands: Commands) {
                                 margin: UiRect::right(Val::Px(10.0)),
                                 ..default()
                             },
-                            event_type,
+                            message_type,
                         ));
 
-                        // Event name
+                        // Message name
 
                         parent.spawn((
-                            Text(format!("{event_type:?}")),
+                            Text(format!("{message_type:?}")),
                             TextFont::from_font_size(30.0),
                             Label,
                         ));
                     });
             };
 
-            add_event(EventType::MarkerHit);
-            add_event(EventType::ClipRepetitionEnd);
-            add_event(EventType::ClipEnd);
-            add_event(EventType::RepetitionEnd);
-            add_event(EventType::End);
+            add_message(MessageType::MarkerHit);
+            add_message(MessageType::ClipRepetitionEnd);
+            add_message(MessageType::ClipEnd);
+            add_message(MessageType::RepetitionEnd);
+            add_message(MessageType::End);
         });
 }
 
-// Component attached to a UI square to be highlighted when the given event type is received
+// Component attached to a UI square to be highlighted when the given message type is received
 #[derive(Debug, Component, Clone, Copy, PartialEq, Eq, Hash)]
-enum EventType {
+enum MessageType {
     MarkerHit,
     ClipRepetitionEnd,
     ClipEnd,
@@ -164,38 +164,38 @@ enum EventType {
     End,
 }
 
-fn show_triggered_events(
-    mut events: EventReader<AnimationEvent>,
-    mut squares: Query<(&mut BackgroundColor, &EventType)>,
+fn show_triggered_messages(
+    mut messages: MessageReader<AnimationMessage>,
+    mut squares: Query<(&mut BackgroundColor, &MessageType)>,
 ) {
-    // Collect the events that were just received
+    // Collect the messages that were just received
 
-    let mut triggered_events: HashSet<EventType> = HashSet::new();
+    let mut triggered_messages: HashSet<MessageType> = HashSet::new();
 
-    for event in events.read() {
-        match event {
-            AnimationEvent::MarkerHit { .. } => {
-                triggered_events.insert(EventType::MarkerHit);
+    for message in messages.read() {
+        match message {
+            AnimationMessage::MarkerHit { .. } => {
+                triggered_messages.insert(MessageType::MarkerHit);
             }
-            AnimationEvent::ClipRepetitionEnd { .. } => {
-                triggered_events.insert(EventType::ClipRepetitionEnd);
+            AnimationMessage::ClipRepetitionEnd { .. } => {
+                triggered_messages.insert(MessageType::ClipRepetitionEnd);
             }
-            AnimationEvent::ClipEnd { .. } => {
-                triggered_events.insert(EventType::ClipEnd);
+            AnimationMessage::ClipEnd { .. } => {
+                triggered_messages.insert(MessageType::ClipEnd);
             }
-            AnimationEvent::AnimationRepetitionEnd { .. } => {
-                triggered_events.insert(EventType::RepetitionEnd);
+            AnimationMessage::AnimationRepetitionEnd { .. } => {
+                triggered_messages.insert(MessageType::RepetitionEnd);
             }
-            AnimationEvent::AnimationEnd { .. } => {
-                triggered_events.insert(EventType::End);
+            AnimationMessage::AnimationEnd { .. } => {
+                triggered_messages.insert(MessageType::End);
             }
         }
     }
 
-    // Color the squares for the events that were just received
+    // Color the squares for the messages that were just received
 
-    for (mut color, event_type) in &mut squares {
-        if triggered_events.contains(event_type) {
+    for (mut color, message_type) in &mut squares {
+        if triggered_messages.contains(message_type) {
             color.0 = Color::from(DEEP_PINK);
         } else {
             color.0 = Color::from(GRAY);
@@ -209,12 +209,11 @@ fn spawn_visual_effects(
     library: Res<AnimationLibrary>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut events: EventReader<AnimationEvent>,
+    mut messages: MessageReader<AnimationMessage>,
 ) {
-    for event in events.read() {
-        if let AnimationEvent::MarkerHit { marker_id, .. } = event {
+    for message in messages.read() {
+        if let AnimationMessage::MarkerHit { marker_id, .. } = message {
             // Spawn a shockwave at each footstep
-
             if library.is_marker_name(*marker_id, "foot touches ground") {
                 commands.spawn((
                     Mesh2d(meshes.add(Circle { radius: 1.0 })),

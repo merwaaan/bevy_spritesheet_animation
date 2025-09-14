@@ -2,8 +2,8 @@ use crate::{
     animation::{AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat},
     clip::{Clip, ClipId},
     easing::Easing,
-    events::AnimationMarkerId,
     library::AnimationLibrary,
+    messages::AnimationMarkerId,
     CRATE_NAME,
 };
 use bevy::{log::warn, reflect::prelude::*};
@@ -17,20 +17,20 @@ pub struct CacheFrame {
     pub duration: Duration,
     pub clip_id: ClipId,
     pub clip_repetition: usize,
-    pub events: Vec<AnimationCacheEvent>,
+    pub messages: Vec<AnimationCacheMessage>,
 }
 
-/// A partial version of AnimationEvent.
+/// A partial version of AnimationMessage.
 ///
-/// The iterator will promote them to regular AnimationIteratorEvents and
+/// The iterator will promote them to regular AnimationIteratorMessages and
 /// add the information available at its level.
 ///
-/// The iterator & animator will also generate extra events that cannot be cached:
+/// The iterator & animator will also generate extra messages that cannot be cached:
 ///  - ClipRepetitionEnd, ClipEnd, AnimationRepetitionEnd on the first frame of the repetitions
 ///  - AnimationEnd after the last frame
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect)]
 #[reflect(Debug, PartialEq, Hash)]
-pub enum AnimationCacheEvent {
+pub enum AnimationCacheMessage {
     MarkerHit {
         marker_id: AnimationMarkerId,
         clip_id: ClipId,
@@ -49,7 +49,7 @@ pub enum AnimationCacheEvent {
 #[reflect(Debug)]
 /// The [AnimationCache] contains pre-computed frames for an animation.
 ///
-/// The idea is to cache for each frame its atlas index, duration and emitted events
+/// The idea is to cache for each frame its atlas index, duration and emitted messages
 /// so that playing an animation becomes just a matter of iterating over this cache
 /// without re-evaluating all the animation  parameters.
 pub struct AnimationCache {
@@ -432,11 +432,11 @@ impl AnimationFrames {
                             duration: frame.duration,
                             clip_id: clip.data.id,
                             clip_repetition: repetition_index,
-                            // Convert the markers to events
-                            events: frame
+                            // Convert the markers to messages
+                            messages: frame
                                 .markers
                                 .iter()
-                                .map(|marker| AnimationCacheEvent::MarkerHit {
+                                .map(|marker| AnimationCacheMessage::MarkerHit {
                                     marker_id: *marker,
                                     clip_id: clip.data.id,
                                     clip_repetition: repetition_index,
@@ -445,15 +445,15 @@ impl AnimationFrames {
                         })
                         .collect();
 
-                    // Inject a ClipRepetitionEnd event on the first frame of each repetition after the first one
+                    // Inject a ClipRepetitionEnd message on the first frame of each repetition after the first one
 
                     if let Some((previous_clip_id, previous_clip_repetition)) =
                         previous_clip_repetition
                     {
                         // At this point, we can safely access [0] as empty cycles have been filtered out
                         clip_frames[0]
-                            .events
-                            .push(AnimationCacheEvent::ClipRepetitionEnd {
+                            .messages
+                            .push(AnimationCacheMessage::ClipRepetitionEnd {
                                 clip_id: previous_clip_id,
                                 clip_repetition: previous_clip_repetition,
                             });
@@ -466,15 +466,15 @@ impl AnimationFrames {
                     all_clip_frames.extend(clip_frames);
                 }
 
-                // Inject a ClipEnd event on the first frame of each clip after the first one
+                // Inject a ClipEnd message on the first frame of each clip after the first one
                 //
                 // Because we'll return None at the end of the animation, the Animator will be
                 // responsible for generating ClipRepetitionEnd/ClipEnd for the last animation cycle
 
                 if let Some(previous_clip_id) = previous_clip {
                     all_clip_frames[0]
-                        .events
-                        .push(AnimationCacheEvent::ClipEnd {
+                        .messages
+                        .push(AnimationCacheMessage::ClipEnd {
                             clip_id: previous_clip_id,
                         });
                 }

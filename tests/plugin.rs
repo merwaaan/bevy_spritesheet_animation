@@ -12,12 +12,12 @@ fn library_available_as_a_resource() {
 }
 
 #[test]
-fn animation_events_available_as_a_resource() {
+fn animation_messages_available_as_a_resource() {
     let ctx = Context::new();
 
     assert!(ctx
         .app
         .world()
-        .get_resource::<Events<AnimationEvent>>()
+        .get_resource::<Messages<AnimationMessage>>()
         .is_some());
 }

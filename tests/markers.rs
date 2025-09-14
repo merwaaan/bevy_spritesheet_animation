@@ -4,7 +4,7 @@ use bevy_spritesheet_animation::prelude::*;
 use context::*;
 
 #[test]
-fn markers_emit_events() {
+fn markers_emit_messages() {
     let mut ctx = Context::new();
 
     let marker1_id = ctx.library().new_marker();

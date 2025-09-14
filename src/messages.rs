@@ -1,7 +1,7 @@
 use std::fmt;
 
 use bevy::{
-    ecs::{entity::Entity, event::Event},
+    ecs::{entity::Entity, message::Message},
     reflect::prelude::*,
 };
 
@@ -22,7 +22,7 @@ impl fmt::Display for AnimationMarkerId {
     }
 }
 
-/// A Bevy event emitted when an animation reaches a point of interest
+/// A Bevy message emitted when an animation reaches a point of interest
 ///
 /// * when a clip repetition ends
 /// * when a clip ends (if the clip repeats multiple times, only occurs at the end of the last repetition)
@@ -32,20 +32,20 @@ impl fmt::Display for AnimationMarkerId {
 ///
 /// # Example
 ///
-/// You can use those events to be notified of a clip/animation ending.
+/// You can use those messages to be notified of a clip/animation ending.
 ///
 /// ```
 /// # use bevy::prelude::*;
 /// # use bevy_spritesheet_animation::prelude::*;
 /// # fn go_to_main_menu() {}
 /// fn death_transition_system(
-///     mut events: EventReader<AnimationEvent>,
+///     mut messages: MessageReader<AnimationMessage>,
 ///     library: Res<AnimationLibrary>
 /// ) {
-///     for event in events.read() {
-///         match event {
+///     for message in messages.read() {
+///         match message {
 ///             // Some animation just ended...
-///             AnimationEvent::AnimationEnd { animation_id, .. } => {
+///             AnimationMessage::AnimationEnd { animation_id, .. } => {
 ///                 // ... it was the main character's death animation,
 ///                 // we can go back to the main menu
 ///
@@ -53,7 +53,7 @@ impl fmt::Display for AnimationMarkerId {
 ///                     go_to_main_menu();
 ///                 }
 ///             }
-///             // Ignore other events
+///             // Ignore other messages
 ///             _ => (),
 ///         }
 ///     }
@@ -85,29 +85,29 @@ impl fmt::Display for AnimationMarkerId {
 /// # use bevy::prelude::*;
 /// # use bevy_spritesheet_animation::prelude::*;
 /// # fn spawn_bullet() {}
-/// // We can watch events from any system and react to them
+/// // We can watch messages from any system and react to them
 /// fn spawn_visual_effects_system(
-///     mut events: EventReader<AnimationEvent>,
+///     mut messages: MessageReader<AnimationMessage>,
 ///     library: Res<AnimationLibrary>
 ///) {
-///     for event in events.read() {
-///         match event {
+///     for message in messages.read() {
+///         match message {
 ///             // Some marker was just hit...
-///             AnimationEvent::MarkerHit { marker_id, .. } => {
+///             AnimationMessage::MarkerHit { marker_id, .. } => {
 ///                 // ... it was our "bullet goes out" marker, let's spawn a bullet.
 ///
 ///                 if library.is_marker_name(*marker_id, "bullet goes out") {
 ///                     spawn_bullet();
 ///                 }
 ///             }
-///             // Ignore other events
+///             // Ignore other messages
 ///             _ => (),
 ///         }
 ///     }
 /// }
 /// ```
-#[derive(Event, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum AnimationEvent {
+#[derive(Message, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum AnimationMessage {
     /// An animation marker has been hit
     MarkerHit {
         entity: Entity,

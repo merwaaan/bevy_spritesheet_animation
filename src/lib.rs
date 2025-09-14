@@ -6,7 +6,7 @@
 //! - A single Bevy [component](crate::prelude::SpritesheetAnimation) to add to your entities to play animations.
 //! - Tunable parameters: [duration](crate::prelude::AnimationDuration), [repetitions](crate::prelude::AnimationRepeat), [direction](crate::prelude::AnimationDirection), [easing](crate::prelude::Easing).
 //! - [Composable animations](crate::prelude::Animation) from multiple clips.
-//! - [Events](crate::prelude::AnimationEvent) to react to animations ending or reaching specific points.
+//! - [Messages](crate::prelude::AnimationMessage) to react to animations ending or reaching specific points.
 //! - A [convenient API](crate::prelude::Spritesheet) to select frames in spritesheets.
 //!
 //! # Quick start
@@ -78,8 +78,8 @@ pub mod animator;
 pub mod clip;
 pub mod components;
 pub mod easing;
-pub mod events;
 pub mod library;
+pub mod messages;
 pub mod plugin;
 pub mod spritesheet;
 
@@ -93,8 +93,8 @@ pub mod prelude {
         clip::{Clip, ClipId},
         components::spritesheet_animation::SpritesheetAnimation,
         easing::{Easing, EasingVariety},
-        events::{AnimationEvent, AnimationMarkerId},
         library::{AnimationLibrary, LibraryError},
+        messages::{AnimationMarkerId, AnimationMessage},
         plugin::SpritesheetAnimationPlugin,
         spritesheet::Spritesheet,
     };

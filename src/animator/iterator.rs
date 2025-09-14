@@ -3,11 +3,11 @@ use std::{sync::Arc, time::Duration};
 use bevy::{log::warn, reflect::prelude::*};
 
 use crate::{
-    animation::AnimationDirection, clip::ClipId,
-    components::spritesheet_animation::AnimationProgress, events::AnimationMarkerId, CRATE_NAME,
+    CRATE_NAME, animation::AnimationDirection, clip::ClipId,
+    components::spritesheet_animation::AnimationProgress, messages::AnimationMarkerId,
 };
 
-use super::cache::{AnimationCache, AnimationCacheEvent, CacheFrame};
+use super::cache::{AnimationCache, AnimationCacheMessage, CacheFrame};
 
 /// Same as [CacheFrame] but with `animation_repetition`
 #[derive(Debug, Clone, Reflect)]
@@ -18,15 +18,15 @@ pub struct IteratorFrame {
     pub clip_id: ClipId,
     pub clip_repetition: usize,
     pub animation_repetition: usize,
-    pub events: Vec<AnimationIteratorEvent>,
+    pub messages: Vec<AnimationIteratorMessage>,
 }
 
-/// A partial version of AnimationEvent.
+/// A partial version of AnimationMessage.
 ///
-/// The animation will promote them to regular AnimationEvents and add the information available at its level.
+/// The animation will promote them to regular AnimationMessages and add the information available at its level.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect)]
 #[reflect(Debug, PartialEq, Hash)]
-pub enum AnimationIteratorEvent {
+pub enum AnimationIteratorMessage {
     MarkerHit {
         marker_id: AnimationMarkerId,
         animation_repetition: usize,
@@ -57,7 +57,7 @@ pub struct AnimationIterator {
     /// Current iteration progress
     next_frame_progress: AnimationProgress,
 
-    /// Marks when a repetition just completed so that end events can be emitted on the next iteration
+    /// Marks when a repetition just completed so that end messages can be emitted on the next iteration
     /// (the value is the last frame)
     repetition_just_ended: Option<CacheFrame>,
 }
@@ -107,33 +107,33 @@ impl AnimationIterator {
         }
     }
 
-    /// Promotes AnimationCacheEvents to AnimationIteratorEvents
-    fn promote_events(
-        animation_events: &[AnimationCacheEvent],
+    /// Promotes AnimationCacheMessages to AnimationIteratorMessages
+    fn promote_messages(
+        animation_messages: &[AnimationCacheMessage],
         animation_repetition: usize,
-    ) -> Vec<AnimationIteratorEvent> {
-        animation_events
+    ) -> Vec<AnimationIteratorMessage> {
+        animation_messages
             .iter()
-            .map(|event| match event {
-                AnimationCacheEvent::MarkerHit {
+            .map(|message| match message {
+                AnimationCacheMessage::MarkerHit {
                     marker_id,
                     clip_id,
                     clip_repetition,
-                } => AnimationIteratorEvent::MarkerHit {
+                } => AnimationIteratorMessage::MarkerHit {
                     marker_id: *marker_id,
                     animation_repetition,
                     clip_id: *clip_id,
                     clip_repetition: *clip_repetition,
                 },
-                AnimationCacheEvent::ClipRepetitionEnd {
+                AnimationCacheMessage::ClipRepetitionEnd {
                     clip_id,
                     clip_repetition,
-                } => AnimationIteratorEvent::ClipRepetitionEnd {
+                } => AnimationIteratorMessage::ClipRepetitionEnd {
                     clip_id: *clip_id,
                     clip_repetition: *clip_repetition,
                 },
-                AnimationCacheEvent::ClipEnd { clip_id } => {
-                    AnimationIteratorEvent::ClipEnd { clip_id: *clip_id }
+                AnimationCacheMessage::ClipEnd { clip_id } => {
+                    AnimationIteratorMessage::ClipEnd { clip_id: *clip_id }
                 }
             })
             .collect()
@@ -174,29 +174,29 @@ impl Iterator for AnimationIterator {
                     clip_id: cached_frame.clip_id,
                     clip_repetition: cached_frame.clip_repetition,
                     animation_repetition: current_frame_progress.repetition,
-                    events: Self::promote_events(
-                        &cached_frame.events,
+                    messages: Self::promote_messages(
+                        &cached_frame.messages,
                         current_frame_progress.repetition,
                     ),
                 };
 
-                // Inject the missing end events in the returned frame
+                // Inject the missing end messages in the returned frame
 
                 if let Some(previous_frame) = &self.repetition_just_ended {
                     frame
-                        .events
-                        .push(AnimationIteratorEvent::ClipRepetitionEnd {
+                        .messages
+                        .push(AnimationIteratorMessage::ClipRepetitionEnd {
                             clip_id: previous_frame.clip_id,
                             clip_repetition: previous_frame.clip_repetition,
                         });
 
-                    frame.events.push(AnimationIteratorEvent::ClipEnd {
+                    frame.messages.push(AnimationIteratorMessage::ClipEnd {
                         clip_id: previous_frame.clip_id,
                     });
 
                     frame
-                        .events
-                        .push(AnimationIteratorEvent::AnimationRepetitionEnd {
+                        .messages
+                        .push(AnimationIteratorMessage::AnimationRepetitionEnd {
                             animation_repetition: current_frame_progress
                                 .repetition
                                 .saturating_sub(1),
@@ -214,7 +214,7 @@ impl Iterator for AnimationIterator {
                 if self.next_frame_progress.frame >= self.cache.frames.len() {
                     self.next_frame_progress.repetition += 1;
 
-                    // Mark that an animation repetition just ended so that the appropriate events are emitted on the next frame
+                    // Mark that an animation repetition just ended so that the appropriate messages are emitted on the next frame
 
                     self.repetition_just_ended = Some(cached_frame.clone());
 

@@ -92,7 +92,7 @@ fn control_character(
     time: Res<Time>,
     keyboard: Res<ButtonInput<KeyCode>>,
     library: Res<AnimationLibrary>,
-    mut events: EventReader<AnimationEvent>,
+    mut messages: MessageReader<AnimationMessage>,
     mut characters: Query<(
         Entity,
         &mut Sprite,
@@ -168,15 +168,15 @@ fn control_character(
 
     // Remove the Shooting component when the shooting animation ends
     //
-    // We use animation events to detect when this happens.
-    // Check out the `events` examples for more details.
+    // We use animation messages to detect when this happens.
+    // Check out the `messages` examples for more details.
 
-    for event in events.read() {
-        if let AnimationEvent::AnimationRepetitionEnd {
+    for message in messages.read() {
+        if let AnimationMessage::AnimationRepetitionEnd {
             entity,
             animation_id,
             ..
-        } = event
+        } = message
             && library.is_animation_name(*animation_id, "shoot")
         {
             commands.entity(*entity).remove::<Shooting>();
