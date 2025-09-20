@@ -4,7 +4,7 @@ use crate::components::sprite3d::Sprite3d;
 use crate::systems::sprite3d;
 use crate::{
     animator::Animator, components::spritesheet_animation::SpritesheetAnimation,
-    events::AnimationEvent, library::AnimationLibrary, systems::spritesheet_animation,
+    library::AnimationLibrary, messages::AnimationMessage, systems::spritesheet_animation,
 };
 use bevy::{
     app::{App, Plugin, PostUpdate},
@@ -65,8 +65,8 @@ impl Plugin for SpritesheetAnimationPlugin {
             .init_resource::<Animator>()
             .register_type::<Animator>()
             .register_type::<SpritesheetAnimation>()
-            // Animations events
-            .add_event::<AnimationEvent>()
+            // Animations messages
+            .add_message::<AnimationMessage>()
             // Systems
             .add_systems(
                 PostUpdate,

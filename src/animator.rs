@@ -7,14 +7,14 @@ use crate::{
     animation::AnimationId,
     animator::iterator::{AnimationIterator, IteratorFrame},
     components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
-    events::AnimationEvent,
     library::AnimationLibrary,
+    messages::AnimationMessage,
 };
 #[cfg(feature = "custom_cursor")]
-use bevy::winit::cursor::{CursorIcon, CustomCursor};
+use bevy::window::{CursorIcon, CustomCursor};
 use bevy::{
     ecs::{
-        entity::Entity, event::EventWriter, query::QueryData, reflect::*, resource::Resource,
+        entity::Entity, message::MessageWriter, query::QueryData, reflect::*, resource::Resource,
         system::Query,
     },
     reflect::prelude::*,
@@ -22,7 +22,7 @@ use bevy::{
     time::Time,
     ui::widget::ImageNode,
 };
-use iterator::AnimationIteratorEvent;
+use iterator::AnimationIteratorMessage;
 use std::{collections::HashMap, time::Duration};
 
 #[derive(Debug, Reflect)]
@@ -68,7 +68,7 @@ impl Animator {
         &mut self,
         time: &Time,
         library: &AnimationLibrary,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        message_writer: &mut MessageWriter<AnimationMessage>,
         query: &mut Query<SpritesheetAnimationQuery>,
     ) {
         // Clear outdated animation instances associated to entities that do not have the component anymore
@@ -109,7 +109,7 @@ impl Animator {
 
                 // Create the instance and immediately play the first frame
 
-                let first_frame = Self::play_frame(&mut iterator, &mut item, event_writer);
+                let first_frame = Self::play_frame(&mut iterator, &mut item, message_writer);
 
                 self.animation_instances.insert(
                     item.entity,
@@ -136,7 +136,7 @@ impl Animator {
                     .iterator
                     .to(item.spritesheet_animation.progress)
                 {
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
+                    Self::play_frame(&mut animation_instance.iterator, &mut item, message_writer)
                         .inspect(|new_frame| {
                             animation_instance.current_frame = Some(new_frame.clone());
                             animation_instance.accumulated_time = Duration::ZERO;
@@ -177,32 +177,32 @@ impl Animator {
                 // Fetch the next frame
 
                 animation_instance.current_frame =
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
+                    Self::play_frame(&mut animation_instance.iterator, &mut item, message_writer)
                         .or_else(|| {
                             // The animation is over
 
-                            // Emit the end events if the animation just ended
+                            // Emit the end messages if the animation just ended
 
-                            event_writer.write(AnimationEvent::ClipRepetitionEnd {
+                            message_writer.write(AnimationMessage::ClipRepetitionEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 clip_id: current_frame.0.clip_id,
                                 clip_repetition: current_frame.0.clip_repetition,
                             });
 
-                            event_writer.write(AnimationEvent::ClipEnd {
+                            message_writer.write(AnimationMessage::ClipEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 clip_id: current_frame.0.clip_id,
                             });
 
-                            event_writer.write(AnimationEvent::AnimationRepetitionEnd {
+                            message_writer.write(AnimationMessage::AnimationRepetitionEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 animation_repetition: current_frame.0.animation_repetition,
                             });
 
-                            event_writer.write(AnimationEvent::AnimationEnd {
+                            message_writer.write(AnimationMessage::AnimationEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                             });
@@ -215,39 +215,42 @@ impl Animator {
 
     fn play_frame(
         iterator: &mut AnimationIterator,
-        item: &mut SpritesheetAnimationQueryItem<'_>,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        item: &mut SpritesheetAnimationQueryItem<'_, '_>,
+        message_writer: &mut MessageWriter<AnimationMessage>,
     ) -> Option<(IteratorFrame, AnimationProgress)> {
         let maybe_frame = iterator.next();
 
         if let Some((frame, progress)) = &maybe_frame {
             // Update the sprite
-            // (we compare the indices to prevent needless "Changed" events)
+            // (we compare the indices to prevent needless "Changed" messages)
 
             if let Some(atlas) = item
                 .sprite
                 .as_deref_mut()
                 .and_then(|sprite| sprite.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index {
-                    atlas.index = frame.atlas_index;
-                }
+                && atlas.index != frame.atlas_index
+            {
+                atlas.index = frame.atlas_index;
+            }
 
             #[cfg(feature = "3d")]
             if let Some(atlas) = item
                 .sprite3d
                 .as_deref_mut()
                 .and_then(|sprite| sprite.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index {
-                    atlas.index = frame.atlas_index;
-                }
+                && atlas.index != frame.atlas_index
+            {
+                atlas.index = frame.atlas_index;
+            }
 
             if let Some(atlas) = item
                 .image_node
                 .as_deref_mut()
                 .and_then(|image| image.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index {
-                    atlas.index = frame.atlas_index;
-                }
+                && atlas.index != frame.atlas_index
+            {
+                atlas.index = frame.atlas_index;
+            }
 
             #[cfg(feature = "custom_cursor")]
             if let Some(atlas) = item
@@ -255,7 +258,7 @@ impl Animator {
                 .as_deref_mut()
                 .and_then(|cursor_icon| {
                     if let CursorIcon::Custom(CustomCursor::Image(
-                        bevy::winit::cursor::CustomCursorImage {
+                        bevy::window::CustomCursorImage {
                             ref mut texture_atlas,
                             ..
                         },
@@ -267,41 +270,42 @@ impl Animator {
                     }
                 })
                 .and_then(|atlas| atlas.as_mut())
-                && atlas.index != frame.atlas_index {
-                    atlas.index = frame.atlas_index;
-                }
+                && atlas.index != frame.atlas_index
+            {
+                atlas.index = frame.atlas_index;
+            }
 
             item.spritesheet_animation.progress = *progress;
 
-            // Emit events
+            // Emit messages
 
-            Animator::emit_events(
-                &frame.events,
+            Animator::emit_messages(
+                &frame.messages,
                 item.spritesheet_animation.animation_id,
                 &item.entity,
-                event_writer,
+                message_writer,
             );
         }
 
         maybe_frame
     }
 
-    fn emit_events(
-        animation_events: &[AnimationIteratorEvent],
+    fn emit_messages(
+        animation_messages: &[AnimationIteratorMessage],
         animation_id: AnimationId,
         entity: &Entity,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        message_writer: &mut MessageWriter<AnimationMessage>,
     ) {
-        animation_events.iter().for_each(|event| {
-            event_writer.write(
-                // Promote AnimationIteratorEvents to regular AnimationEvents
-                match event {
-                    AnimationIteratorEvent::MarkerHit {
+        animation_messages.iter().for_each(|message| {
+            message_writer.write(
+                // Promote AnimationIteratorMessages to regular AnimationMessages
+                match message {
+                    AnimationIteratorMessage::MarkerHit {
                         marker_id,
                         animation_repetition,
                         clip_id,
                         clip_repetition,
-                    } => AnimationEvent::MarkerHit {
+                    } => AnimationMessage::MarkerHit {
                         entity: *entity,
                         marker_id: *marker_id,
                         animation_id,
@@ -309,23 +313,23 @@ impl Animator {
                         clip_id: *clip_id,
                         clip_repetition: *clip_repetition,
                     },
-                    AnimationIteratorEvent::ClipRepetitionEnd {
+                    AnimationIteratorMessage::ClipRepetitionEnd {
                         clip_id,
                         clip_repetition,
-                    } => AnimationEvent::ClipRepetitionEnd {
+                    } => AnimationMessage::ClipRepetitionEnd {
                         entity: *entity,
                         animation_id,
                         clip_id: *clip_id,
                         clip_repetition: *clip_repetition,
                     },
-                    AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
+                    AnimationIteratorMessage::ClipEnd { clip_id } => AnimationMessage::ClipEnd {
                         entity: *entity,
                         animation_id,
                         clip_id: *clip_id,
                     },
-                    AnimationIteratorEvent::AnimationRepetitionEnd {
+                    AnimationIteratorMessage::AnimationRepetitionEnd {
                         animation_repetition,
-                    } => AnimationEvent::AnimationRepetitionEnd {
+                    } => AnimationMessage::AnimationRepetitionEnd {
                         entity: *entity,
                         animation_id,
                         animation_repetition: *animation_repetition,

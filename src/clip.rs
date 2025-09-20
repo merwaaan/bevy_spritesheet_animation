@@ -5,7 +5,7 @@ use bevy::reflect::prelude::*;
 use crate::{
     animation::{AnimationDirection, AnimationDuration},
     easing::Easing,
-    events::AnimationMarkerId,
+    messages::AnimationMarkerId,
 };
 
 /// An opaque identifier that references a [Clip].
@@ -31,8 +31,8 @@ impl fmt::Display for ClipId {
 /// Parameters like duration, repetitions, direction and easing can be specified.
 ///
 /// A clip can also contain markers to identify frames of interest.
-/// When an animation reaches such a frame, a [MarkerHit](crate::prelude::AnimationEvent::MarkerHit) event will be emitted.
-/// See the documentation of [AnimationEvent](crate::prelude::AnimationEvent) for more details.
+/// When an animation reaches such a frame, a [MarkerHit](crate::prelude::AnimationMessage::MarkerHit) message will be emitted.
+/// See the documentation of [AnimationMessage](crate::prelude::AnimationMessage) for more details.
 ///
 /// The "frames" of a clip actually are TextureAtlas entries, referred to by their indices.
 /// At runtime, they will be automatically assigned to your entities' [TextureAtlas](bevy::prelude::TextureAtlas) component to make things move.
@@ -93,7 +93,7 @@ pub struct Clip {
     /// The optional easing of this animation
     easing: Option<Easing>,
 
-    /// Markers that will generate [MarkerHit](crate::prelude::AnimationEvent::MarkerHit) events when played by an animation
+    /// Markers that will generate [MarkerHit](crate::prelude::AnimationMessage::MarkerHit) messages when played by an animation
     markers: HashMap<usize, Vec<AnimationMarkerId>>,
 }
 

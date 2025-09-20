@@ -101,15 +101,15 @@ impl Context {
     }
 
     pub fn run(&mut self, ms: u32) {
-        // Clear the events from the previous frame
+        // Clear the messages from the previous frame
 
-        let mut events_resources = self
+        let mut messages_resources = self
             .app
             .world_mut()
-            .get_resource_mut::<Events<AnimationEvent>>()
+            .get_resource_mut::<Messages<AnimationMessage>>()
             .unwrap();
 
-        events_resources.clear();
+        messages_resources.clear();
 
         // Move time forwards
 
@@ -129,7 +129,7 @@ impl Context {
     pub fn check(
         &mut self,
         expected_atlas_index: usize,
-        expected_events: impl IntoIterator<Item = AnimationEvent>,
+        expected_messages: impl IntoIterator<Item = AnimationMessage>,
     ) {
         // Check the current atlas index of the sprite
 
@@ -145,21 +145,21 @@ impl Context {
 
         assert_eq!(atlas.index, expected_atlas_index);
 
-        // Check the emitted events
+        // Check the emitted messages
 
-        let events_resources = self
+        let messages_resources = self
             .app
             .world_mut()
-            .get_resource_mut::<Events<AnimationEvent>>()
+            .get_resource_mut::<Messages<AnimationMessage>>()
             .unwrap();
 
-        let mut events: HashSet<AnimationEvent> = HashSet::new();
+        let mut messages: HashSet<AnimationMessage> = HashSet::new();
 
-        for event in events_resources.get_cursor().read(&events_resources) {
-            events.insert(*event);
+        for message in messages_resources.get_cursor().read(&messages_resources) {
+            messages.insert(*message);
         }
 
-        assert_eq!(events, HashSet::from_iter(expected_events));
+        assert_eq!(messages, HashSet::from_iter(expected_messages));
     }
 
     pub fn get_sprite<F: FnMut(&mut SpritesheetAnimation)>(&mut self, mut f: F) {
@@ -189,8 +189,8 @@ impl Context {
         animation_repetition: usize,
         clip_id: ClipId,
         clip_repetition: usize,
-    ) -> AnimationEvent {
-        AnimationEvent::MarkerHit {
+    ) -> AnimationMessage {
+        AnimationMessage::MarkerHit {
             entity: self.sprite_entity,
             marker_id,
             animation_id,
@@ -205,8 +205,8 @@ impl Context {
         animation_id: AnimationId,
         clip_id: ClipId,
         clip_repetition: usize,
-    ) -> AnimationEvent {
-        AnimationEvent::ClipRepetitionEnd {
+    ) -> AnimationMessage {
+        AnimationMessage::ClipRepetitionEnd {
             entity: self.sprite_entity,
             animation_id,
             clip_id,
@@ -214,8 +214,8 @@ impl Context {
         }
     }
 
-    pub fn clip_end(&self, animation_id: AnimationId, clip_id: ClipId) -> AnimationEvent {
-        AnimationEvent::ClipEnd {
+    pub fn clip_end(&self, animation_id: AnimationId, clip_id: ClipId) -> AnimationMessage {
+        AnimationMessage::ClipEnd {
             entity: self.sprite_entity,
             animation_id,
             clip_id,
@@ -226,16 +226,16 @@ impl Context {
         &self,
         animation_id: AnimationId,
         animation_repetition: usize,
-    ) -> AnimationEvent {
-        AnimationEvent::AnimationRepetitionEnd {
+    ) -> AnimationMessage {
+        AnimationMessage::AnimationRepetitionEnd {
             entity: self.sprite_entity,
             animation_id,
             animation_repetition,
         }
     }
 
-    pub fn anim_end(&self, animation_id: AnimationId) -> AnimationEvent {
-        AnimationEvent::AnimationEnd {
+    pub fn anim_end(&self, animation_id: AnimationId) -> AnimationMessage {
+        AnimationMessage::AnimationEnd {
             entity: self.sprite_entity,
             animation_id,
         }

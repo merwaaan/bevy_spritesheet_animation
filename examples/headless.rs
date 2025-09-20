@@ -1,6 +1,6 @@
 // This example shows how to use this plugin in a bevy app without bevy_render.
 //
-// For example for a headless server with MinimalPlugins, while still using the animations events.
+// For example for a headless server with MinimalPlugins, while still using the animations messages.
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -12,7 +12,7 @@ fn main() {
     App::new()
         .add_plugins((MinimalPlugins, SpritesheetAnimationPlugin))
         .add_systems(Startup, spawn_animation)
-        .add_systems(Update, log_animations_events)
+        .add_systems(Update, log_animation_messages)
         .run();
 }
 
@@ -44,8 +44,8 @@ fn spawn_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>
     commands.spawn(SpritesheetAnimation::from_id(animation_id));
 }
 
-fn log_animations_events(mut events: EventReader<AnimationEvent>) {
-    for event in events.read() {
-        println!("{:?}", event);
+fn log_animation_messages(mut messages: MessageReader<AnimationMessage>) {
+    for m in messages.read() {
+        println!("{:?}", m);
     }
 }

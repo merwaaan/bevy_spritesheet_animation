@@ -19,7 +19,7 @@ bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easil
 - A single Bevy [component](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) to add to your entities to play animations.
 - Tunable parameters: [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html), [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html).
 - [Composable animations](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html) from multiple clips.
-- [Events](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/events/enum.AnimationEvent.html) to react to animations ending or reaching specific points.
+- [Messages](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/messages/enum.AnimationMessage.html) to react to animations ending or reaching specific points.
 - A [convenient API](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/spritesheet/struct.Spritesheet.html) to select frames in spritesheets.
 
 # Quick start
@@ -295,17 +295,17 @@ fn spawn_cursor_icon(mut commands: Commands, mut library: ResMut<AnimationLibrar
 
 For more examples, browse the [examples/](examples) directory.
 
-| Example                                | Description                                                              |
-| -------------------------------------- | ------------------------------------------------------------------------ |
-| [basic](examples/basic.rs)             | Shows how to create an animated sprite                                   |
-| [3d](examples/3d.rs)                   | Shows how to create 3D sprites                                           |
-| [progress](examples/progress.rs)       | Shows how to control an animation                                        |
-| [composition](examples/composition.rs) | Shows how to create an animation with multiple clips                     |
-| [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                             |
-| [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations    |
-| [events](examples/events.rs)           | Shows how to react to animations reaching points of interest with events |
-| [headless](examples/headless.rs)       | Shows how to run animations in a headless Bevy app without rendering     |
-| [stress](examples/stress.rs)           | Stress test with thousands of animated sprites (either 2D or 3D)         |
+| Example                                | Description                                                                |
+| -------------------------------------- | -------------------------------------------------------------------------- |
+| [basic](examples/basic.rs)             | Shows how to create an animated sprite                                     |
+| [3d](examples/3d.rs)                   | Shows how to create 3D sprites                                             |
+| [progress](examples/progress.rs)       | Shows how to control an animation                                          |
+| [composition](examples/composition.rs) | Shows how to create an animation with multiple clips                       |
+| [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                               |
+| [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations      |
+| [messages](examples/messages.rs)       | Shows how to react to animations reaching points of interest with messages |
+| [headless](examples/headless.rs)       | Shows how to run animations in a headless Bevy app without rendering       |
+| [stress](examples/stress.rs)           | Stress test with thousands of animated sprites (either 2D or 3D)           |
 
 # Compatibility
 
