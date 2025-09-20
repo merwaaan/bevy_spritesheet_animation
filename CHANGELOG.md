@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.2.0 - 2025-09-20
+
+### Fixed
+
+- Fix 3D sprites not casting shadows from both sides (by luisbg)
+
 ## 3.1.0 - 2025-08-18
 
 ### Changed
