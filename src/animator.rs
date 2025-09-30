@@ -215,7 +215,7 @@ impl Animator {
 
     fn play_frame(
         iterator: &mut AnimationIterator,
-        item: &mut SpritesheetAnimationQueryItem<'_>,
+        item: &mut SpritesheetAnimationQueryItem<'_, '_>,
         event_writer: &mut EventWriter<AnimationEvent>,
     ) -> Option<(IteratorFrame, AnimationProgress)> {
         let maybe_frame = iterator.next();

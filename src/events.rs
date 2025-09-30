@@ -1,7 +1,7 @@
 use std::fmt;
 
 use bevy::{
-    ecs::{entity::Entity, event::Event},
+    ecs::{entity::Entity, message::Message},
     reflect::prelude::*,
 };
 
@@ -106,7 +106,7 @@ impl fmt::Display for AnimationMarkerId {
 ///     }
 /// }
 /// ```
-#[derive(Event, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Message, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AnimationEvent {
     /// An animation marker has been hit
     MarkerHit {

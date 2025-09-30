@@ -1,20 +1,16 @@
 #[cfg(feature = "3d")]
 use crate::prelude::Sprite3d;
 use bevy::{
-    asset::{Assets, Handle},
+    asset::{Assets, Handle, RenderAssetUsages},
     ecs::{
         entity::Entity,
         query::Changed,
         system::{Commands, Query, Res, ResMut},
     },
+    mesh::{Indices, PrimitiveTopology},
     pbr::StandardMaterial,
     prelude::*,
-    render::{
-        alpha::AlphaMode,
-        mesh::{Indices, Mesh, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-        render_resource::Face,
-    },
+    render::{alpha::AlphaMode, render_resource::Face},
 };
 use std::{collections::HashMap, hash::Hash};
 

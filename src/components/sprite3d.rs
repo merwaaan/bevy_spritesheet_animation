@@ -1,6 +1,6 @@
 use bevy::{
-    asset::Handle, color::Color, ecs::prelude::*, math::Vec2, prelude::*, render::view::Visibility,
-    sprite::Anchor, transform::components::Transform,
+    asset::Handle, color::Color, ecs::prelude::*, math::Vec2, prelude::*, sprite::Anchor,
+    transform::components::Transform,
 };
 
 /// Specifies the rendering properties of a 3D sprite.
