@@ -17,7 +17,7 @@ custom_cursor = ["bevy/bevy_winit", "bevy/custom_cursor"]
 3d = ["bevy/bevy_pbr"]
 
 [dependencies]
-bevy = { version = "0.16.0", default-features = false, features = [
+bevy = { version = "0.17.0", default-features = false, features = [
   "bevy_log",
   "bevy_sprite",
   "bevy_pbr",
@@ -26,9 +26,9 @@ bevy = { version = "0.16.0", default-features = false, features = [
 
 [dev-dependencies]
 approx = "0.5.1"
-bevy = { version = "0.16.0", default-features = true }
+bevy = { version = "0.17.0", default-features = true }
 clap = { version = "4.5.16", features = ["derive"] }
-iyes_perf_ui = { git = "https://github.com/IyesGames/iyes_perf_ui.git", rev = "8e6dd6072c2e093b5353f62970e55304175dbe8f" }
+iyes_perf_ui = { git = "https://github.com/mgi388/iyes_perf_ui.git", branch = "bevy-0.17" }
 rand = "0.9"
 
 [profile.test]

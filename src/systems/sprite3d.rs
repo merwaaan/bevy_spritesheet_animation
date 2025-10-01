@@ -1,20 +1,16 @@
 #[cfg(feature = "3d")]
 use crate::prelude::Sprite3d;
 use bevy::{
-    asset::{Assets, Handle},
+    asset::{Assets, Handle, RenderAssetUsages},
     ecs::{
         entity::Entity,
         query::Changed,
         system::{Commands, Query, Res, ResMut},
     },
+    mesh::{Indices, PrimitiveTopology},
     pbr::StandardMaterial,
     prelude::*,
-    render::{
-        alpha::AlphaMode,
-        mesh::{Indices, Mesh, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-        render_resource::Face,
-    },
+    render::{alpha::AlphaMode, render_resource::Face},
 };
 use std::{collections::HashMap, hash::Hash};
 
@@ -37,7 +33,7 @@ pub struct Cache {
 #[derive(Debug, Hash, PartialEq, Eq, Reflect)]
 #[reflect(Debug, Hash, PartialEq)]
 struct MaterialId {
-    image: Handle<Image>,
+    image: AssetId<Image>,
     color: u32,
     alpha_mode: HashableAlphaMode,
     unlit: bool,
@@ -87,7 +83,7 @@ impl Hash for HashableLinearRgba {
 impl MaterialId {
     fn new(sprite: &Sprite3d, image_handle: &Handle<Image>) -> Self {
         Self {
-            image: image_handle.clone_weak(),
+            image: image_handle.id(),
             color: sprite.color.to_linear().as_u32(),
             alpha_mode: HashableAlphaMode(sprite.alpha_mode),
             unlit: sprite.unlit,
@@ -280,9 +276,7 @@ fn get_or_create_material(
                 ..default()
             });
 
-            cache
-                .materials
-                .insert(material_id, material_handle.clone_weak());
+            cache.materials.insert(material_id, material_handle.clone());
 
             material_handle
         })

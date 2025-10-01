@@ -1,6 +1,6 @@
 use bevy::{
-    asset::Handle, color::Color, ecs::prelude::*, math::Vec2, prelude::*, render::view::Visibility,
-    sprite::Anchor, transform::components::Transform,
+    asset::Handle, color::Color, ecs::prelude::*, math::Vec2, prelude::*, sprite::Anchor,
+    transform::components::Transform,
 };
 
 /// Specifies the rendering properties of a 3D sprite.
@@ -137,6 +137,6 @@ impl Sprite3d {
 
     pub fn double_sided(mut self, ds: bool) -> Self {
         self.double_sided = ds;
-	self
+        self
     }
 }
