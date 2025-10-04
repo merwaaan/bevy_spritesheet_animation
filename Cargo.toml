@@ -36,3 +36,13 @@ inherits = "release"
 
 [lints]
 clippy.type_complexity = "allow"
+
+# Optimize for build time in CI.
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+debug = "line-tables-only"
+codegen-units = 4
+
+[profile.ci.package."*"]
+opt-level = 0
