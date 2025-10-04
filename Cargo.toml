@@ -31,18 +31,9 @@ clap = { version = "4.5.16", features = ["derive"] }
 iyes_perf_ui = { git = "https://github.com/IyesGames/iyes_perf_ui.git", rev = "8e6dd6072c2e093b5353f62970e55304175dbe8f" }
 rand = "0.9"
 
-[profile.test]
-inherits = "release"
-
-[lints]
-clippy.type_complexity = "allow"
-
-# Optimize for build time in CI.
-[profile.ci]
-inherits = "dev"
-opt-level = 0
-debug = "line-tables-only"
-codegen-units = 4
-
-[profile.ci.package."*"]
-opt-level = 0
+[lints.clippy]
+too_many_arguments = "allow"
+type_complexity = "allow"
+std_instead_of_core = "warn"
+std_instead_of_alloc = "warn"
+core_instead_of_alloc = "warn"

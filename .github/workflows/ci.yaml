@@ -6,120 +6,99 @@ on:
   pull_request:
     branches: [main]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
-  cancel-in-progress: true
-
 env:
-  # Reduce compile time and cache size.
-  RUSTFLAGS: -Dwarnings -Zshare-generics=y -Zthreads=0
-  RUSTDOCFLAGS: -Dwarnings -Zshare-generics=y -Zthreads=0
-  # Use the same Rust toolchain across jobs so they can share a cache.
-  toolchain: nightly-2025-06-26
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: --deny warnings
+  RUSTDOCFLAGS: --deny warnings
 
 jobs:
   # Check formatting.
   format:
     name: Format
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: ${{ env.toolchain }}
           components: rustfmt
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  # Check documentation.
-  docs:
-    name: Docs
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.toolchain }}
-
-      - name: Restore Rust cache
-        id: cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: ci
-          save-if: false
-
-      - name: Install build dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
-
-      - name: Check documentation
-        run: cargo doc --locked --workspace --profile ci --all-features --document-private-items --no-deps
-
   # Run Clippy lints.
-  clippy-lints:
-    name: Clippy lints
+  clippy:
+    name: Clippy
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ env.toolchain }}
           components: clippy
 
+      - name: Install dependencies
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+
       - name: Restore Rust cache
-        id: cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ci
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
-      - name: Install build dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
-
       - name: Run Clippy lints
-        run: cargo clippy --locked --workspace --all-targets --profile ci --all-features
+        run: cargo clippy --workspace --all-features --all-targets -- --deny warnings
 
-  # Run tests.
-  tests:
-    name: Tests
+  # Check documentation.
+  doc:
+    name: Docs
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up environment
-        run: echo "RUSTFLAGS=${RUSTFLAGS:+$RUSTFLAGS }-Zcodegen-backend=cranelift" >> "${GITHUB_ENV}"
-
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.toolchain }}
-          components: rustc-codegen-cranelift-preview
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: test
-          cache-directories: ${{ env.LD_LIBRARY_PATH }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
-      - name: Install build dependencies
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
+      - name: Check documentation
+        run: cargo doc --workspace --all-features --document-private-items --no-deps
+
+  # Run tests.
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Run tests
-        run: cargo test --locked --workspace --all-targets --profile ci --no-fail-fast
+        run: |
+          cargo test --workspace --all-features --all-targets
+          # TODO: Workaround for https://github.com/rust-lang/cargo/issues/6669
+          cargo test --workspace --all-features --doc
