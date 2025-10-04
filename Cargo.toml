@@ -34,6 +34,3 @@ rand = "0.9"
 [lints.clippy]
 too_many_arguments = "allow"
 type_complexity = "allow"
-std_instead_of_core = "warn"
-std_instead_of_alloc = "warn"
-core_instead_of_alloc = "warn"
