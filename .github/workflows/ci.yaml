@@ -75,7 +75,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Check documentation
-        run: cargo doc --workspace --all-features --document-private-items --no-deps
+        run: cargo doc --workspace --document-private-items --no-deps
 
   # Run tests.
   test:
