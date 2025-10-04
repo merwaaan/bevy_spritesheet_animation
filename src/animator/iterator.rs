@@ -3,8 +3,8 @@ use std::{sync::Arc, time::Duration};
 use bevy::{log::warn, reflect::prelude::*};
 
 use crate::{
-    animation::AnimationDirection, clip::ClipId,
-    components::spritesheet_animation::AnimationProgress, events::AnimationMarkerId, CRATE_NAME,
+    CRATE_NAME, animation::AnimationDirection, clip::ClipId,
+    components::spritesheet_animation::AnimationProgress, events::AnimationMarkerId,
 };
 
 use super::cache::{AnimationCache, AnimationCacheEvent, CacheFrame};

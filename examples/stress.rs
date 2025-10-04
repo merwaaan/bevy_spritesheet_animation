@@ -17,7 +17,7 @@ use bevy_spritesheet_animation::prelude::*;
 use clap::{Parser, ValueEnum};
 use common::random_position;
 use iyes_perf_ui::prelude::*;
-use rand::{seq::IndexedRandom as _, Rng};
+use rand::{Rng, seq::IndexedRandom as _};
 
 #[derive(ValueEnum, Clone)]
 enum Mode {

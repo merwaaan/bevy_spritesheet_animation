@@ -137,6 +137,6 @@ impl Sprite3d {
 
     pub fn double_sided(mut self, ds: bool) -> Self {
         self.double_sided = ds;
-	self
+        self
     }
 }
