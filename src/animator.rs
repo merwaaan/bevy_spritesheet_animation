@@ -228,26 +228,29 @@ impl Animator {
                 .sprite
                 .as_deref_mut()
                 .and_then(|sprite| sprite.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index {
-                    atlas.index = frame.atlas_index;
-                }
+                && atlas.index != frame.atlas_index
+            {
+                atlas.index = frame.atlas_index;
+            }
 
             #[cfg(feature = "3d")]
             if let Some(atlas) = item
                 .sprite3d
                 .as_deref_mut()
                 .and_then(|sprite| sprite.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index {
-                    atlas.index = frame.atlas_index;
-                }
+                && atlas.index != frame.atlas_index
+            {
+                atlas.index = frame.atlas_index;
+            }
 
             if let Some(atlas) = item
                 .image_node
                 .as_deref_mut()
                 .and_then(|image| image.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index {
-                    atlas.index = frame.atlas_index;
-                }
+                && atlas.index != frame.atlas_index
+            {
+                atlas.index = frame.atlas_index;
+            }
 
             #[cfg(feature = "custom_cursor")]
             if let Some(atlas) = item
@@ -267,9 +270,10 @@ impl Animator {
                     }
                 })
                 .and_then(|atlas| atlas.as_mut())
-                && atlas.index != frame.atlas_index {
-                    atlas.index = frame.atlas_index;
-                }
+                && atlas.index != frame.atlas_index
+            {
+                atlas.index = frame.atlas_index;
+            }
 
             item.spritesheet_animation.progress = *progress;
 

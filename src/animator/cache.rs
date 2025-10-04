@@ -1,10 +1,10 @@
 use crate::{
+    CRATE_NAME,
     animation::{AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat},
     clip::{Clip, ClipId},
     easing::Easing,
     events::AnimationMarkerId,
     library::AnimationLibrary,
-    CRATE_NAME,
 };
 use bevy::{log::warn, reflect::prelude::*};
 use std::time::Duration;

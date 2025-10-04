@@ -15,9 +15,10 @@ fn library_available_as_a_resource() {
 fn animation_events_available_as_a_resource() {
     let ctx = Context::new();
 
-    assert!(ctx
-        .app
-        .world()
-        .get_resource::<Events<AnimationEvent>>()
-        .is_some());
+    assert!(
+        ctx.app
+            .world()
+            .get_resource::<Events<AnimationEvent>>()
+            .is_some()
+    );
 }

@@ -1,9 +1,9 @@
 use std::{
     collections::{HashMap, HashSet},
     sync::{
+        Arc,
         // TODO: Use bevy_platform when updated to Bevy 0.16.
         atomic::{AtomicUsize, Ordering},
-        Arc,
     },
 };
 
@@ -393,11 +393,7 @@ impl AnimationLibrary {
     pub fn animation_with_name(&self, name: impl AsRef<str>) -> Option<AnimationId> {
         self.animation_names.iter().find_map(
             |(k, v)| {
-                if v == name.as_ref() {
-                    Some(*k)
-                } else {
-                    None
-                }
+                if v == name.as_ref() { Some(*k) } else { None }
             },
         )
     }

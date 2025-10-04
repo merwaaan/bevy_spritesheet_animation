@@ -5,7 +5,7 @@ use bevy::{
 
 /// Specifies the rendering properties of a 3D sprite.
 ///
-/// This contains similar fields as Bevy's [Sprite](bevy::sprite::Sprite).
+/// This contains similar fields as Bevy's [Sprite].
 ///
 /// # Note
 ///
@@ -137,6 +137,6 @@ impl Sprite3d {
 
     pub fn double_sided(mut self, ds: bool) -> Self {
         self.double_sided = ds;
-	self
+        self
     }
 }
