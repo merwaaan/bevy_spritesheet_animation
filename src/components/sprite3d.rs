@@ -5,7 +5,7 @@ use bevy::{
 
 /// Specifies the rendering properties of a 3D sprite.
 ///
-/// This contains similar fields as Bevy's [Sprite](bevy::sprite::Sprite).
+/// This contains similar fields as Bevy's [Sprite].
 ///
 /// # Note
 ///
