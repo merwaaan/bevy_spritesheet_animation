@@ -92,7 +92,7 @@ fn control_character(
     time: Res<Time>,
     keyboard: Res<ButtonInput<KeyCode>>,
     library: Res<AnimationLibrary>,
-    mut events: EventReader<AnimationEvent>,
+    mut events: MessageReader<AnimationEvent>,
     mut characters: Query<(
         Entity,
         &mut Sprite,

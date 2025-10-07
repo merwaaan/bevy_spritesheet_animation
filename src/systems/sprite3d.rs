@@ -443,7 +443,7 @@ fn try_get_or_create_mesh(
 
 pub(crate) fn remove_dropped_standard_materials(
     mut cache: ResMut<Cache>,
-    mut standard_material_events: EventReader<AssetEvent<StandardMaterial>>,
+    mut standard_material_events: MessageReader<AssetEvent<StandardMaterial>>,
 ) {
     for event in standard_material_events.read() {
         if let AssetEvent::Removed { id } = event {

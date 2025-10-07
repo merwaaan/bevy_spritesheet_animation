@@ -39,7 +39,7 @@ impl fmt::Display for AnimationMarkerId {
 /// # use bevy_spritesheet_animation::prelude::*;
 /// # fn go_to_main_menu() {}
 /// fn death_transition_system(
-///     mut events: EventReader<AnimationEvent>,
+///     mut events: MessageReader<AnimationEvent>,
 ///     library: Res<AnimationLibrary>
 /// ) {
 ///     for event in events.read() {
@@ -87,7 +87,7 @@ impl fmt::Display for AnimationMarkerId {
 /// # fn spawn_bullet() {}
 /// // We can watch events from any system and react to them
 /// fn spawn_visual_effects_system(
-///     mut events: EventReader<AnimationEvent>,
+///     mut events: MessageReader<AnimationEvent>,
 ///     library: Res<AnimationLibrary>
 ///) {
 ///     for event in events.read() {

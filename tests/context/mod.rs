@@ -106,7 +106,7 @@ impl Context {
         let mut events_resources = self
             .app
             .world_mut()
-            .get_resource_mut::<Events<AnimationEvent>>()
+            .get_resource_mut::<Messages<AnimationEvent>>()
             .unwrap();
 
         events_resources.clear();
@@ -150,7 +150,7 @@ impl Context {
         let events_resources = self
             .app
             .world_mut()
-            .get_resource_mut::<Events<AnimationEvent>>()
+            .get_resource_mut::<Messages<AnimationEvent>>()
             .unwrap();
 
         let mut events: HashSet<AnimationEvent> = HashSet::new();

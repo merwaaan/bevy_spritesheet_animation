@@ -11,10 +11,10 @@ use crate::{
     library::AnimationLibrary,
 };
 #[cfg(feature = "custom_cursor")]
-use bevy::winit::cursor::{CursorIcon, CustomCursor};
+use bevy::window::{CursorIcon, CustomCursor};
 use bevy::{
     ecs::{
-        entity::Entity, event::EventWriter, query::QueryData, reflect::*, resource::Resource,
+        entity::Entity, message::MessageWriter, query::QueryData, reflect::*, resource::Resource,
         system::Query,
     },
     reflect::prelude::*,
@@ -68,7 +68,7 @@ impl Animator {
         &mut self,
         time: &Time,
         library: &AnimationLibrary,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        event_writer: &mut MessageWriter<AnimationEvent>,
         query: &mut Query<SpritesheetAnimationQuery>,
     ) {
         // Clear outdated animation instances associated to entities that do not have the component anymore
@@ -216,7 +216,7 @@ impl Animator {
     fn play_frame(
         iterator: &mut AnimationIterator,
         item: &mut SpritesheetAnimationQueryItem<'_, '_>,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        event_writer: &mut MessageWriter<AnimationEvent>,
     ) -> Option<(IteratorFrame, AnimationProgress)> {
         let maybe_frame = iterator.next();
 
@@ -258,7 +258,7 @@ impl Animator {
                 .as_deref_mut()
                 .and_then(|cursor_icon| {
                     if let CursorIcon::Custom(CustomCursor::Image(
-                        bevy::winit::cursor::CustomCursorImage {
+                        bevy::window::CustomCursorImage {
                             ref mut texture_atlas,
                             ..
                         },
@@ -294,7 +294,7 @@ impl Animator {
         animation_events: &[AnimationIteratorEvent],
         animation_id: AnimationId,
         entity: &Entity,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        event_writer: &mut MessageWriter<AnimationEvent>,
     ) {
         animation_events.iter().for_each(|event| {
             event_writer.write(

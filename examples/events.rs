@@ -165,7 +165,7 @@ enum EventType {
 }
 
 fn show_triggered_events(
-    mut events: EventReader<AnimationEvent>,
+    mut events: MessageReader<AnimationEvent>,
     mut squares: Query<(&mut BackgroundColor, &EventType)>,
 ) {
     // Collect the events that were just received
@@ -209,7 +209,7 @@ fn spawn_visual_effects(
     library: Res<AnimationLibrary>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut events: EventReader<AnimationEvent>,
+    mut events: MessageReader<AnimationEvent>,
 ) {
     for event in events.read() {
         if let AnimationEvent::MarkerHit { marker_id, .. } = event {

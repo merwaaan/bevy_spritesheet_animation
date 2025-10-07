@@ -1,6 +1,6 @@
 use bevy::{
     ecs::{
-        event::EventWriter,
+        message::MessageWriter,
         system::{Query, Res, ResMut},
     },
     time::Time,
@@ -16,7 +16,7 @@ pub fn play_animations(
     time: Res<Time>,
     library: Res<AnimationLibrary>,
     mut animator: ResMut<Animator>,
-    mut event_writer: EventWriter<AnimationEvent>,
+    mut event_writer: MessageWriter<AnimationEvent>,
     mut query: Query<SpritesheetAnimationQuery>,
 ) {
     animator.update(&time, &library, &mut event_writer, &mut query);
