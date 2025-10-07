@@ -118,14 +118,16 @@ fn animations() {
 
     // Name it again, replacing the old name
 
-    assert!(ctx
-        .library()
-        .name_animation(animation1_id, "first again")
-        .is_ok());
+    assert!(
+        ctx.library()
+            .name_animation(animation1_id, "first again")
+            .is_ok()
+    );
 
-    assert!(ctx
-        .library()
-        .is_animation_name(animation1_id, "first again"));
+    assert!(
+        ctx.library()
+            .is_animation_name(animation1_id, "first again")
+    );
     assert_eq!(
         ctx.library().get_animation_name(animation1_id),
         Some("first again")
