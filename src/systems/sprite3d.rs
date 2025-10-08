@@ -127,10 +127,10 @@ impl MeshId {
 /// Setups 3D sprites for rendering by attaching the 3D geometry and materials to display them.
 pub fn setup_rendering(
     mut commands: Commands,
-    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
-    images: Res<Assets<Image>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    atlas_layouts: Option<Res<Assets<TextureAtlasLayout>>>,
+    images: Option<Res<Assets<Image>>>,
+    mut meshes: Option<ResMut<Assets<Mesh>>>,
+    mut materials: Option<ResMut<Assets<StandardMaterial>>>,
     mut cache: ResMut<Cache>,
     sprites: Query<
         (
@@ -142,37 +142,41 @@ pub fn setup_rendering(
         Or<(Without<Mesh3d>, Without<MeshMaterial3d<StandardMaterial>>)>,
     >,
 ) {
-    for (entity, sprite, maybe_mesh, maybe_material) in &sprites {
-        // Add a mesh to the entity if it does not have one yet
+    if let (Some(images), Some(atlas_layouts), Some(meshes), Some(materials)) =
+        (images, atlas_layouts, &mut meshes, &mut materials)
+    {
+        for (entity, sprite, maybe_mesh, maybe_material) in &sprites {
+            // Add a mesh to the entity if it does not have one yet
 
-        if maybe_mesh.is_none() {
-            try_get_or_create_mesh(sprite, &images, &atlas_layouts, &mut meshes, &mut cache)
-                .inspect(|mesh_handle| {
-                    commands.entity(entity).insert(Mesh3d(mesh_handle.clone()));
+            if maybe_mesh.is_none() {
+                try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache)
+                    .inspect(|mesh_handle| {
+                        commands.entity(entity).insert(Mesh3d(mesh_handle.clone()));
+                    });
+            }
+
+            // Add a material to the entity if it does not have one yet
+
+            if maybe_material.is_none() {
+                let material_handle = materials.add(StandardMaterial {
+                    base_color_texture: Some(sprite.image.clone()),
+                    base_color: sprite.color,
+                    cull_mode: Some(Face::Back),
+                    unlit: sprite.unlit,
+                    alpha_mode: sprite.alpha_mode,
+                    emissive: sprite.emissive,
+                    // TODO
+                    // these are sensible values for 3d rendering,
+                    // but could be extended to public API
+                    perceptual_roughness: 0.5,
+                    reflectance: 0.15,
+                    ..default()
                 });
-        }
 
-        // Add a material to the entity if it does not have one yet
-
-        if maybe_material.is_none() {
-            let material_handle = materials.add(StandardMaterial {
-                base_color_texture: Some(sprite.image.clone()),
-                base_color: sprite.color,
-                cull_mode: Some(Face::Back),
-                unlit: sprite.unlit,
-                alpha_mode: sprite.alpha_mode,
-                emissive: sprite.emissive,
-                // TODO
-                // these are sensible values for 3d rendering,
-                // but could be extended to public API
-                perceptual_roughness: 0.5,
-                reflectance: 0.15,
-                ..default()
-            });
-
-            commands
-                .entity(entity)
-                .insert(MeshMaterial3d(material_handle));
+                commands
+                    .entity(entity)
+                    .insert(MeshMaterial3d(material_handle));
+            }
         }
     }
 }
@@ -180,10 +184,10 @@ pub fn setup_rendering(
 /// Synchronizes 3D sprites when their Sprite3D gets updated.
 pub fn sync_when_sprites_change(
     mut commands: Commands,
-    images: Res<Assets<Image>>,
-    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    images: Option<Res<Assets<Image>>>,
+    atlas_layouts: Option<Res<Assets<TextureAtlasLayout>>>,
+    mut meshes: Option<ResMut<Assets<Mesh>>>,
+    mut materials: Option<ResMut<Assets<StandardMaterial>>>,
     mut cache: ResMut<Cache>,
     sprites: Query<
         (
@@ -195,32 +199,36 @@ pub fn sync_when_sprites_change(
         Changed<Sprite3d>,
     >,
 ) {
-    for (entity, sprite, mesh, material) in &sprites {
-        // Update the mesh if it changed
+    if let (Some(images), Some(atlas_layouts), Some(meshes), Some(materials)) =
+        (images, atlas_layouts, &mut meshes, &mut materials)
+    {
+        for (entity, sprite, mesh, material) in &sprites {
+            // Update the mesh if it changed
 
-        try_get_or_create_mesh(sprite, &images, &atlas_layouts, &mut meshes, &mut cache).inspect(
-            |new_mesh_handle| {
-                if mesh.0 != *new_mesh_handle {
-                    commands.entity(entity).remove::<Mesh3d>();
+            try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache).inspect(
+                |new_mesh_handle| {
+                    if mesh.0 != *new_mesh_handle {
+                        commands.entity(entity).remove::<Mesh3d>();
 
-                    commands
-                        .entity(entity)
-                        .insert(Mesh3d(new_mesh_handle.clone()));
-                }
-            },
-        );
-        // Update the material if it changed
+                        commands
+                            .entity(entity)
+                            .insert(Mesh3d(new_mesh_handle.clone()));
+                    }
+                },
+            );
+            // Update the material if it changed
 
-        let new_material_handle = get_or_create_material(sprite, &mut materials, &mut cache);
+            let new_material_handle = get_or_create_material(sprite, materials, &mut cache);
 
-        if material.0 != new_material_handle {
-            commands
-                .entity(entity)
-                .remove::<MeshMaterial3d<StandardMaterial>>();
+            if material.0 != new_material_handle {
+                commands
+                    .entity(entity)
+                    .remove::<MeshMaterial3d<StandardMaterial>>();
 
-            commands
-                .entity(entity)
-                .insert(MeshMaterial3d(new_material_handle));
+                commands
+                    .entity(entity)
+                    .insert(MeshMaterial3d(new_material_handle));
+            }
         }
     }
 }
@@ -228,23 +236,26 @@ pub fn sync_when_sprites_change(
 /// Synchronizes 3D sprites when the index of their texture atlas changes.
 pub fn sync_when_atlases_change(
     mut commands: Commands,
-    images: Res<Assets<Image>>,
-    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
-    mut meshes: ResMut<Assets<Mesh>>,
+    images: Option<Res<Assets<Image>>>,
+    atlas_layouts: Option<Res<Assets<TextureAtlasLayout>>>,
+    mut meshes: Option<ResMut<Assets<Mesh>>>,
     mut cache: ResMut<Cache>,
     sprites: Query<(Entity, &Sprite3d, &Mesh3d), Changed<Sprite3d>>,
 ) {
-    for (entity, sprite, mesh) in &sprites {
-        try_get_or_create_mesh(sprite, &images, &atlas_layouts, &mut meshes, &mut cache).inspect(
-            |new_mesh_handle| {
-                if mesh.0 != *new_mesh_handle {
-                    commands.entity(entity).remove::<Mesh3d>();
-                    commands
-                        .entity(entity)
-                        .insert(Mesh3d(new_mesh_handle.clone()));
-                }
-            },
-        );
+    if let (Some(images), Some(atlas_layouts), Some(meshes)) = (images, atlas_layouts, &mut meshes)
+    {
+        for (entity, sprite, mesh) in &sprites {
+            try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache).inspect(
+                |new_mesh_handle| {
+                    if mesh.0 != *new_mesh_handle {
+                        commands.entity(entity).remove::<Mesh3d>();
+                        commands
+                            .entity(entity)
+                            .insert(Mesh3d(new_mesh_handle.clone()));
+                    }
+                },
+            );
+        }
     }
 }
 
@@ -443,11 +454,13 @@ fn try_get_or_create_mesh(
 
 pub(crate) fn remove_dropped_standard_materials(
     mut cache: ResMut<Cache>,
-    mut standard_material_events: MessageReader<AssetEvent<StandardMaterial>>,
+    mut standard_material_events: Option<MessageReader<AssetEvent<StandardMaterial>>>,
 ) {
-    for event in standard_material_events.read() {
-        if let AssetEvent::Removed { id } = event {
-            cache.materials.retain(|_, handle| handle.id() != *id);
+    if let Some(standard_material_events) = &mut standard_material_events {
+        for event in standard_material_events.read() {
+            if let AssetEvent::Removed { id } = event {
+                cache.materials.retain(|_, handle| handle.id() != *id);
+            }
         }
     }
 }
