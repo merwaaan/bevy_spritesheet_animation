@@ -1,3 +1,7 @@
+use std::time::Duration;
+
+use bevy::{log::warn, reflect::prelude::*};
+
 use crate::{
     CRATE_NAME,
     animation::{AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat},
@@ -6,8 +10,6 @@ use crate::{
     events::AnimationMarkerId,
     library::AnimationLibrary,
 };
-use bevy::{log::warn, reflect::prelude::*};
-use std::time::Duration;
 
 /// A pre-computed frame of animation, ready to be played back.
 #[derive(Debug, Clone, Reflect)]

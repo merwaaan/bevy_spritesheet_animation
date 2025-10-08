@@ -1,16 +1,15 @@
-#[cfg(feature = "3d")]
-use crate::components::sprite3d::Sprite3d;
-#[cfg(feature = "3d")]
-use crate::systems::sprite3d;
-use crate::{
-    animator::Animator, components::spritesheet_animation::SpritesheetAnimation,
-    events::AnimationEvent, library::AnimationLibrary, systems::spritesheet_animation,
-};
 use bevy::{
     app::{App, Plugin, PostUpdate},
     ecs::schedule::IntoScheduleConfigs as _,
     prelude::SystemSet,
 };
+
+use crate::{
+    animator::Animator, components::spritesheet_animation::SpritesheetAnimation,
+    events::AnimationEvent, library::AnimationLibrary, systems::spritesheet_animation,
+};
+#[cfg(feature = "3d")]
+use crate::{components::sprite3d::Sprite3d, systems::sprite3d};
 
 /// Set for systems that update the animation state.
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]

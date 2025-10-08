@@ -1,15 +1,8 @@
 pub mod cache;
 mod iterator;
 
-#[cfg(feature = "3d")]
-use crate::components::sprite3d::Sprite3d;
-use crate::{
-    animation::AnimationId,
-    animator::iterator::{AnimationIterator, IteratorFrame},
-    components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
-    events::AnimationEvent,
-    library::AnimationLibrary,
-};
+use std::{collections::HashMap, time::Duration};
+
 #[cfg(feature = "custom_cursor")]
 use bevy::winit::cursor::{CursorIcon, CustomCursor};
 use bevy::{
@@ -22,8 +15,17 @@ use bevy::{
     time::Time,
     ui::widget::ImageNode,
 };
+
+#[cfg(feature = "3d")]
+use crate::components::sprite3d::Sprite3d;
+use crate::{
+    animation::AnimationId,
+    animator::iterator::{AnimationIterator, IteratorFrame},
+    components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
+    events::AnimationEvent,
+    library::AnimationLibrary,
+};
 use iterator::AnimationIteratorEvent;
-use std::{collections::HashMap, time::Duration};
 
 #[derive(Debug, Reflect)]
 #[reflect(Debug)]

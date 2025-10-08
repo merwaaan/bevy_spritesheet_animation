@@ -3,11 +3,13 @@ use std::{sync::Arc, time::Duration};
 use bevy::{log::warn, reflect::prelude::*};
 
 use crate::{
-    CRATE_NAME, animation::AnimationDirection, clip::ClipId,
-    components::spritesheet_animation::AnimationProgress, events::AnimationMarkerId,
+    CRATE_NAME,
+    animation::AnimationDirection,
+    animator::cache::{AnimationCache, AnimationCacheEvent, CacheFrame},
+    clip::ClipId,
+    components::spritesheet_animation::AnimationProgress,
+    events::AnimationMarkerId,
 };
-
-use super::cache::{AnimationCache, AnimationCacheEvent, CacheFrame};
 
 /// Same as [CacheFrame] but with `animation_repetition`
 #[derive(Debug, Clone, Reflect)]
