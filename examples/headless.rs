@@ -44,7 +44,7 @@ fn spawn_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>
     commands.spawn(SpritesheetAnimation::from_id(animation_id));
 }
 
-fn log_animations_events(mut events: EventReader<AnimationEvent>) {
+fn log_animations_events(mut events: MessageReader<AnimationEvent>) {
     for event in events.read() {
         println!("{:?}", event);
     }

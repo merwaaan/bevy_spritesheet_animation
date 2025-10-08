@@ -14,7 +14,7 @@ use crate::{
 use bevy::winit::cursor::{CursorIcon, CustomCursor};
 use bevy::{
     ecs::{
-        entity::Entity, event::EventWriter, query::QueryData, reflect::*, resource::Resource,
+        entity::Entity, message::MessageWriter, query::QueryData, reflect::*, resource::Resource,
         system::Query,
     },
     reflect::prelude::*,
@@ -68,7 +68,7 @@ impl Animator {
         &mut self,
         time: &Time,
         library: &AnimationLibrary,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        message_writer: &mut MessageWriter<AnimationEvent>,
         query: &mut Query<SpritesheetAnimationQuery>,
     ) {
         // Clear outdated animation instances associated to entities that do not have the component anymore
@@ -109,7 +109,7 @@ impl Animator {
 
                 // Create the instance and immediately play the first frame
 
-                let first_frame = Self::play_frame(&mut iterator, &mut item, event_writer);
+                let first_frame = Self::play_frame(&mut iterator, &mut item, message_writer);
 
                 self.animation_instances.insert(
                     item.entity,
@@ -136,7 +136,7 @@ impl Animator {
                     .iterator
                     .to(item.spritesheet_animation.progress)
                 {
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
+                    Self::play_frame(&mut animation_instance.iterator, &mut item, message_writer)
                         .inspect(|new_frame| {
                             animation_instance.current_frame = Some(new_frame.clone());
                             animation_instance.accumulated_time = Duration::ZERO;
@@ -177,32 +177,32 @@ impl Animator {
                 // Fetch the next frame
 
                 animation_instance.current_frame =
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, event_writer)
+                    Self::play_frame(&mut animation_instance.iterator, &mut item, message_writer)
                         .or_else(|| {
                             // The animation is over
 
                             // Emit the end events if the animation just ended
 
-                            event_writer.write(AnimationEvent::ClipRepetitionEnd {
+                            message_writer.write(AnimationEvent::ClipRepetitionEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 clip_id: current_frame.0.clip_id,
                                 clip_repetition: current_frame.0.clip_repetition,
                             });
 
-                            event_writer.write(AnimationEvent::ClipEnd {
+                            message_writer.write(AnimationEvent::ClipEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 clip_id: current_frame.0.clip_id,
                             });
 
-                            event_writer.write(AnimationEvent::AnimationRepetitionEnd {
+                            message_writer.write(AnimationEvent::AnimationRepetitionEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                                 animation_repetition: current_frame.0.animation_repetition,
                             });
 
-                            event_writer.write(AnimationEvent::AnimationEnd {
+                            message_writer.write(AnimationEvent::AnimationEnd {
                                 entity: item.entity,
                                 animation_id: animation_instance.animation_id,
                             });
@@ -215,8 +215,8 @@ impl Animator {
 
     fn play_frame(
         iterator: &mut AnimationIterator,
-        item: &mut SpritesheetAnimationQueryItem<'_>,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        item: &mut SpritesheetAnimationQueryItem<'_, '_>,
+        message_writer: &mut MessageWriter<AnimationEvent>,
     ) -> Option<(IteratorFrame, AnimationProgress)> {
         let maybe_frame = iterator.next();
 
@@ -283,7 +283,7 @@ impl Animator {
                 &frame.events,
                 item.spritesheet_animation.animation_id,
                 &item.entity,
-                event_writer,
+                message_writer,
             );
         }
 
@@ -294,10 +294,10 @@ impl Animator {
         animation_events: &[AnimationIteratorEvent],
         animation_id: AnimationId,
         entity: &Entity,
-        event_writer: &mut EventWriter<AnimationEvent>,
+        message_writer: &mut MessageWriter<AnimationEvent>,
     ) {
         animation_events.iter().for_each(|event| {
-            event_writer.write(
+            message_writer.write(
                 // Promote AnimationIteratorEvents to regular AnimationEvents
                 match event {
                     AnimationIteratorEvent::MarkerHit {

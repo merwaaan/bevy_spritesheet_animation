@@ -66,7 +66,7 @@ impl Plugin for SpritesheetAnimationPlugin {
             .register_type::<Animator>()
             .register_type::<SpritesheetAnimation>()
             // Animations events
-            .add_event::<AnimationEvent>()
+            .add_message::<AnimationEvent>()
             // Systems
             .add_systems(
                 PostUpdate,

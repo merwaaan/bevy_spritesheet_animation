@@ -61,15 +61,15 @@ fn spawn_sprites(
         Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_flip(true, false),
         Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_flip(false, true),
         Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_flip(true, true),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BottomLeft),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BottomCenter),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BottomRight),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::CenterLeft),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::Center),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::CenterRight),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TopLeft),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TopCenter),
-        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TopRight),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BOTTOM_LEFT),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BOTTOM_CENTER),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::BOTTOM_RIGHT),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::CENTER_LEFT),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::CENTER),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::CENTER_RIGHT),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TOP_LEFT),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TOP_CENTER),
+        Sprite3d::from_atlas_image(image.clone(), atlas.clone()).with_anchor(Anchor::TOP_RIGHT),
         Sprite3d::from_atlas_image(image.clone(), atlas.clone())
             .with_custom_size(Vec2::new(100.0, 400.0)),
     ];
@@ -125,15 +125,15 @@ fn update_on_keypress(keyboard: Res<ButtonInput<KeyCode>>, mut sprites: Query<&m
 
         if keyboard.just_pressed(KeyCode::KeyA) {
             static ANCHORS: [Anchor; 9] = [
-                Anchor::BottomLeft,
-                Anchor::BottomCenter,
-                Anchor::BottomRight,
-                Anchor::CenterLeft,
-                Anchor::Center,
-                Anchor::CenterRight,
-                Anchor::TopLeft,
-                Anchor::TopCenter,
-                Anchor::TopRight,
+                Anchor::BOTTOM_LEFT,
+                Anchor::BOTTOM_CENTER,
+                Anchor::BOTTOM_RIGHT,
+                Anchor::CENTER_LEFT,
+                Anchor::CENTER,
+                Anchor::CENTER_RIGHT,
+                Anchor::TOP_LEFT,
+                Anchor::TOP_CENTER,
+                Anchor::TOP_RIGHT,
             ];
 
             sprite.anchor = *ANCHORS.choose(&mut rng).unwrap();

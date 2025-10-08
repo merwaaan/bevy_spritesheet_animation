@@ -18,7 +18,7 @@ fn animation_events_available_as_a_resource() {
     assert!(
         ctx.app
             .world()
-            .get_resource::<Events<AnimationEvent>>()
+            .get_resource::<Messages<AnimationEvent>>()
             .is_some()
     );
 }

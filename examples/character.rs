@@ -92,7 +92,7 @@ fn control_character(
     time: Res<Time>,
     keyboard: Res<ButtonInput<KeyCode>>,
     library: Res<AnimationLibrary>,
-    mut events: EventReader<AnimationEvent>,
+    mut messages: MessageReader<AnimationEvent>,
     mut characters: Query<(
         Entity,
         &mut Sprite,
@@ -171,7 +171,7 @@ fn control_character(
     // We use animation events to detect when this happens.
     // Check out the `events` examples for more details.
 
-    for event in events.read() {
+    for event in messages.read() {
         if let AnimationEvent::AnimationRepetitionEnd {
             entity,
             animation_id,
