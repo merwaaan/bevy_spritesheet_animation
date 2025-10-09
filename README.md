@@ -3,29 +3,26 @@
 [![Build](https://github.com/merwaaan/bevy_spritesheet_animation/actions/workflows/ci.yaml/badge.svg)](https://github.com/merwaaan/bevy_spritesheet_animation/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easily animating 2D and 3D sprites.
+bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easily animating **2D** and **3D** sprites.
 
 ![An animated character walking from the left to the right and shooting their gun](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example.gif)
 
 > [!TIP]
-> This crate supports the latest [Bevy 0.17](https://bevyengine.org/news/bevy-0-17/). Please check the [compatibility table](#compatibility) to see which version of this crate to use with older Bevy versions.
+> This crate supports the latest [Bevy 0.17](https://bevyengine.org/news/bevy-0-17/). Please check the [compatibility table](#compatibility) to see which versions of this crate work with older Bevy versions.
 
 > [!NOTE]
 > This crate is under active development. Please regularly check the [CHANGELOG](CHANGELOG.md) for recent changes.
 
 # Features
 
-- Animate 2D sprites, [3D sprites](#3d-sprites), UI images and custom cursor icons! 🎉
-- A single Bevy [component](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) to add to your entities to play animations.
-- Tunable parameters: [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html), [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html).
-- [Composable animations](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html) from multiple clips.
-- [Events](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/events/enum.AnimationEvent.html) to react to animations ending or reaching specific points.
-- A [convenient API](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/spritesheet/struct.Spritesheet.html) to select frames in spritesheets.
+- Animate [2D sprites](#quick-start), [3D sprites](#3d-sprites), [UI images](#ui-images) and [cursors](#cursors)! 🎉
+- [Easily build](crate::prelude::AnimationBuilder) animations from [spritesheets](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/spritesheet/struct.Spritesheet.html) with custom parameters like [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html) and [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html).
+- Trigger [events](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/events/enum.AnimationEvent.html) when animations end or reach specific points.
 
 # Quick start
 
 1. Add the [SpritesheetAnimationPlugin](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/plugin/struct.SpritesheetAnimationPlugin.html) to your app
-2. Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to create new clips and animations
+2. Build animations with the [Spritesheet API](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/spritesheet/struct.Spritesheet.html)
 3. Add [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) components to your entities
 
 ```rust
@@ -34,206 +31,192 @@ use bevy_spritesheet_animation::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        // Add the plugin to enable animations.
-        // This makes the AnimationLibrary resource available to your systems.
+        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        // Add the plugin to enable animations
+        //
+        // This configures the app to play animations for entities with a SpritesheetAnimation component.
+        // This also makes the Assets<Animation> resource available to your systems.
         .add_plugins(SpritesheetAnimationPlugin)
-        .add_systems(Startup, setup)
+        .add_systems(Startup, create_animated_sprite)
         .run();
 }
 
-fn setup(
+fn create_animated_sprite(
     mut commands: Commands,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
+    mut animations: ResMut<Assets<Animation>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    // Create a clip
+    commands.spawn(Camera2d);
 
-    let spritesheet = Spritesheet::new(8, 8);
-
-    let clip = Clip::from_frames(spritesheet.row(3))
-        .with_duration(AnimationDuration::PerFrame(150));
-
-    let clip_id = library.register_clip(clip);
-
-    // Add this clip to an animation
-
-    let animation = Animation::from_clip(clip_id)
-        .with_repetitions(AnimationRepetition::Times(3));
-
-    let animation_id = library.register_animation(animation);
-
-    // This is a simple animation with a single clip but we can create more sophisticated
-    // animations with multiple clips, each one having different parameters.
+    // Create an animation from a row of an 8x8 spritesheet
+    //
+    // This is a simple animation made of a single clip but we can create more sophisticated animations with multiple clips, each one having different parameters.
     //
     // See the `composition` example for more details.
 
-    // Spawn a Bevy built-in Sprite
-
     let image = assets.load("character.png");
 
-    let atlas = TextureAtlas {
-        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
-        ..default()
-    };
+    let spritesheet = Spritesheet::new(&image, 8, 8);
+
+    let animation = spritesheet
+        .create_animation()
+        .add_row(3)
+        .set_duration(AnimationDuration::PerFrame(100))
+        .build();
+
+    // Register the animation as an asset
+
+    let animation_handle = animations.add(animation);
+
+    // Create a regular Bevy sprite
+    //
+    // Here we use the spritesheet to automatically generate the animation-ready Bevy sprite.
+    // This is optional and you may prefer to build the sprite manually.
+
+    let sprite = spritesheet
+        .with_size_hint(768, 768)
+        .sprite(&mut atlas_layouts);
+
+    // Spawn the sprite with a SpritesheetAnimation component that references our animation
 
     commands.spawn((
-        Sprite::from_atlas_image(image, atlas),
-
-        // Add a SpritesheetAnimation component that references our newly created animation
-        SpritesheetAnimation::from_id(animation_id),
+        // This is a regular Bevy sprite
+        sprite,
+        // This is the component that animates the sprite
+        SpritesheetAnimation::new(animation_handle),
     ));
-
-    commands.spawn(Camera2d);
 }
+
 ```
 
 # Overview
 
-## Clips
-
-A clip is a sequence of frames.
-
-It is the most basic building block for creating animations.
-Simple animations may contain a single clip while more complex animations may contain a sequence of clips.
-
-Parameters like [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html) and [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html) can be specified.
-
-Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to register a new clip.
-
-The clip can then be referenced in any number of animations.
-
-```rust
-fn create_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
-
-    // Create a clip that uses some frames from a spritesheet
-
-    let spritesheet = Spritesheet::new(8, 8);
-
-    let clip = Clip::from_frames(spritesheet.column(2))
-        .with_duration(AnimationDuration::PerRepetition(1500))
-        .with_repetitions(5);
-
-    let clip_id = library.register_clip(clip);
-
-    // Add this clip to an animation
-
-    let animation = Animation::from_clip(clip_id);
-
-    // ...
-}
-```
-
 ## Animations
 
-In its simplest form, an animation is composed of a single clip that loops endlessly.
+In its simplest form, an [Animation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html) is a sequence of cells extracted from a spritesheet image.
 
-However, you may compose more sophisticated animations by chaining multiple clips and tuning their parameters separately.
+Use a [Spritesheet](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/spritesheet/struct.Spritesheet.html) to create an [Animation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/struct.Animation.html).
 
-Use the [AnimationLibrary](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/library/struct.AnimationLibrary.html) resource to register a new animation.
-
-The animation can then be referenced in any number of SpritesheetAnimation component.
+For each animation, you can control its [duration](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDuration.html), [repetitions](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationRepeat.html), [direction](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/animation/enum.AnimationDirection.html) and [easing](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/easing/enum.Easing.html).
 
 ```rust
-fn create_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+// Here, we extract two animations from an 8x8 spritesheet image
 
-    // ... omitted: create and register a few clips
+let image = assets.load("character.png");
 
-    let animation = Animation::from_clips([
-            running_clip_id,
-            shooting_clip_id,
-            running_clip_id
-        ])
-        .with_duration(AnimationDuration::PerRepetition(3000))
-        .with_direction(Animation::Direction::Backwards);
+let spritesheet = Spritesheet::new(&image, 8, 8)
 
-    let animation_id = library.register_animation(animation);
+// Let's create a looping animation from the first row
 
-    // Assign the animation to an entity with the SpritesheetAnimation component
+let run_animation = spritesheet
+    .create_animation()
+    .add_row(0)
+    .set_duration(AnimationDuration::PerRepetition(1500))
+    .set_repetitions(AnimationRepeat::Loop)
+    .build();
 
-    // ... omitted: load the sprite's image and create an atlas
+// Let's create another animation from another row, with different playback parameters
+
+let shoot_animation = spritesheet
+    .create_animation()
+    .add_row(3)
+    .set_duration(AnimationDuration::PerFrame(120))
+    .set_easing(Easing::In(EasingVariety::Quadratic))
+    .build();
+```
+
+## Clips
+
+To create more sophisticated animations, you can leverage a lower-level construct: [clips](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/clip/struct.Clip.html).
+
+Think of clips as sub-animations that are chained together and have their own parameters (duration, repetitions, etc...).
+
+```rust
+let animation = Spritesheet::new(&image, 8, 8)
+    .create_animation()
+
+    // An animation starts with an implicit clip that you can edit right away
+    //
+    // Parameters set with set_clip_xxx() only apply to the current clip
+    .add_row(2)
+    .set_clip_duration(AnimationDuration::PerRepetition(2500))
+
+    // Call start_clip() to add another clip
+    //
+    // Here the second clip uses the same frames but will play faster and repeat a few times
+    .start_clip()
+    .add_row(4)
+    .set_clip_duration(AnimationDuration::PerRepetition(1000))
+    .set_clip_repetitions(5)
+
+    // Parameters set with set_xxx() apply to the whole animation
+    .set_direction(AnimationDirection::PingPong)
+
+    .build();
+```
+
+## Animations are assets
+
+Just like Bevy's images, materials or meshes, this crate's animations are assets.
+
+After creating an animation, register it in `Assets<Animation>`.
+
+This will give you a `Handle<Animation>` that you can assign to `SpritesheetAnimation` components.
+
+```rust
+fn create_animated_sprite(
+    mut commands: Commands,
+    mut animations: ResMut<Assets<Animation>>,
+) {
+    // ... omitted: create an animation
+
+    let animation_handle = animations.add(animation);
 
     commands.spawn((
-        Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::from_id(animation_id),
+        // ... omitted: your entity's other components
+
+        SpritesheetAnimation::new(animation_handle),
     ));
 }
 ```
 
-## Think of clips and animations as assets!
+> [!WARNING]
+> An animation should be created only once and then assigned to as many sprites as you need.
+> Creating identical animations gives more work to the plugin and may degrade performance!
 
-Clips and animations should be created once.
-You can then assign them to many entities.
+## Interaction with Bevy's built-in components
 
-### ❌ BAD
+To animate an entity, you just have to give it:
 
-Do not create the same clip/animation for each entity that plays it.
+- a regular Sprite component (provided by Bevy)
+- a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) component (provided by this crate)
+
+This crate provides a few helpers to make the creation of such entities more concise.
+
+In the simplest case, you can use `Spritesheet::sprite()` to get an animation-ready sprite with the correct image and texture atlas:
 
 ```rust
-fn spawn_characters(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
-
-    // Creating identical animations gives more work to the plugin and degrades performance!
-
-    for _ in 0..100 {
-        let clip = Clip::from_frames([1, 2, 3]);
-        let clip_id = library.register_clip(clip);
-
-        let animation = Animation::from_clip(clip_id);
-        let animation_id = library.register_animation();
-
-        commands.spawn((
-            Sprite::from_atlas_image(/* .... */),
-            SpritesheetAnimation::from_id(animation_id),
-        ));
-    }
-}
+commands.spawn((
+    spritesheet.sprite(&mut atlas_layouts),
+    SpritesheetAnimation::new(animation_handle),
+));
 ```
 
-### 👍 GOOD
+If you need more control, for instance to set some sprite attributes like its color, you might prefer to construct the sprite yourself.
 
-Instead, create clips/animations once and then reference them when needed.
-
-For instance, you can create all your animations in a setup system, give them unique names and then assign them to entities, immediately or at a later stage.
+In that case, you can spell out the entity creation and use `Spritesheet::atlas()` to retrieve the texture atlas that matches your spritesheet.
 
 ```rust
-fn create_animation(mut library: ResMut<AnimationLibrary>) {
-    let clip = Clip::from_frames([1, 2, 3]);
-    let clip_id = library.register_clip(clip);
-
-    let animation = Animation::from_clip(clip_id);
-    let animation_id = library.register_animation();
-
-    // Here, we name the animation to make it easy to retrieve it in other systems.
-    //
-    // Alternatively, you may prefer to store the animation ID yourself.
-    // For instance, in a Bevy Resource that contains the IDs of all your clips/animations.
-    //
-    // Something like:
-    //
-    // #[derive(Resource)]
-    // struct GameAnimations {
-    //     enemy_running: AnimationId,
-    //     enemy_firing: AnimationId,
-    //     ... and so on ...
-    // }
-
-    library.name_animation(animation_id, "enemy running");
-}
-
-fn spawn_enemies(mut commands: Commands, library: Res<AnimationLibrary>) {
-
-    // Retrieve our animation and assign it to many entities
-
-    if let Some(animation_id) = libray.animation_with_name("enemy running") {
-        for _ in 0..100 {
-            commands.spawn((
-                Sprite::from_atlas_image(/* .... */),
-                SpritesheetAnimation::from_id(animation_id),
-            ));
-        }
-    }
-}
+commands.spawn((
+    Sprite {
+        image: your_image,
+        texture_atlas: spritesheet.atlas(&mut atlas_layouts),
+        color: LinearRGBA::RED,
+        ..default()
+    },
+    SpritesheetAnimation::new(animation_handle),
+));
 ```
 
 ## 3D sprites
@@ -244,45 +227,72 @@ This crate also makes it easy to integrate 3D sprites into your games, which is 
 
 Animating a 3D sprite is the same as animating 2D sprites: simply spawn a [Sprite3d](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/sprite3d/struct.Sprite3d.html) instead of Bevy's built-in Sprite and attach a [SpritesheetAnimation](https://docs.rs/bevy_spritesheet_animation/latest/bevy_spritesheet_animation/components/spritesheet_animation/struct.SpritesheetAnimation.html) component to the entity.
 
+Like for 2D sprites, Spritesheet provides a helper that creates an animation-ready 3D sprite:
+
 ```rust
-fn spawn_character(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+let sprite3d = spritesheet
+    .with_size_hint(600, 400)
+    .sprite3d(&mut atlas_layouts)
+    .with_color(LinearRgba::RED)
+    .with_flip(false, true);
 
-    // ...
+commands.spawn((
+    sprite3d,
+    SpritesheetAnimation::new(animation_handle),
+));
+```
 
-    let animation_id = library.register_animation(animation);
+## UI images
+
+This crate also animates UI images with the same workflow.
+
+Please check out the [complete example](examples/ui.rs).
+
+```rust
+fn create_animated_ui_image(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    images: Res<Assets<Image>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>
+) {
+    // ... omitted: create a spritesheet and an animation
+
+    let image_node = spritesheet
+        .with_loaded_image(&images)
+        .expect("the image is not loaded")
+        .image_node(&mut atlas_layouts);
 
     commands.spawn((
-        Sprite3dBuilder::from_image(texture.clone())
-            .with_atlas(atlas_layout)
-            .with_anchor(Anchor::BottomRight)
-            .build(),
-        SpritesheetAnimation::from_id(animation_id),
+        image_node,
+        SpritesheetAnimation::new(animation),
     ));
 }
 ```
 
-## Custom cursor icons
+## Cursors
 
-You can also animate custom cursor icons by adding a `SpritesheetAnimation` component.
+This crate also animates cursors with the same workflow.
+
+Please check out the [complete example](examples/cursor.rs).
 
 ```rust
 fn create_animated_cursor(
+    window: Single<Entity, With<Window>>,
     mut commands: Commands,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    window: Single<Entity, With<Window>>
+    assets: Res<AssetServer>,
+    images: Res<Assets<Image>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>
 ) {
-    // ... omitted: create the animation ...
+    // ... omitted: create a spritesheet and an animation
 
-    let animation_id = library.register_animation(animation);
+    let cursor_icon = spritesheet
+        .with_loaded_image(&images)
+        .expect("the image is not loaded")
+        .cursor_icon(&mut atlas_layouts);
 
     commands.entity(*window).insert((
-        CursorIcon::Custom(CustomCursor::Image(CustomCursorImage {
-            handle: image,
-            texture_atlas: Some(atlas),
-            ..default()
-        })),
-        SpritesheetAnimation::from_id(animation_id),
+        cursor_icon,
+        SpritesheetAnimation::new(animation),
     ));
 }
 ```
@@ -291,18 +301,19 @@ fn create_animated_cursor(
 
 For more examples, browse the [examples/](examples) directory.
 
-| Example                                | Description                                                              |
-| -------------------------------------- | ------------------------------------------------------------------------ |
-| [basic](examples/basic.rs)             | Shows how to create an animated sprite                                   |
-| [3d](examples/3d.rs)                   | Shows how to create 3D sprites                                           |
-| [progress](examples/progress.rs)       | Shows how to control an animation                                        |
-| [composition](examples/composition.rs) | Shows how to create an animation with multiple clips                     |
-| [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                             |
-| [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations    |
-| [events](examples/events.rs)           | Shows how to react to animations reaching points of interest with events |
-| [headless](examples/headless.rs)       | Shows how to run animations in a headless Bevy app without rendering     |
-| [stress](examples/stress.rs)           | Stress test with thousands of animated sprites (either 2D or 3D)         |
-| [cursor](examples/cursor.rs)           | Shows how to create a custom animated cursor                             |
+| Example                                | Description                                                           |
+| -------------------------------------- | --------------------------------------------------------------------- |
+| [basic](examples/basic.rs)             | Shows how to create a simple animated sprite                          |
+| [composition](examples/composition.rs) | Shows how to create an animation with multiple clips                  |
+| [progress](examples/progress.rs)       | Shows how to query/control the progress of an animation               |
+| [parameters](examples/parameters.rs)   | Shows the effect of each animation parameter                          |
+| [character](examples/character.rs)     | Shows how to create a controllable character with multiple animations |
+| [events](examples/events.rs)           | Shows how to handle animation events                                  |
+| [3d](examples/3d.rs)                   | Shows how to create 3D sprites                                        |
+| [cursor](examples/cursor.rs)           | Shows how to create an animated cursor                                |
+| [ui](examples/ui.rs)                   | Shows how to create an animated UI image                              |
+| [headless](examples/headless.rs)       | Shows how to run animations in a headless Bevy app without rendering  |
+| [stress](examples/stress.rs)           | Stress test with thousands of animated sprites (either 2D or 3D)      |
 
 # Compatibility
 
@@ -316,4 +327,7 @@ For more examples, browse the [examples/](examples) directory.
 
 # Credits
 
-- The character spritesheet used for the examples is CC0 from [thekingphoenix](https://opengameart.org/content/pixel-character-with-gun)
+- Assets used in the examples:
+  - Character spritesheet by [thekingphoenix](https://opengameart.org/content/pixel-character-with-gun)
+  - Cursor spritesheet by [crusenho](https://crusenho.itch.io/complete-ui-book-styles-pack)
+  - Hearts spritesheet by [ELV Games](https://elvgames.itch.io/free-inventory-asset-pack)

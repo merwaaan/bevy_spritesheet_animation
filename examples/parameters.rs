@@ -1,14 +1,7 @@
-// This example shows the effect of each animation parameter.
+// This example showcases different animation parameters.
 
-#[path = "./common/mod.rs"]
-pub mod common;
-
-use bevy::prelude::*;
-use bevy_spritesheet_animation::{
-    easing::{Easing, EasingVariety},
-    prelude::*,
-};
-use common::*;
+use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_spritesheet_animation::prelude::*;
 
 fn main() {
     App::new()
@@ -21,31 +14,21 @@ fn main() {
 }
 
 fn spawn_animations(
+    windows: Query<&Window, With<PrimaryWindow>>,
     mut commands: Commands,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
+    mut animations: ResMut<Assets<Animation>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
+    let window = windows.single().expect("no primary window");
+
     commands.spawn(Camera2d);
 
-    // Create a clip
-
-    let spritesheet = Spritesheet::new(1, 30);
-
-    let clip = Clip::from_frames(spritesheet.column(0));
-
-    let clip_id = library.register_clip(clip);
-
-    // Load assets for the sprites
+    // Create an animated sprite for each parameter set
 
     let image = assets.load("ball.png");
 
-    let atlas = TextureAtlas {
-        layout: atlas_layouts.add(spritesheet.atlas_layout(100, 20)),
-        ..default()
-    };
-
-    // Create an animated sprite for each parameter set
+    let spritesheet = Spritesheet::new(&image, 1, 30);
 
     let mut parameters = vec![
         // Duration
@@ -75,6 +58,7 @@ fn spawn_animations(
     ];
 
     // Easing
+
     for variety in [
         EasingVariety::Quadratic,
         EasingVariety::Cubic,
@@ -90,31 +74,35 @@ fn spawn_animations(
     }
 
     for (index, (duration, repetitions, direction, easing)) in parameters.iter().enumerate() {
-        let mut animation = Animation::from_clip(clip_id);
+        let mut animation = spritesheet.create_animation().add_column(0);
 
         if let &Some(duration) = duration {
-            animation.set_duration(duration);
+            animation = animation.set_duration(duration);
         }
 
         if let &Some(repetitions) = repetitions {
-            animation.set_repetitions(repetitions);
+            animation = animation.set_repetitions(repetitions);
         }
 
         if let &Some(direction) = direction {
-            animation.set_direction(direction);
+            animation = animation.set_direction(direction);
         }
 
         if let &Some(easing) = easing {
-            animation.set_easing(easing);
+            animation = animation.set_easing(easing);
         }
 
-        let animation_id = library.register_animation(animation);
+        let animation_handle = animations.add(animation.build());
+
+        let sprite = spritesheet
+            .with_size_hint(100, 600)
+            .sprite(&mut atlas_layouts);
 
         commands
             .spawn((
-                Sprite::from_atlas_image(image.clone(), atlas.clone()),
-                SpritesheetAnimation::from_id(animation_id),
-                Transform::from_translation(grid_position(6, 6, index)),
+                sprite,
+                SpritesheetAnimation::new(animation_handle),
+                Transform::from_translation(grid_position(window, 6, 6, index)),
             ))
             // Add a label describing the parameters
             .with_children(|builder| {
@@ -128,11 +116,30 @@ fn spawn_animations(
                 builder.spawn((
                     Text2d(description),
                     TextColor(Color::WHITE),
-                    TextFont::from_font_size(15.0),
-                    Transform::from_xyz(0.0, -50.0, 0.0),
+                    Transform::from_xyz(0.0, -50.0, 0.0).with_scale(Vec3::splat(0.7)),
                 ));
             });
     }
+}
+
+/// Returns the screen-space position of the nth item in a grid
+fn grid_position(window: &Window, columns: u32, rows: u32, n: usize) -> Vec3 {
+    const MARGIN: f32 = 100.0;
+
+    let width = window.width() - MARGIN * 2.0;
+    let height = window.height() - MARGIN * 2.0;
+
+    let xgap = width / columns.saturating_sub(1) as f32;
+    let ygap = height / rows.saturating_sub(1) as f32;
+
+    let x = (n as u32 % columns) as f32;
+    let y = (n as u32 / columns) as f32;
+
+    Vec3::new(
+        x * xgap - width / 2.0,
+        -y * ygap + height / 2.0, // flip Y
+        0.0,
+    )
 }
 
 // The spritesheet has been generated with this Javascript code:

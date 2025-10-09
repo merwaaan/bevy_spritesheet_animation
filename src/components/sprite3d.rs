@@ -1,83 +1,106 @@
-use bevy::{
-    asset::Handle, color::Color, ecs::prelude::*, math::Vec2, prelude::*, sprite::Anchor,
-    transform::components::Transform,
-};
+use bevy::{prelude::*, sprite::Anchor};
 
-/// Specifies the rendering properties of a 3D sprite.
+/// A 3D sprite, animated or not.
 ///
-/// This contains similar fields as Bevy's [Sprite].
+/// This component is intended to be used as a drop-in replacement for Bevy's standard [Sprite](https://docs.rs/bevy/latest/bevy/sprite/struct.Sprite.html).
 ///
-/// # Note
+/// # Example
 ///
-/// The geometry and material required for rendering a 3D sprite will be automatically added by the library in an internal system.
+/// Use the [Spritesheet's sprite3d()](crate::prelude::ComponentGenerator::sprite3d) to create an animation-ready 3D sprite.
 ///
-/// The library requires the sprite's texture to be loaded before setting everything up.
-/// If the texture has already been loaded (for example, in a loading stage), the sprite will appear on the next update.
-/// Otherwise, the actual rendering will be delayed and the sprite will not be visible during a few frames.
+/// Additionally, insert a [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) component to animate the 3D sprite.
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_spritesheet_animation::prelude::*;
+/// fn create_animated_sprite(
+///     mut commands: Commands,
+///     mut animations: ResMut<Assets<Animation>>,
+///     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+///     # spritesheet: &Spritesheet,
+///     # animation: Handle<Animation>
+/// ) {
+///     // ...omitted: create a spritesheet and an animation
+///     //
+///     // The animation is optional, you might just need a static 3D sprite
+///
+///     let sprite3d = spritesheet
+///         .with_size_hint(600, 400)
+///         .sprite3d(&mut atlas_layouts)
+///         .with_color(LinearRgba::RED)
+///         .with_flip(false, true)
+///         .with_double_sided(true);
+///
+///     commands.spawn((
+///         sprite3d,
+///         SpritesheetAnimation::new(animation),
+///     ));
+/// }
+/// ```
+///
+/// # Required components
+///
+/// The geometry and material required for rendering a 3D sprite will be automatically added by the plugin.
+///
+/// It requires the sprite's image to be loaded before setting everything up:
+/// - If the image has already been loaded (for example, at a separate loading stage), the sprite will immediately appear.
+/// - Otherwise, rendering will be delayed and the sprite will not be visible during a few frames.
 #[derive(Component, Debug, Reflect)]
 #[require(Transform, Visibility)]
 #[reflect(Component, Debug)]
 pub struct Sprite3d {
-    /// The image used to render the sprite
+    /// The sprite's image (should be a spritesheet when animated)
     pub image: Handle<Image>,
 
-    /// The (optional) texture atlas used to render the sprite
+    /// The texture atlas used to render only part of the image
     pub texture_atlas: Option<TextureAtlas>,
 
-    /// A color to tint the sprite with.
-    ///
-    /// The default color is white, which does not tint the sprite.
+    /// A color to tint the sprite with (default = `Color::WHITE`).
     pub color: Color,
 
-    /// Flips the sprite horizontally.
+    /// Flips the sprite horizontally (default = `false`).
     pub flip_x: bool,
 
-    /// Flips the sprite vertically.
+    /// Flips the sprite vertically (default = `false`).
     pub flip_y: bool,
 
-    /// The size of the sprite.
+    /// The size of the sprite (default = `None`).
     ///
     /// If undefined, the dimensions of the sprite's image will be used.
     pub custom_size: Option<Vec2>,
 
-    /// The position of the sprite's origin
+    /// The position of the sprite's origin (default = `Anchor::CENTER`).
     pub anchor: Anchor,
 
-    /// The sprite's alpha mode.
+    /// The sprite's alpha mode (default = `AlphaMode::Mask(0.5)`).
     ///
-    /// - `Mask(0.5)` (default) only allows fully opaque or fully transparent pixels
-    ///   (cutoff at `0.5`).
-    /// - `Blend` allows partially transparent pixels (slightly more expensive).
-    /// - Use any other value to achieve desired blending effect.
+    /// Use other modes to achieve custom blending effects.
+    /// A common choice is `AlphaMode::Blend`, which makes pixels partially transparent depending on the color's alpha.
     pub alpha_mode: AlphaMode,
 
-    /// Whether the sprite should be rendered as unlit.
-    /// `true` (default) disables lighting.
+    /// Whether the sprite should be unlit (default = `true`).
     pub unlit: bool,
 
-    /// An emissive colour, if the sprite should emit light.
-    /// `LinearRgba::Black` (default) does nothing.
+    /// An emissive color, if the sprite emits light (default = `Color::BLACK`).
     pub emissive: LinearRgba,
 
-    /// Whether the sprite should be rendered as double-sided.
-    /// `true` adds a second set of indices, describing the same indices
-    /// in reverse order.
+    /// Whether the sprite should be rendered as double-sided (default = `false`).
     pub double_sided: bool,
 }
 
 impl Default for Sprite3d {
     fn default() -> Self {
         Self {
-            image: Default::default(),
-            texture_atlas: Default::default(),
-            color: Default::default(),
-            flip_x: Default::default(),
-            flip_y: Default::default(),
-            custom_size: Default::default(),
-            anchor: Default::default(),
+            image: default(),
+            texture_atlas: default(),
+            color: default(),
+            flip_x: default(),
+            flip_y: default(),
+            custom_size: default(),
+            anchor: default(),
             alpha_mode: AlphaMode::Mask(0.5),
             unlit: true,
-            emissive: LinearRgba::BLACK,
+            emissive: Color::BLACK.into(),
             double_sided: false,
         }
     }
@@ -85,17 +108,14 @@ impl Default for Sprite3d {
 
 impl Sprite3d {
     pub fn from_image(image: Handle<Image>) -> Self {
-        Self {
-            image,
-            ..Default::default()
-        }
+        Self { image, ..default() }
     }
 
     pub fn from_atlas_image(image: Handle<Image>, atlas: TextureAtlas) -> Self {
         Self {
             image,
             texture_atlas: Some(atlas),
-            ..Default::default()
+            ..default()
         }
     }
 
@@ -135,7 +155,7 @@ impl Sprite3d {
         self
     }
 
-    pub fn double_sided(mut self, ds: bool) -> Self {
+    pub fn with_double_sided(mut self, ds: bool) -> Self {
         self.double_sided = ds;
         self
     }

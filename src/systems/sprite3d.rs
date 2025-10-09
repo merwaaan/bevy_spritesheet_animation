@@ -1,16 +1,11 @@
-use std::{collections::HashMap, hash::Hash};
+use std::hash::Hash;
 
 use bevy::{
-    asset::{Assets, Handle, RenderAssetUsages},
-    ecs::{
-        entity::Entity,
-        query::Changed,
-        system::{Commands, Query, Res, ResMut},
-    },
+    asset::RenderAssetUsages,
     mesh::{Indices, PrimitiveTopology},
-    pbr::StandardMaterial,
+    platform::collections::HashMap,
     prelude::*,
-    render::{alpha::AlphaMode, render_resource::Face},
+    render::render_resource::Face,
 };
 
 use crate::prelude::Sprite3d;
@@ -243,7 +238,7 @@ fn get_or_create_material(
                 unlit: sprite.unlit,
                 alpha_mode: sprite.alpha_mode,
                 emissive: sprite.emissive,
-                // TODO
+
                 // these are sensible values for 3d rendering,
                 // but could be extended to public API
                 perceptual_roughness: 0.5,

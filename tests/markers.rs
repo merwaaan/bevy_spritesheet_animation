@@ -7,45 +7,52 @@ use context::*;
 fn markers_emit_events() {
     let mut ctx = Context::new();
 
-    let marker1_id = ctx.library().new_marker();
-    let marker2_id = ctx.library().new_marker();
+    let mut clip1_id = ClipId::dummy();
+    let clip1_marker1 = Marker::new();
+    let clip1_marker2 = Marker::new();
+    let clip1_marker3 = Marker::new();
+    let clip1_marker4 = Marker::new();
 
-    let clip1 = Clip::from_frames([0, 1, 2])
-        .with_marker(marker1_id, 0)
-        .with_marker(marker2_id, 1)
-        .with_marker(marker1_id, 2)
-        .with_marker(marker2_id, 2);
-    let clip1_id = ctx.library().register_clip(clip1);
+    let mut clip2_id = ClipId::dummy();
+    let clip2_marker1 = Marker::new();
+    let clip2_marker2 = Marker::new();
 
-    let clip2 = Clip::from_frames([7, 8, 9])
-        .with_marker(marker2_id, 0)
-        .with_marker(marker1_id, 2);
-    let clip2_id = ctx.library().register_clip(clip2);
-
-    let animation =
-        Animation::from_clips([clip1_id, clip2_id]).with_duration(AnimationDuration::PerFrame(100));
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    let animation = ctx.attach_animation(|builder| {
+        builder
+            .set_duration(AnimationDuration::PerFrame(100))
+            // Clip 1
+            .add_indices([0, 1, 2])
+            .add_clip_marker(clip1_marker1, 0)
+            .add_clip_marker(clip1_marker2, 1)
+            .add_clip_marker(clip1_marker3, 2)
+            .add_clip_marker(clip1_marker4, 2)
+            .get_current_clip_id(&mut clip1_id)
+            // Clip 2
+            .start_clip()
+            .add_indices([7, 8, 9])
+            .add_clip_marker(clip2_marker1, 0)
+            .add_clip_marker(clip2_marker2, 2)
+            .get_current_clip_id(&mut clip2_id)
+    });
 
     ctx.run(50);
     ctx.check(
         0,
-        [ctx.marker_hit(marker1_id, animation_id, 0, clip1_id, 0)],
+        [ctx.marker_hit(clip1_marker1, &animation, 0, clip1_id, 0)],
     );
 
     ctx.run(100); // 150
     ctx.check(
         1,
-        [ctx.marker_hit(marker2_id, animation_id, 0, clip1_id, 0)],
+        [ctx.marker_hit(clip1_marker2, &animation, 0, clip1_id, 0)],
     );
 
     ctx.run(100); // 250
     ctx.check(
         2,
         [
-            ctx.marker_hit(marker1_id, animation_id, 0, clip1_id, 0),
-            ctx.marker_hit(marker2_id, animation_id, 0, clip1_id, 0),
+            ctx.marker_hit(clip1_marker3, &animation, 0, clip1_id, 0),
+            ctx.marker_hit(clip1_marker4, &animation, 0, clip1_id, 0),
         ],
     );
 
@@ -53,9 +60,9 @@ fn markers_emit_events() {
     ctx.check(
         7,
         [
-            ctx.marker_hit(marker2_id, animation_id, 0, clip2_id, 0),
-            ctx.clip_rep_end(animation_id, clip1_id, 0),
-            ctx.clip_end(animation_id, clip1_id),
+            ctx.marker_hit(clip2_marker1, &animation, 0, clip2_id, 0),
+            ctx.clip_rep_end(&animation, clip1_id, 0),
+            ctx.clip_end(&animation, clip1_id),
         ],
     );
 
@@ -65,7 +72,7 @@ fn markers_emit_events() {
     ctx.run(100); // 550
     ctx.check(
         9,
-        [ctx.marker_hit(marker1_id, animation_id, 0, clip2_id, 0)],
+        [ctx.marker_hit(clip2_marker2, &animation, 0, clip2_id, 0)],
     );
 
     // Loop
@@ -74,10 +81,10 @@ fn markers_emit_events() {
     ctx.check(
         0,
         [
-            ctx.marker_hit(marker1_id, animation_id, 1, clip1_id, 0),
-            ctx.clip_rep_end(animation_id, clip2_id, 0),
-            ctx.clip_end(animation_id, clip2_id),
-            ctx.anim_rep_end(animation_id, 0),
+            ctx.marker_hit(clip1_marker1, &animation, 1, clip1_id, 0),
+            ctx.clip_rep_end(&animation, clip2_id, 0),
+            ctx.clip_end(&animation, clip2_id),
+            ctx.anim_rep_end(&animation, 0),
         ],
     );
 }
