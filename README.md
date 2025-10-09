@@ -263,17 +263,7 @@ fn spawn_character(mut commands: Commands, mut library: ResMut<AnimationLibrary>
 
 ## Custom cursor icons
 
-You can animate custom cursor icons using this crate.
-
-You need to enable the optional `custom_cursor` feature.
-
-```toml
-[dependencies]
-bevy = { version = "...", features = ["...", "custom_cursor"] }
-bevy_spritesheet_animation = { version = "...", features = ["custom_cursor"] }
-```
-
-When you spawn your cursor icon entity, add a `SpritesheetAnimation` component as usual to play an animation.
+You can also animate custom cursor icons by adding a `SpritesheetAnimation` component.
 
 ```rust
 fn spawn_cursor_icon(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {

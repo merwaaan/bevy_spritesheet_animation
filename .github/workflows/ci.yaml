@@ -12,7 +12,8 @@ env:
   RUSTDOCFLAGS: --deny warnings
 
 jobs:
-  # Check formatting.
+  # Check formatting
+
   format:
     name: Format
     runs-on: ubuntu-latest
@@ -29,7 +30,8 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  # Run Clippy lints.
+  # Run Clippy lints
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
@@ -54,7 +56,8 @@ jobs:
       - name: Run Clippy lints
         run: cargo clippy --workspace --all-features --all-targets -- --deny warnings
 
-  # Check documentation.
+  # Check documentation
+
   doc:
     name: Docs
     runs-on: ubuntu-latest
@@ -75,9 +78,10 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Check documentation
-        run: cargo doc --workspace --document-private-items --no-deps
+        run: cargo doc --workspace --no-default-features --document-private-items --no-deps
 
-  # Run tests.
+  # Run tests
+
   test:
     name: Tests
     runs-on: ubuntu-latest
@@ -99,6 +103,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cargo test --workspace --all-features --all-targets
-          # TODO: Workaround for https://github.com/rust-lang/cargo/issues/6669
-          cargo test --workspace --all-features --doc
+          # Storage is limited so we optimize for space to prevent the build from failing (will take longer though)
+          CARGO_INCREMENTAL=0 RUSTFLAGS="-C debuginfo=0 -C lto=no" cargo test --release --workspace --no-default-features --all-targets
+          # Workaround for https://github.com/rust-lang/cargo/issues/6669
+          CARGO_INCREMENTAL=0 RUSTFLAGS="-C debuginfo=0 -C lto=no" cargo test --release --workspace --no-default-features --doc

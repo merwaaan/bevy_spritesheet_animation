@@ -5,11 +5,12 @@ use bevy::{
 };
 
 use crate::{
-    animator::Animator, components::spritesheet_animation::SpritesheetAnimation,
-    events::AnimationEvent, library::AnimationLibrary, systems::spritesheet_animation,
+    animator::Animator,
+    components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
+    events::AnimationEvent,
+    library::AnimationLibrary,
+    systems::{sprite3d, spritesheet_animation},
 };
-#[cfg(feature = "3d")]
-use crate::{components::sprite3d::Sprite3d, systems::sprite3d};
 
 /// Set for systems that update the animation state.
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
@@ -66,20 +67,15 @@ impl Plugin for SpritesheetAnimationPlugin {
             .register_type::<SpritesheetAnimation>()
             // Animations events
             .add_message::<AnimationEvent>()
-            // Systems
+            // Animation system
             .add_systems(
                 PostUpdate,
-                // Main animation system
                 spritesheet_animation::play_animations.in_set(AnimationSystemSet),
-            );
-
-        #[cfg(feature = "3d")]
-        app
-            // Cache for 3D sprites
+            )
+            // 3D sprites
             .init_resource::<sprite3d::Cache>()
             .register_type::<sprite3d::Cache>()
             .register_type::<Sprite3d>()
-            // 3D sprite systems
             .add_systems(
                 PostUpdate,
                 (

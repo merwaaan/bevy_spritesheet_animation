@@ -16,12 +16,13 @@ use bevy::{
     ui::widget::ImageNode,
 };
 
-#[cfg(feature = "3d")]
-use crate::components::sprite3d::Sprite3d;
 use crate::{
     animation::AnimationId,
     animator::iterator::{AnimationIterator, IteratorFrame},
-    components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
+    components::{
+        sprite3d::Sprite3d,
+        spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
+    },
     events::AnimationEvent,
     library::AnimationLibrary,
 };
@@ -57,7 +58,6 @@ pub struct SpritesheetAnimationQuery {
     entity: Entity,
     spritesheet_animation: &'static mut SpritesheetAnimation,
     sprite: Option<&'static mut Sprite>,
-    #[cfg(feature = "3d")]
     sprite3d: Option<&'static mut Sprite3d>,
     image_node: Option<&'static mut ImageNode>,
     #[cfg(feature = "custom_cursor")]

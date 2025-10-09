@@ -91,16 +91,13 @@ pub mod prelude {
             Animation, AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat,
         },
         clip::{Clip, ClipId},
-        components::spritesheet_animation::SpritesheetAnimation,
+        components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
         easing::{Easing, EasingVariety},
         events::{AnimationEvent, AnimationMarkerId},
         library::{AnimationLibrary, LibraryError},
         plugin::SpritesheetAnimationPlugin,
         spritesheet::Spritesheet,
     };
-
-    #[cfg(feature = "3d")]
-    pub use super::components::sprite3d::Sprite3d;
 }
 
 const CRATE_NAME: &str = "bevy_spritesheet_animation";

@@ -12,26 +12,32 @@ resolver = "3"
 exclude = ["assets/example.gif", "assets/example3d.gif"]
 
 [features]
-default = ["3d"]
-custom_cursor = ["bevy/bevy_winit", "bevy/custom_cursor"]
-3d = ["bevy/bevy_pbr"]
+default = [
+  # In practice, this feature flag is not required as we use optional arguments for our Bevy systems.
+  # However, the Github Action's environment does not support winit, which is a transitive dependency of bevy/custom_cursor.
+  # So hiding this behind a feature allows us to run tests with --no-default-features in that specific context and circumvent the issue.
+  "custom_cursor"
+]
+custom_cursor = ["bevy/custom_cursor"]
 
 [dependencies]
 bevy = { version = "0.17.0", default-features = false, features = [
   "bevy_log",
   "bevy_sprite",
   "bevy_pbr",
-  "bevy_ui",
+  "bevy_ui"
 ] }
 
 [dev-dependencies]
 approx = "0.5.1"
-bevy = { version = "0.17.0", default-features = true, features = [
+bevy = { version = "0.17.0", features = [
+  # Needed for the "stress" example  as it uses Bevy's FPS overlay
   "bevy_dev_tools"
 ] }
 clap = { version = "4.5.16", features = ["derive"] }
 rand = "0.9"
 
 [lints.clippy]
+# Bevy systems can have a lot of arguments
 too_many_arguments = "allow"
 type_complexity = "allow"

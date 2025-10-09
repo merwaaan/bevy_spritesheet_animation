@@ -13,7 +13,6 @@ use bevy::{
     render::{alpha::AlphaMode, render_resource::Face},
 };
 
-#[cfg(feature = "3d")]
 use crate::prelude::Sprite3d;
 
 /// Cached data for the 3D sprites
