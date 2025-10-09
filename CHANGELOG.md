@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.0.0 - 2025-10-09
+
+### Added
+
+- Add support for Bevy 0.17
+- Add an example showing how to setup an animated cursor
+
+### Changed
+
+- Remove the `3d` feature, 3D sprites are now available by default
+- Add the `custom_cursor` feature to the defaults
+
 ## 3.2.0 - 2025-09-20
 
 ### Fixed
