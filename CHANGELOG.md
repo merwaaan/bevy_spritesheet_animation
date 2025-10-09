@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.0.1 - 2025-10-09
+
+No actual changes. Had to bump the version to republish the crate and fix docs.rs failing to build the documentation.
+
 ## 4.0.0 - 2025-10-09
 
 ### Added
