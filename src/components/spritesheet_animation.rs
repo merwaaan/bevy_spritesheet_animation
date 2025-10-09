@@ -1,8 +1,8 @@
-use bevy::{ecs::prelude::*, reflect::prelude::*};
+use bevy::{asset::Handle, ecs::prelude::*, reflect::prelude::*};
 
-use crate::animation::AnimationId;
+use crate::animation::Animation;
 
-// The progress of an animation being played.
+/// The progress of an animation being played
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 #[reflect(Debug, Default, PartialEq, Hash)]
 pub struct AnimationProgress {
@@ -22,7 +22,7 @@ pub struct AnimationProgress {
 
 /// A Bevy component that enables spritesheet animations.
 ///
-/// It contains an [AnimationId] that references an [Animation](crate::prelude::Animation) obtained with [AnimationLibrary::register_animation](crate::prelude::AnimationLibrary::register_animation).
+/// It references an [Animation](crate::prelude::Animation) and contains a few playback-related attributes.
 ///
 /// # Note
 ///
@@ -35,18 +35,18 @@ pub struct AnimationProgress {
 /// # use bevy_spritesheet_animation::prelude::*;
 /// fn my_system(
 ///     mut commands: Commands,
-///     mut library: ResMut<AnimationLibrary>,
 ///     # assets: Res<AssetServer>,
 ///     # mut layouts: ResMut<Assets<TextureAtlasLayout>>,
+///     mut animations: ResMut<Assets<Animation>>,
 /// ) {
 ///     let clip = Clip::from_frames([1, 2, 3]);
-///     let clip_id = library.register_clip(clip);
 ///
-///     let animation = Animation::from_clip(clip_id);
-///     let animation_id = library.register_animation(animation);
+///     let animation = Animation::from_clip(clip);
+///
+///     let animation_handle = animations.add(animation);
 ///
 ///     // ... omitted: load a texture and an atlas layout ...
-///     # let image = assets.load("fake");
+///     # let image = assets.load("");
 ///     # let atlas = TextureAtlas {
 ///     #    layout: layouts.add(TextureAtlasLayout::new_empty(UVec2::ONE)),
 ///     #    ..default()
@@ -54,28 +54,30 @@ pub struct AnimationProgress {
 ///
 ///     commands.spawn((
 ///         Sprite::from_atlas_image(image, atlas),
-///         SpritesheetAnimation::from_id(animation_id),
+///         SpritesheetAnimation::new(animation_handle),
 ///     ));
 /// }
 /// ```
 #[derive(Component, Debug, Clone, Reflect)]
 #[reflect(Component, Debug)]
 pub struct SpritesheetAnimation {
-    /// The ID of the animation to play
+    /// The animation to play
     ///
     /// # Note
     ///
-    /// In most cases, it's best to use [SpritesheetAnimation::switch], which will set a new `animation_id` and also reset the `frame` and `repetition` indices, as changing the animation without adjusting the indices can lead to unexpected results.
+    /// In most cases, it's best to call [SpritesheetAnimation::switch], which will set a new `animation` and also reset the `frame` and `repetition` indices, as changing the animation without adjusting the indices can lead to unexpected results.
     ///
-    /// However, only updating the `animation_id` can be useful in specific cases, such as when working with animation variants that must resume from the same frame.
-    pub animation_id: AnimationId,
+    /// However, only updating the `animation` can be useful in specific cases, such as when working with animation variants that must resume from the same frame.
+    pub animation: Handle<Animation>,
 
     /// The current progress of the animation
+    ///
+    /// This can be both read from and written to.
     pub progress: AnimationProgress,
 
     /// Is the animation currently playing?
     ///
-    /// The animation can alternatively be stopped by removing the [SpritesheetAnimation] component from its entity entirely.
+    /// Alternatively, the animation can be stopped by removing the [SpritesheetAnimation] component from its entity entirely.
     /// However, re-inserting the component at a later time will restart it from scratch whereas pausing/resuming the animation with `playing` keeps its progress.
     pub playing: bool,
 
@@ -84,14 +86,14 @@ pub struct SpritesheetAnimation {
 }
 
 impl SpritesheetAnimation {
-    /// Creates a [SpritesheetAnimation] component from an [AnimationId] returned by [AnimationLibrary::register_animation](crate::prelude::AnimationLibrary::register_animation).
+    /// Creates a [SpritesheetAnimation] component.
     ///
     /// # Arguments
     ///
-    /// * `animation_id` - the ID of the animation to play
-    pub fn from_id(animation_id: AnimationId) -> Self {
+    /// * `animation` - the handle of the animation to play
+    pub fn new(animation: Handle<Animation>) -> Self {
         Self {
-            animation_id,
+            animation,
             progress: AnimationProgress {
                 frame: 0,
                 repetition: 0,
@@ -105,9 +107,9 @@ impl SpritesheetAnimation {
     ///
     /// # Note
     ///
-    /// To change the animation while keeping the current `frame` and `repetition` indices, directly set `animation_id` instead.
-    pub fn switch(&mut self, animation_id: AnimationId) {
-        self.animation_id = animation_id;
+    /// To change the animation while keeping the current `frame` and `repetition` indices, directly update the `animation` field instead.
+    pub fn switch(&mut self, animation: Handle<Animation>) {
+        self.animation = animation;
         self.reset();
     }
 

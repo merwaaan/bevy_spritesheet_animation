@@ -22,9 +22,9 @@ fn main() {
 
 fn spawn_animations(
     mut commands: Commands,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut animations: ResMut<Assets<Animation>>,
 ) {
     commands.spawn(Camera2d);
 
@@ -33,8 +33,6 @@ fn spawn_animations(
     let spritesheet = Spritesheet::new(1, 30);
 
     let clip = Clip::from_frames(spritesheet.column(0));
-
-    let clip_id = library.register_clip(clip);
 
     // Load assets for the sprites
 
@@ -90,7 +88,7 @@ fn spawn_animations(
     }
 
     for (index, (duration, repetitions, direction, easing)) in parameters.iter().enumerate() {
-        let mut animation = Animation::from_clip(clip_id);
+        let mut animation = Animation::from_clip(clip.clone());
 
         if let &Some(duration) = duration {
             animation.set_duration(duration);
@@ -108,12 +106,12 @@ fn spawn_animations(
             animation.set_easing(easing);
         }
 
-        let animation_id = library.register_animation(animation);
+        let animation_handle = animations.add(animation);
 
         commands
             .spawn((
                 Sprite::from_atlas_image(image.clone(), atlas.clone()),
-                SpritesheetAnimation::from_id(animation_id),
+                SpritesheetAnimation::new(animation_handle),
                 Transform::from_translation(grid_position(6, 6, index)),
             ))
             // Add a label describing the parameters

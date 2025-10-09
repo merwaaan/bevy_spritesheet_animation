@@ -48,7 +48,7 @@ fn setup(
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
 ) {
-    // Create a clip
+    // Create a clip from a row of an 8x8 spritesheet
 
     let spritesheet = Spritesheet::new(8, 8);
 
@@ -82,7 +82,7 @@ fn setup(
         Sprite::from_atlas_image(image, atlas),
 
         // Add a SpritesheetAnimation component that references our newly created animation
-        SpritesheetAnimation::from_id(animation_id),
+        SpritesheetAnimation::new(animation_handle),
     ));
 
     commands.spawn(Camera2d);
@@ -156,7 +156,7 @@ fn create_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary
 
     commands.spawn((
         Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::from_id(animation_id),
+        SpritesheetAnimation::new(animation_handle),
     ));
 }
 ```
@@ -184,7 +184,7 @@ fn spawn_characters(mut commands: Commands, mut library: ResMut<AnimationLibrary
 
         commands.spawn((
             Sprite::from_atlas_image(/* .... */),
-            SpritesheetAnimation::from_id(animation_id),
+            SpritesheetAnimation::new(animation_handle),
         ));
     }
 }
@@ -229,7 +229,7 @@ fn spawn_enemies(mut commands: Commands, library: Res<AnimationLibrary>) {
         for _ in 0..100 {
             commands.spawn((
                 Sprite::from_atlas_image(/* .... */),
-                SpritesheetAnimation::from_id(animation_id),
+                SpritesheetAnimation::new(animation_handle),
             ));
         }
     }
@@ -256,7 +256,7 @@ fn spawn_character(mut commands: Commands, mut library: ResMut<AnimationLibrary>
             .with_atlas(atlas_layout)
             .with_anchor(Anchor::BottomRight)
             .build(),
-        SpritesheetAnimation::from_id(animation_id),
+        SpritesheetAnimation::new(animation_handle),
     ));
 }
 ```
@@ -282,7 +282,7 @@ fn create_animated_cursor(
             texture_atlas: Some(atlas),
             ..default()
         })),
-        SpritesheetAnimation::from_id(animation_id),
+        SpritesheetAnimation::new(animation_handle),
     ));
 }
 ```

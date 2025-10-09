@@ -38,16 +38,24 @@ fn main() {
                 spawn_visual_effects,
                 animate_bullets,
                 animate_footsteps,
+                switch_slomo,
             ),
         )
         .run();
 }
 
+#[derive(Resource)]
+struct MyAnimations {
+    left_foot_touches_ground_marker: MarkerId,
+    right_foot_touches_ground_marker: MarkerId,
+    bullet_out_marker: MarkerId,
+}
+
 fn spawn_character(
     mut commands: Commands,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut animations: ResMut<Assets<Animation>>,
 ) {
     commands.spawn(Camera2d);
 
@@ -55,40 +63,37 @@ fn spawn_character(
 
     let spritesheet = Spritesheet::new(8, 8);
 
-    let foot_touches_ground_marker = library.new_marker();
+    let mut run_clip = Clip::from_frames(spritesheet.row(3)).with_repetitions(4);
 
-    library
-        .name_marker(foot_touches_ground_marker, "foot touches ground")
-        .unwrap();
+    // The character's foot touches the ground on frame 1...
 
-    let run_clip = Clip::from_frames(spritesheet.row(3))
-        .with_repetitions(4)
-        // The character's foot touches the ground on frame 1...
-        .with_marker(foot_touches_ground_marker, 1)
-        // ... and then again on frame 5
-        .with_marker(foot_touches_ground_marker, 5);
+    let left_foot_touches_ground_marker = run_clip.add_marker(1);
 
-    let run_clip_id = library.register_clip(run_clip);
+    // ... and then again on frame 5
+
+    let right_foot_touches_ground_marker = run_clip.add_marker(5);
 
     // Create a shooting clip
 
-    let bullet_out_marker = library.new_marker();
+    let mut shoot_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 5, 5));
 
-    library
-        .name_marker(bullet_out_marker, "bullet goes out")
-        .unwrap();
+    // The character shoots their gun on frame 1
 
-    let shoot_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 5, 5))
-        // The character shoots their gun on frame 1
-        .with_marker(bullet_out_marker, 1);
-
-    let shoot_clip_id = library.register_clip(shoot_clip);
+    let bullet_out_marker = shoot_clip.add_marker(5);
 
     // Create the final animation
 
-    let animation = Animation::from_clips([run_clip_id, shoot_clip_id]);
+    let animation = Animation::from_clips([run_clip, shoot_clip]);
 
-    let animation_id = library.register_animation(animation);
+    let animation_handle = animations.add(animation);
+
+    // TODO doc
+
+    commands.insert_resource(MyAnimations {
+        left_foot_touches_ground_marker,
+        right_foot_touches_ground_marker,
+        bullet_out_marker,
+    });
 
     // Spawn a sprite using the animation
 
@@ -101,7 +106,7 @@ fn spawn_character(
 
     commands.spawn((
         Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::from_id(animation_id),
+        SpritesheetAnimation::new(animation_handle),
     ));
 }
 
@@ -152,6 +157,13 @@ fn create_ui(mut commands: Commands) {
             add_event(EventType::RepetitionEnd);
             add_event(EventType::End);
         });
+
+    // Help text
+
+    commands.spawn((
+        Text("SPACE: toggle slow motion".to_owned()),
+        TextFont::from_font_size(30.0),
+    ));
 }
 
 // Component attached to a UI square to be highlighted when the given event type is received
@@ -206,16 +218,17 @@ fn show_triggered_events(
 // Spawns footsteps & bullets when the marked frames are played
 fn spawn_visual_effects(
     mut commands: Commands,
-    library: Res<AnimationLibrary>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut messages: MessageReader<AnimationEvent>,
+    my_animations: Res<MyAnimations>,
 ) {
     for event in messages.read() {
         if let AnimationEvent::MarkerHit { marker_id, .. } = event {
             // Spawn a shockwave at each footstep
-
-            if library.is_marker_name(*marker_id, "foot touches ground") {
+            if marker_id == &my_animations.left_foot_touches_ground_marker
+                || marker_id == &my_animations.right_foot_touches_ground_marker
+            {
                 commands.spawn((
                     Mesh2d(meshes.add(Circle { radius: 1.0 })),
                     MeshMaterial2d(materials.add(ColorMaterial::default())),
@@ -223,10 +236,9 @@ fn spawn_visual_effects(
                     Footstep,
                 ));
             }
-
             // Spawn a bullet when firing
-
-            if library.is_marker_name(*marker_id, "bullet goes out") {
+            // TODO not working!
+            else if marker_id == &my_animations.bullet_out_marker {
                 commands.spawn((
                     Mesh2d(meshes.add(Circle { radius: 3.0 })),
                     MeshMaterial2d(materials.add(Color::from(YELLOW))),
@@ -284,6 +296,21 @@ fn animate_footsteps(
 
             if material.color.alpha() <= 0.0 {
                 commands.entity(entity).despawn();
+            }
+        }
+    }
+}
+
+fn switch_slomo(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut sprites: Query<&mut SpritesheetAnimation>,
+) {
+    if keyboard.just_pressed(KeyCode::Space) {
+        for mut sprite in &mut sprites {
+            if sprite.speed_factor >= 1.0 {
+                sprite.speed_factor = 0.1;
+            } else {
+                sprite.speed_factor = 1.0;
             }
         }
     }

@@ -10,7 +10,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         // Add the plugin to enable animations.
-        // This makes the AnimationLibrary resource available to your systems.
+        // This makes the Assets<Animation> resource available to your systems.
         .add_plugins(SpritesheetAnimationPlugin)
         .add_systems(
             Startup,
@@ -19,7 +19,12 @@ fn main() {
         .run();
 }
 
-fn create_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
+#[derive(Resource)]
+struct MyAnimation {
+    handle: Handle<Animation>,
+}
+
+fn create_animation(mut commands: Commands, mut animations: ResMut<Assets<Animation>>) {
     commands.spawn(Camera2d);
 
     // Create a clip that references some frames from a spritesheet
@@ -28,49 +33,52 @@ fn create_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary
 
     let clip = Clip::from_frames(spritesheet.row(3));
 
-    let clip_id = library.register_clip(clip);
-
     // Create an animation that uses the clip
-
-    let animation = Animation::from_clip(clip_id);
-
-    let animation_id = library.register_animation(animation);
-
-    // Name the animation to retrieve it from other systems
-
-    library.name_animation(animation_id, "walk").unwrap();
-
+    //
     // This is a simple animation with a single clip but we can create more sophisticated
     // animations with multiple clips, each one having different parameters.
     //
     // See the `composition` example for more details.
+
+    let animation = Animation::from_clip(clip);
+
+    // Name the animation to retrieve it from other systems
+
+    let animation_handle = animations.add(animation);
+
+    commands.insert_resource(MyAnimation {
+        handle: animation_handle,
+    });
 }
 
 // We split the setup in two separate systems to show how to retrieve animations from their name
 
 fn spawn_sprite(
     mut commands: Commands,
-    library: Res<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    my_animation: Res<MyAnimation>,
 ) {
     // Retrieve our animation from the library
 
-    if let Some(animation_id) = library.animation_with_name("walk") {
-        // Create an image and a texture atlas like you would for any Bevy sprite
+    // Create an image and a texture atlas like you would for any Bevy sprite
+    //
+    // However, here we use the Spritesheet helper to easily generate the atlas.
+    // This is optional and you may prefer to build the atlas manually.
 
-        let image = assets.load("character.png");
+    let image = assets.load("character.png");
 
-        let atlas = TextureAtlas {
-            layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
-            ..default()
-        };
+    let spritesheet = Spritesheet::new(8, 8);
 
-        // Spawn a sprite with a SpritesheetAnimation component that references our animation
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
+        ..default()
+    };
 
-        commands.spawn((
-            Sprite::from_atlas_image(image, atlas),
-            SpritesheetAnimation::from_id(animation_id),
-        ));
-    }
+    // Spawn a sprite with a SpritesheetAnimation component that references our animation
+
+    commands.spawn((
+        Sprite::from_atlas_image(image, atlas),
+        SpritesheetAnimation::new(my_animation.handle.clone()),
+    ));
 }

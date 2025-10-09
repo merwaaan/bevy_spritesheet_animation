@@ -1,23 +1,6 @@
-use std::fmt;
+use bevy::{asset::Asset, reflect::prelude::*};
 
-use bevy::reflect::prelude::*;
-
-use crate::{clip::ClipId, easing::Easing};
-
-/// An opaque identifier that references an [Animation].
-///
-/// Returned by [AnimationLibrary::register_animation](crate::prelude::AnimationLibrary::register_animation).
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect)]
-#[reflect(Debug, PartialEq, Hash)]
-pub struct AnimationId {
-    pub(crate) value: usize,
-}
-
-impl fmt::Display for AnimationId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "animation{}", self.value)
-    }
-}
+use crate::{clip::Clip, easing::Easing};
 
 /// Specifies the duration of an [Animation].
 ///
@@ -86,45 +69,41 @@ impl Default for AnimationDirection {
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::default();
 /// let some_clip = Clip::from_frames([1, 2, 3])
 ///     .with_duration(AnimationDuration::PerRepetition(2000));
-///
-/// let some_clip_id = library.register_clip(some_clip);
 ///
 /// let another_clip = Clip::from_frames([7, 8, 9, 7, 7])
 ///     .with_repetitions(10)
 ///     .with_direction(AnimationDirection::PingPong);
 ///
-/// let another_clip_id = library.register_clip(another_clip);
-///
-/// let animation = Animation::from_clips([some_clip_id, another_clip_id])
+/// let animation = Animation::from_clips([some_clip, another_clip])
 ///     .with_repetitions(AnimationRepeat::Loop)
 ///     .with_easing(Easing::In(EasingVariety::Quadratic));
-///
-/// let animation_id = library.register_animation(animation);
 /// ```
-#[derive(Debug, Clone, Reflect)]
-#[reflect(Debug)]
+#[derive(Asset, TypePath, Debug, Clone)]
+//TODOmerwan#[reflect(Debug)]
 pub struct Animation {
-    /// The IDs of the [Clip](crate::prelude::Clip)s that compose this animation
-    clip_ids: Vec<ClipId>,
+    /// The [Clip](crate::prelude::Clip)s that compose this animation
+    clips: Vec<Clip>,
 
     /// The optional duration of this animation
     duration: Option<AnimationDuration>,
+
     /// The optional number of repetitions of this animation
     repetitions: Option<AnimationRepeat>,
+
     /// The optional direction of this animation
     direction: Option<AnimationDirection>,
+
     /// The optional easing of this animation
     easing: Option<Easing>,
 }
 
 impl Animation {
     /// Creates a new animation from a single clip.
-    pub fn from_clip(clip_id: ClipId) -> Self {
+    pub fn from_clip(clip: Clip) -> Self {
         Self {
-            clip_ids: vec![clip_id],
+            clips: vec![clip],
             duration: None,
             repetitions: None,
             direction: None,
@@ -133,9 +112,9 @@ impl Animation {
     }
 
     /// Creates a new animation from a sequence of clips.
-    pub fn from_clips(clip_ids: impl IntoIterator<Item = ClipId>) -> Self {
+    pub fn from_clips(clips: impl IntoIterator<Item = Clip>) -> Self {
         Self {
-            clip_ids: clip_ids.into_iter().collect(),
+            clips: clips.into_iter().collect(),
             duration: None,
             repetitions: None,
             direction: None,
@@ -143,19 +122,17 @@ impl Animation {
         }
     }
 
-    pub fn clip_ids(&self) -> &[ClipId] {
-        &self.clip_ids
+    pub fn clips(&self) -> &[Clip] {
+        &self.clips
     }
 
     pub fn duration(&self) -> &Option<AnimationDuration> {
         &self.duration
     }
 
-    pub fn with_duration(&self, duration: AnimationDuration) -> Self {
-        Self {
-            duration: Some(duration),
-            ..self.clone()
-        }
+    pub fn with_duration(mut self, duration: AnimationDuration) -> Self {
+        self.duration = Some(duration);
+        self
     }
 
     pub fn set_duration(&mut self, duration: AnimationDuration) -> &mut Self {
@@ -167,11 +144,9 @@ impl Animation {
         &self.repetitions
     }
 
-    pub fn with_repetitions(&self, repetitions: AnimationRepeat) -> Self {
-        Self {
-            repetitions: Some(repetitions),
-            ..self.clone()
-        }
+    pub fn with_repetitions(mut self, repetitions: AnimationRepeat) -> Self {
+        self.repetitions = Some(repetitions);
+        self
     }
 
     pub fn set_repetitions(&mut self, repetitions: AnimationRepeat) -> &mut Self {
@@ -183,11 +158,9 @@ impl Animation {
         &self.direction
     }
 
-    pub fn with_direction(&self, direction: AnimationDirection) -> Self {
-        Self {
-            direction: Some(direction),
-            ..self.clone()
-        }
+    pub fn with_direction(mut self, direction: AnimationDirection) -> Self {
+        self.direction = Some(direction);
+        self
     }
 
     pub fn set_direction(&mut self, direction: AnimationDirection) -> &mut Self {
@@ -199,11 +172,9 @@ impl Animation {
         &self.easing
     }
 
-    pub fn with_easing(&self, easing: Easing) -> Self {
-        Self {
-            easing: Some(easing),
-            ..self.clone()
-        }
+    pub fn with_easing(mut self, easing: Easing) -> Self {
+        self.easing = Some(easing);
+        self
     }
 
     pub fn set_easing(&mut self, easing: Easing) -> &mut Self {

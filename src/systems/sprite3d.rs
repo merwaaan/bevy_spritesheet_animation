@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::hash::Hash;
 
 use bevy::{
     asset::{Assets, Handle, RenderAssetUsages},
@@ -9,6 +9,7 @@ use bevy::{
     },
     mesh::{Indices, PrimitiveTopology},
     pbr::StandardMaterial,
+    platform::collections::HashMap,
     prelude::*,
     render::{alpha::AlphaMode, render_resource::Face},
 };
@@ -243,7 +244,7 @@ fn get_or_create_material(
                 unlit: sprite.unlit,
                 alpha_mode: sprite.alpha_mode,
                 emissive: sprite.emissive,
-                // TODO
+
                 // these are sensible values for 3d rendering,
                 // but could be extended to public API
                 perceptual_roughness: 0.5,

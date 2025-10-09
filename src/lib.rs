@@ -1,4 +1,4 @@
-//! This crate is a [Bevy](https://bevyengine.org/) plugin for animating sprites that are backed by spritesheets.
+//! This crate is a [Bevy](https://bevyengine.org/) plugin for animating sprites.
 //!
 //!# Features
 //!
@@ -12,7 +12,7 @@
 //! # Quick start
 //!
 //! 1. Add the [SpritesheetAnimationPlugin](crate::prelude::SpritesheetAnimationPlugin) to your app
-//! 2. Use the [AnimationLibrary](crate::prelude::AnimationLibrary) resource to create new clips and animations
+//! 2. Use the `Assets<[Animation](crate::prelude::Animation)>` resource to register new animations
 //! 3. Add a [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) component to your entity
 //!
 //! ```no_run (cannot actually execute this during CI builds as there are no displays)
@@ -23,7 +23,7 @@
 //!     let app = App::new()
 //!         .add_plugins(DefaultPlugins)
 //!         // Add the plugin to enable animations.
-//!         // This makes the AnimationLibrary resource available to your systems.
+//!         // This makes the Assets<Animation> resource available to your systems.
 //!         .add_plugins(SpritesheetAnimationPlugin)
 //!         .add_systems(Startup, setup);
 //!
@@ -32,28 +32,27 @@
 //!
 //! fn setup(
 //!     mut commands: Commands,
-//!     mut library: ResMut<AnimationLibrary>,
 //!     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+//!     mut animations: ResMut<Assets<Animation>>,
 //!     assets: Res<AssetServer>,
 //! ) {
-//!     // Create a clip that references some frames from a spritesheet
+//!     // Create a clip from a row of an 8x8 spritesheet
 //!
 //!     let spritesheet = Spritesheet::new(8, 8);
 //!
-//!     let clip = Clip::from_frames(spritesheet.row(3));
+//!     let clip = Clip::from_frames(spritesheet.row(3))
+//!         .with_duration(AnimationDuration::PerFrame(150));
 //!
-//!     let clip_id = library.register_clip(clip);
-//!
-//!     // Create an animation that uses the clip
-//!
-//!     let animation = Animation::from_clip(clip_id);
-//!
-//!     let animation_id = library.register_animation(animation);
-//!
+//!     // Create an animation from this clip
+//!     //
 //!     // This is a simple animation made of a single clip but we can create more sophisticated
 //!     // animations with multiple clips, each one having different parameters.
 //!     //
 //!     // See the `composition` example for more details.
+//!
+//!     let animation = Animation::from_clip(clip);
+//!
+//!     let animation_handle = animations.add(animation);
 //!
 //!     // Spawn an animated sprite with a SpritesheetAnimation component that references our animation
 //!
@@ -65,8 +64,11 @@
 //!     };
 //!
 //!     commands.spawn((
+//!         // This is Bevy's built-in sprite
 //!         Sprite::from_atlas_image(image, atlas),
-//!         SpritesheetAnimation::from_id(animation_id),
+//!
+//!         // This is the component provided by this crate that will animate the sprite
+//!         SpritesheetAnimation::new(animation_handle),
 //!     ));
 //!
 //!     commands.spawn(Camera2d);
@@ -78,26 +80,22 @@ pub mod clip;
 pub mod components;
 pub mod easing;
 pub mod events;
-pub mod library;
 pub mod plugin;
 pub mod spritesheet;
 
-mod animator;
-mod systems;
-
 pub mod prelude {
     pub use super::{
-        animation::{
-            Animation, AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat,
-        },
-        clip::{Clip, ClipId},
+        animation::{Animation, AnimationDirection, AnimationDuration, AnimationRepeat},
+        clip::{Clip, ClipId, MarkerId},
         components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
         easing::{Easing, EasingVariety},
-        events::{AnimationEvent, AnimationMarkerId},
-        library::{AnimationLibrary, LibraryError},
+        events::AnimationEvent,
         plugin::SpritesheetAnimationPlugin,
         spritesheet::Spritesheet,
     };
 }
+
+mod animator;
+mod systems;
 
 const CRATE_NAME: &str = "bevy_spritesheet_animation";

@@ -4,13 +4,12 @@ use bevy::{image::TextureAtlasLayout, log::warn, math::UVec2};
 
 use crate::CRATE_NAME;
 
-/// An helper to obtain frame indices from a spritesheet.
+/// A helper to extract frame indices from a spritesheet.
 ///
 /// When creating a clip, you might specify its frames by using raw indices:
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::default();
 /// let clip = Clip::from_frames([6, 7, 8, 9, 10, 11]);
 /// ```
 ///
@@ -18,7 +17,6 @@ use crate::CRATE_NAME;
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::default();
 /// // We're working with a spritesheet with 8 columns and 4 rows
 ///
 /// let spritesheet = Spritesheet::new(8, 4);
@@ -65,7 +63,6 @@ impl Spritesheet {
     /// // └───┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(2, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.all());
@@ -95,7 +92,6 @@ impl Spritesheet {
     /// // └───┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(2, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.positions([(1, 0), (0, 1)]));
@@ -140,7 +136,6 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.row(1));
@@ -183,7 +178,6 @@ impl Spritesheet {
     /// // └─────────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(5, 2);
     ///
     /// // This clip will play frames G → H → I
@@ -261,7 +255,6 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.column(1));
@@ -303,7 +296,6 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 4);
     ///
     /// let clip = Clip::from_frames(spritesheet.column_partial(1, 1..));
@@ -372,7 +364,6 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.horizontal_strip(2, 0, 3));
@@ -417,7 +408,6 @@ impl Spritesheet {
     /// // └─────┘
     ///
     /// # use bevy_spritesheet_animation::prelude::*;
-    /// # let mut library = AnimationLibrary::default();
     /// let spritesheet = Spritesheet::new(3, 2);
     ///
     /// let clip = Clip::from_frames(spritesheet.vertical_strip(1, 0, 3));
@@ -450,6 +440,9 @@ impl Spritesheet {
         frames
     }
 
+    // TODO pass size in constructor?
+    // TODO pass image in alt constructor?
+
     /// Creates a [TextureAtlasLayout] from the spritesheet.
     ///
     /// # Arguments
@@ -464,10 +457,9 @@ impl Spritesheet {
     /// # use bevy_spritesheet_animation::prelude::*;
     /// fn setup(
     ///     mut commands: Commands,
-    ///     mut library: ResMut<AnimationLibrary>,
     ///     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     ///     assets: Res<AssetServer>,
-    /// #   animation_id: AnimationId
+    /// #   animation_handle: Handle<Animation>
     /// ) {
     ///     let spritesheet = Spritesheet::new(8, 8);
     ///
@@ -482,7 +474,7 @@ impl Spritesheet {
     ///
     ///     commands.spawn((
     ///         Sprite::from_atlas_image(image, atlas),
-    ///         SpritesheetAnimation::from_id(animation_id),
+    ///         SpritesheetAnimation::new(animation_handle),
     ///     ));
     /// }
     /// ```

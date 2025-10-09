@@ -20,8 +20,8 @@ fn main() {
 
 fn spawn_sprites(
     mut commands: Commands,
-    mut library: ResMut<AnimationLibrary>,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut animations: ResMut<Assets<Animation>>,
     assets: Res<AssetServer>,
 ) {
     // 3D sprites require a 3D camera
@@ -37,11 +37,9 @@ fn spawn_sprites(
 
     let clip = Clip::from_frames(spritesheet.row(3));
 
-    let clip_id = library.register_clip(clip);
+    let animation = Animation::from_clip(clip);
 
-    let animation = Animation::from_clip(clip_id);
-
-    let animation_id = library.register_animation(animation);
+    let animation_handle = animations.add(animation);
 
     // Create an image and a texture atlas like you would for any Bevy sprite
 
@@ -79,7 +77,7 @@ fn spawn_sprites(
     for (i, sprite) in sprites.into_iter().enumerate() {
         commands.spawn((
             sprite,
-            SpritesheetAnimation::from_id(animation_id),
+            SpritesheetAnimation::new(animation_handle.clone()),
             Orbit {
                 start_angle: i as f32 * std::f32::consts::TAU / sprite_count as f32,
             },

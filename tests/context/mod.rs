@@ -17,8 +17,9 @@ pub struct Context {
 }
 
 impl Context {
+    // Creates the test context
     pub fn new() -> Self {
-        // Initialize the app
+        // Create the app
 
         let mut app = App::new();
 
@@ -41,6 +42,7 @@ impl Context {
         .insert_resource(TimeUpdateStrategy::ManualInstant(Instant::now()));
 
         // Increase the max delta for each frame
+        // TODO why?
 
         app.world_mut()
             .get_resource_mut::<Time<Virtual>>()
@@ -86,20 +88,30 @@ impl Context {
         }
     }
 
-    pub fn library(&mut self) -> Mut<'_, AnimationLibrary> {
-        self.app
+    // Registers an animation and returns a handle
+    pub fn create_animation(&mut self, animation: Animation) -> Handle<Animation> {
+        let mut animations = self
+            .app
             .world_mut()
-            .get_resource_mut::<AnimationLibrary>()
-            .unwrap()
+            .get_resource_mut::<Assets<Animation>>()
+            .unwrap();
+
+        animations.add(animation.clone())
     }
 
-    pub fn add_animation_to_sprite(&mut self, animation_id: AnimationId) {
+    // Adds an animation to the test sprite
+    pub fn attach_animation(&mut self, animation: Animation) -> Handle<Animation> {
+        let handle = self.create_animation(animation);
+
         self.app
             .world_mut()
             .entity_mut(self.sprite_entity)
-            .insert(SpritesheetAnimation::from_id(animation_id));
+            .insert(SpritesheetAnimation::new(handle.clone()));
+
+        handle
     }
 
+    // Runs the app for some time
     pub fn run(&mut self, ms: u32) {
         // Clear the events from the previous frame
 
@@ -126,6 +138,7 @@ impl Context {
         self.app.update();
     }
 
+    // Tests the current state of the sprite
     pub fn check(
         &mut self,
         expected_atlas_index: usize,
@@ -156,88 +169,81 @@ impl Context {
         let mut events: HashSet<AnimationEvent> = HashSet::new();
 
         for event in events_resources.get_cursor().read(&events_resources) {
-            events.insert(*event);
+            events.insert(event.clone());
         }
 
         assert_eq!(events, HashSet::from_iter(expected_events));
     }
 
+    // Gets the sprites to inspect or update it
     pub fn get_sprite<F: FnMut(&mut SpritesheetAnimation)>(&mut self, mut f: F) {
-        let mut sprite_animation = self
+        let mut sprite = self
             .app
             .world_mut()
             .get_mut::<SpritesheetAnimation>(self.sprite_entity)
             .unwrap();
 
-        f(&mut sprite_animation);
+        f(&mut sprite);
     }
 
-    pub fn update_sprite_animation<F: FnMut(&mut SpritesheetAnimation)>(&mut self, mut builder: F) {
-        let mut sprite_animation = self
-            .app
-            .world_mut()
-            .get_mut::<SpritesheetAnimation>(self.sprite_entity)
-            .unwrap();
-
-        builder(&mut sprite_animation);
-    }
+    // Helpers that create animation events
 
     pub fn marker_hit(
         &self,
-        marker_id: AnimationMarkerId,
-        animation_id: AnimationId,
+        marker_id: MarkerId,
+        animation: &Handle<Animation>,
         animation_repetition: usize,
-        clip_id: ClipId,
+        clip: &Clip,
         clip_repetition: usize,
     ) -> AnimationEvent {
         AnimationEvent::MarkerHit {
             entity: self.sprite_entity,
             marker_id,
-            animation_id,
-            animation_repetition,
-            clip_id,
+            clip_id: clip.id(),
             clip_repetition,
+            animation: animation.clone(),
+            animation_repetition,
         }
     }
 
     pub fn clip_rep_end(
         &self,
-        animation_id: AnimationId,
-        clip_id: ClipId,
+        animation: &Handle<Animation>,
+        clip: &Clip,
         clip_repetition: usize,
     ) -> AnimationEvent {
         AnimationEvent::ClipRepetitionEnd {
             entity: self.sprite_entity,
-            animation_id,
-            clip_id,
+            clip_id: clip.id(),
             clip_repetition,
+            animation: animation.clone(),
         }
     }
 
-    pub fn clip_end(&self, animation_id: AnimationId, clip_id: ClipId) -> AnimationEvent {
+    pub fn clip_end(&self, animation: &Handle<Animation>, clip: &Clip) -> AnimationEvent {
         AnimationEvent::ClipEnd {
             entity: self.sprite_entity,
-            animation_id,
-            clip_id,
+            clip_id: clip.id(),
+            animation: animation.clone(),
         }
     }
 
     pub fn anim_rep_end(
         &self,
-        animation_id: AnimationId,
+        animation: &Handle<Animation>,
         animation_repetition: usize,
     ) -> AnimationEvent {
         AnimationEvent::AnimationRepetitionEnd {
             entity: self.sprite_entity,
-            animation_id,
+            animation: animation.clone(),
             animation_repetition,
         }
     }
 
-    pub fn anim_end(&self, animation_id: AnimationId) -> AnimationEvent {
+    pub fn anim_end(&self, animation: &Handle<Animation>) -> AnimationEvent {
         AnimationEvent::AnimationEnd {
             entity: self.sprite_entity,
-            animation_id,
+            animation: animation.clone(),
         }
     }
 }

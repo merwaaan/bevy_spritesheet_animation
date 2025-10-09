@@ -6,9 +6,8 @@ use crate::{
     CRATE_NAME,
     animation::AnimationDirection,
     animator::cache::{AnimationCache, AnimationCacheEvent, CacheFrame},
-    clip::ClipId,
+    clip::{ClipId, MarkerId},
     components::spritesheet_animation::AnimationProgress,
-    events::AnimationMarkerId,
 };
 
 /// Same as [CacheFrame] but with `animation_repetition`
@@ -30,7 +29,7 @@ pub(crate) struct IteratorFrame {
 #[reflect(Debug, PartialEq, Hash)]
 pub(crate) enum AnimationIteratorEvent {
     MarkerHit {
-        marker_id: AnimationMarkerId,
+        marker_id: MarkerId,
         animation_repetition: usize,
         clip_id: ClipId,
         clip_repetition: usize,

@@ -4,11 +4,9 @@ use bevy::{log::warn, reflect::prelude::*};
 
 use crate::{
     CRATE_NAME,
-    animation::{AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat},
-    clip::{Clip, ClipId},
+    animation::{Animation, AnimationDirection, AnimationDuration, AnimationRepeat},
+    clip::{Clip, ClipId, MarkerId},
     easing::Easing,
-    events::AnimationMarkerId,
-    library::AnimationLibrary,
 };
 
 /// A pre-computed frame of animation, ready to be played back.
@@ -34,7 +32,7 @@ pub(crate) struct CacheFrame {
 #[reflect(Debug, PartialEq, Hash)]
 pub(crate) enum AnimationCacheEvent {
     MarkerHit {
-        marker_id: AnimationMarkerId,
+        marker_id: MarkerId,
         clip_id: ClipId,
         clip_repetition: usize,
     },
@@ -81,9 +79,7 @@ impl AnimationCache {
         }
     }
 
-    pub fn new(animation_id: AnimationId, library: &AnimationLibrary) -> AnimationCache {
-        let animation = library.get_animation(animation_id);
-
+    pub fn new(animation: &Animation) -> AnimationCache {
         // If the animation repeats 0 times, just create an empty cache that will play no frames
         // TODO should use the first frame only instead?
 
@@ -96,9 +92,9 @@ impl AnimationCache {
         // Gather data for all the clips
 
         let clips_data = animation
-            .clip_ids()
+            .clips()
             .iter()
-            .map(|clip_id| ClipData::new(*clip_id, library))
+            .map(ClipData::new)
             // Filter out clips with 0 frames / 0 repetitions / durations of 0
             //
             // Doing so at this point will simplify what follows as well as the playback code as we won't have to handle those special cases
@@ -191,7 +187,6 @@ impl AnimationCache {
 
 #[derive(Clone)]
 struct ClipData {
-    id: ClipId,
     clip: Clip,
     duration: AnimationDuration,
     repetitions: usize,
@@ -201,9 +196,7 @@ struct ClipData {
 }
 
 impl ClipData {
-    fn new(clip_id: ClipId, library: &AnimationLibrary) -> Self {
-        let clip = library.get_clip(clip_id).clone();
-
+    fn new(clip: &Clip) -> Self {
         let duration = clip.duration().unwrap_or_default();
         let repetitions = clip.repetitions().unwrap_or(1);
         let direction = clip.direction().unwrap_or_default();
@@ -228,8 +221,7 @@ impl ClipData {
         };
 
         Self {
-            id: clip_id,
-            clip,
+            clip: clip.clone(),
             duration,
             repetitions,
             direction,
@@ -245,7 +237,7 @@ impl ClipData {
 struct Frame {
     atlas_index: usize,
     duration: Duration,
-    markers: Vec<AnimationMarkerId>,
+    markers: Vec<MarkerId>,
 }
 
 #[derive(Clone)]
@@ -407,7 +399,7 @@ impl AnimationFrames {
         let merge = |mut frames: AnimationFrames| {
             let mut all_frames = Vec::new();
 
-            let mut previous_clip = None;
+            let mut previous_clip_id = None;
             let mut previous_clip_repetition = None;
 
             for clip in &mut frames.clips {
@@ -432,7 +424,7 @@ impl AnimationFrames {
                         .map(|frame| CacheFrame {
                             atlas_index: frame.atlas_index,
                             duration: frame.duration,
-                            clip_id: clip.data.id,
+                            clip_id: clip.data.clip.id(),
                             clip_repetition: repetition_index,
                             // Convert the markers to events
                             events: frame
@@ -440,7 +432,7 @@ impl AnimationFrames {
                                 .iter()
                                 .map(|marker| AnimationCacheEvent::MarkerHit {
                                     marker_id: *marker,
-                                    clip_id: clip.data.id,
+                                    clip_id: clip.data.clip.id(),
                                     clip_repetition: repetition_index,
                                 })
                                 .collect(),
@@ -461,7 +453,7 @@ impl AnimationFrames {
                             });
                     }
 
-                    previous_clip_repetition = Some((clip.data.id, repetition_index));
+                    previous_clip_repetition = Some((clip.data.clip.id(), repetition_index));
 
                     // Merge with the full clip
 
@@ -473,7 +465,7 @@ impl AnimationFrames {
                 // Because we'll return None at the end of the animation, the Animator will be
                 // responsible for generating ClipRepetitionEnd/ClipEnd for the last animation cycle
 
-                if let Some(previous_clip_id) = previous_clip {
+                if let Some(previous_clip_id) = previous_clip_id {
                     all_clip_frames[0]
                         .events
                         .push(AnimationCacheEvent::ClipEnd {
@@ -481,7 +473,7 @@ impl AnimationFrames {
                         });
                 }
 
-                previous_clip = Some(clip.data.id);
+                previous_clip_id = Some(clip.data.clip.id());
 
                 // Merge with the full animation
 

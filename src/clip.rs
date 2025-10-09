@@ -1,16 +1,18 @@
-use std::{collections::HashMap, fmt};
+use std::{
+    fmt,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
-use bevy::reflect::prelude::*;
+use bevy::{platform::collections::HashMap, reflect::prelude::*};
 
 use crate::{
     animation::{AnimationDirection, AnimationDuration},
     easing::Easing,
-    events::AnimationMarkerId,
 };
 
-/// An opaque identifier that references a [Clip].
+/// An opaque identifier that references a [Clip]
 ///
-/// Returned by [AnimationLibrary::register_clip](crate::prelude::AnimationLibrary::register_clip).
+/// Clip-related [AnimationEvent](crate::prelude::AnimationEvent)s will contain this ID.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect)]
 #[reflect(Debug, PartialEq, Hash)]
 pub struct ClipId {
@@ -22,6 +24,25 @@ impl fmt::Display for ClipId {
         write!(f, "clip{}", self.value)
     }
 }
+
+static NEXT_CLIP_ID: AtomicUsize = AtomicUsize::new(0);
+
+/// An opaque identifier that references an animation marker
+///
+/// Marker-related [AnimationEvent](crate::prelude::AnimationEvent)s will contain this ID.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect)]
+#[reflect(Debug, PartialEq, Hash)]
+pub struct MarkerId {
+    pub(crate) value: usize,
+}
+
+impl fmt::Display for MarkerId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "marker{}", self.value)
+    }
+}
+
+static NEXT_MARKER_ID: AtomicUsize = AtomicUsize::new(0);
 
 /// A [Clip] is a sequence of frames.
 ///
@@ -35,13 +56,12 @@ impl fmt::Display for ClipId {
 /// See the documentation of [AnimationEvent](crate::prelude::AnimationEvent) for more details.
 ///
 /// The "frames" of a clip actually are TextureAtlas entries, referred to by their indices.
-/// At runtime, they will be automatically assigned to your entities' [TextureAtlas](bevy::prelude::TextureAtlas) component to make things move.
+/// At runtime, they will be automatically assigned to the entities' [TextureAtlas](bevy::prelude::TextureAtlas) component to make things move.
 ///
 /// # Example
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::default();
 /// // Create a clip
 ///
 /// let spritesheet = Spritesheet::new(8, 4);
@@ -50,51 +70,55 @@ impl fmt::Display for ClipId {
 ///     .with_repetitions(5)
 ///     .with_duration(AnimationDuration::PerRepetition(1000));
 ///
-/// let clip_id = library.register_clip(clip.clone());
-///
 /// // For simple cases, just add a single clip to an animation
 ///
-/// let simple_animation = Animation::from_clip(clip_id);
+/// let simple_animation = Animation::from_clip(clip.clone());
 ///
 /// // You can also compose animations from multiple clips
 /// //
 /// // Here, an animation made of two clips:
 /// // - first, the clip played once, slowly
-/// // - then, the clip played twice, faster
+/// // - then, the same clip played twice, faster
 ///
-/// let slow_clip = clip.clone()
+/// let slow_clip = clip
+///     .clone()
 ///     .with_duration(AnimationDuration::PerRepetition(5000));
 ///
-/// let slow_clip_id = library.register_clip(slow_clip);
+/// let fast_clip = clip
+///     .clone()
+///     .with_repetitions(2)
+///     .with_duration(AnimationDuration::PerRepetition(200));
 ///
-/// let fast_clip = clip.clone()
-///     .with_duration(AnimationDuration::PerRepetition(200))
-///     .with_repetitions(2);
-///
-/// let fast_clip_id = library.register_clip(fast_clip);
-///
-/// let composite_animation = Animation::from_clips([slow_clip_id, fast_clip_id]);
+/// let composite_animation = Animation::from_clips([slow_clip, fast_clip]);
 /// ```
 #[derive(Debug, Clone, Reflect)]
 #[reflect(Debug)]
 pub struct Clip {
+    /// Unique ID of this clip
+    ///
+    /// Marker-related [AnimationEvent](crate::prelude::AnimationEvent)s will contain this ID.
+    id: ClipId,
+
     /// Indices into the layout of a TextureAtlas component
     atlas_indices: Vec<usize>,
 
-    /// The optional duration of this animation
+    /// The optional duration of this clip
     duration: Option<AnimationDuration>,
 
-    /// The optional number of repetitions of this animation
+    /// The optional number of repetitions of this clip
     repetitions: Option<usize>,
 
-    /// The optional direction of this animation
+    /// The optional direction of this clip
     direction: Option<AnimationDirection>,
 
-    /// The optional easing of this animation
+    /// The optional easing of this clip
     easing: Option<Easing>,
 
-    /// Markers that will generate [MarkerHit](crate::prelude::AnimationEvent::MarkerHit) events when played by an animation
-    markers: HashMap<usize, Vec<AnimationMarkerId>>,
+    /// Markers that will trigger [MarkerHit](crate::prelude::AnimationEvent::MarkerHit) events when the corresponding frame is played
+    ///
+    /// The key is the frame index.
+    /// Multiple markers can be associated to the same frame.
+    markers: HashMap<usize, Vec<MarkerId>>,
 }
 
 impl Clip {
@@ -119,6 +143,9 @@ impl Clip {
     /// ```
     pub fn from_frames(atlas_indices: impl IntoIterator<Item = usize>) -> Self {
         Self {
+            id: ClipId {
+                value: NEXT_CLIP_ID.fetch_add(1, Ordering::Relaxed),
+            },
             atlas_indices: atlas_indices.into_iter().collect(),
             duration: None,
             repetitions: None,
@@ -130,25 +157,6 @@ impl Clip {
 
     pub fn frames(&self) -> &[usize] {
         &self.atlas_indices
-    }
-
-    pub fn markers(&self) -> &HashMap<usize, Vec<AnimationMarkerId>> {
-        &self.markers
-    }
-
-    pub fn with_marker(&self, marker_id: AnimationMarkerId, frame_index: usize) -> Self {
-        let mut other = self.clone();
-
-        let frame_markers = other.markers.entry(frame_index).or_default();
-        frame_markers.push(marker_id);
-
-        other
-    }
-
-    pub fn add_marker(&mut self, marker_id: AnimationMarkerId, frame_index: usize) -> &mut Self {
-        let frame_markers = self.markers.entry(frame_index).or_default();
-        frame_markers.push(marker_id);
-        self
     }
 
     pub fn duration(&self) -> &Option<AnimationDuration> {
@@ -213,5 +221,25 @@ impl Clip {
     pub fn set_easing(&mut self, easing: Easing) -> &mut Self {
         self.easing = Some(easing);
         self
+    }
+
+    pub fn markers(&self) -> &HashMap<usize, Vec<MarkerId>> {
+        &self.markers
+    }
+
+    pub fn add_marker(&mut self, frame_index: usize) -> MarkerId {
+        let marker_id = MarkerId {
+            value: NEXT_MARKER_ID.fetch_add(1, Ordering::Relaxed),
+        };
+
+        let frame_markers = self.markers.entry(frame_index).or_default();
+
+        frame_markers.push(marker_id);
+
+        marker_id
+    }
+
+    pub fn id(&self) -> ClipId {
+        self.id
     }
 }

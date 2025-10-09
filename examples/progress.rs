@@ -4,7 +4,7 @@
 pub mod common;
 
 use bevy::prelude::*;
-use bevy_spritesheet_animation::prelude::*;
+use bevy_spritesheet_animation::{animation::Animation, prelude::*};
 
 fn main() {
     App::new()
@@ -17,34 +17,24 @@ fn main() {
         .run();
 }
 
-#[derive(Component)]
-struct AllAnimations {
-    animation1_id: AnimationId,
-    animation2_id: AnimationId,
-}
-
 fn spawn_character(
     mut commands: Commands,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut animations: ResMut<Assets<Animation>>,
 ) {
     commands.spawn(Camera2d);
 
-    // Create two animations
+    // Create an animation
 
     let spritesheet = Spritesheet::new(8, 8);
 
-    let mut create_animation = |frames| {
-        let clip = Clip::from_frames(frames).with_duration(AnimationDuration::PerFrame(2000));
-        let clip_id = library.register_clip(clip);
+    let clip =
+        Clip::from_frames(spritesheet.row(3)).with_duration(AnimationDuration::PerFrame(2000));
 
-        let animation = Animation::from_clip(clip_id);
-        library.register_animation(animation)
-    };
+    let animation = Animation::from_clip(clip);
 
-    let animation1_id = create_animation(spritesheet.row(3));
-    let animation2_id = create_animation(spritesheet.horizontal_strip(0, 5, 5));
+    let animation_handle = animations.add(animation);
 
     // Spawn an animated sprite
 
@@ -57,12 +47,7 @@ fn spawn_character(
 
     commands.spawn((
         Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::from_id(animation1_id),
-        // Store the two animation IDs in a component for convenience
-        AllAnimations {
-            animation1_id,
-            animation2_id,
-        },
+        SpritesheetAnimation::new(animation_handle),
     ));
 
     // Help text
@@ -75,9 +60,9 @@ fn spawn_character(
 
 fn control_animation(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut sprites: Query<(&mut SpritesheetAnimation, &AllAnimations)>,
+    mut sprites: Query<&mut SpritesheetAnimation>,
 ) {
-    for (mut sprite, all_animations) in &mut sprites {
+    for mut sprite in &mut sprites {
         // Pause the current animation
 
         if keyboard.just_pressed(KeyCode::KeyP) {
@@ -105,18 +90,6 @@ fn control_animation(
             if keyboard.just_pressed(*key) {
                 sprite.progress.frame = frame;
             }
-        }
-
-        // Switch to the other animation
-
-        if keyboard.just_pressed(KeyCode::KeyS) {
-            let next_animation = if sprite.animation_id == all_animations.animation1_id {
-                all_animations.animation2_id
-            } else {
-                all_animations.animation1_id
-            };
-
-            sprite.switch(next_animation);
         }
     }
 }

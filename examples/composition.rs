@@ -18,9 +18,9 @@ fn main() {
 
 fn spawn_character(
     mut commands: Commands,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut animations: ResMut<Assets<Animation>>,
 ) {
     commands.spawn(Camera2d);
 
@@ -38,25 +38,19 @@ fn spawn_character(
         .with_duration(AnimationDuration::PerRepetition(700))
         .with_repetitions(3);
 
-    let idle_clip_id = library.register_clip(idle_clip);
-
     let run_clip = Clip::from_frames(spritesheet.row(3))
         .with_duration(AnimationDuration::PerRepetition(600))
         .with_repetitions(5);
-
-    let run_clip_id = library.register_clip(run_clip);
 
     let shoot_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 5, 5))
         .with_duration(AnimationDuration::PerRepetition(600))
         .with_repetitions(1);
 
-    let shoot_clip_id = library.register_clip(shoot_clip);
-
-    let animation = Animation::from_clips([idle_clip_id, run_clip_id, shoot_clip_id])
+    let animation = Animation::from_clips([idle_clip, run_clip, shoot_clip])
         // Let's repeat it a few times and then stop
         .with_repetitions(AnimationRepeat::Times(5));
 
-    let animation_id = library.register_animation(animation);
+    let animation_handle = animations.add(animation);
 
     // Spawn a sprite that uses the animation
 
@@ -69,6 +63,6 @@ fn spawn_character(
 
     commands.spawn((
         Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::from_id(animation_id),
+        SpritesheetAnimation::new(animation_handle),
     ));
 }

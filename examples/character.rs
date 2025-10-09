@@ -20,11 +20,40 @@ fn main() {
         .run();
 }
 
+#[derive(Resource)]
+struct MyAnimations {
+    idle: Handle<Animation>,
+    run: Handle<Animation>,
+    shoot: Handle<Animation>,
+}
+
+// macro_rules! declare_animation_set_field_type {
+//     ($x:ident) => {
+//         Handle<Animation>
+//     };
+
+//     ($x:ident ?) => {
+//         Option<Handle<u8>>
+//     };
+// }
+
+// macro_rules! declare_animation_set {
+//     ($name:ident [ $($field:ident $(?)?),* ]) => {
+//         #[derive(Resource, Default)]
+//         pub struct $name {
+//             $(
+//                 pub $field: declare_animation_set_field_type!($field),
+//             )*
+//         }
+//     };
+// }
+// declare_animation_set!(MyAnimations [ idle, run, shoot? ]);
+
 fn spawn_character(
     mut commands: Commands,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut animations: ResMut<Assets<Animation>>,
 ) {
     commands.spawn(Camera2d);
 
@@ -36,37 +65,31 @@ fn spawn_character(
 
     let idle_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 0, 5));
 
-    let idle_clip_id = library.register_clip(idle_clip);
+    let idle_animation = Animation::from_clip(idle_clip);
 
-    let idle_animation = Animation::from_clip(idle_clip_id);
-
-    let idle_animation_id = library.register_animation(idle_animation);
-
-    library.name_animation(idle_animation_id, "idle").unwrap();
+    let idle_animation_handle = animations.add(idle_animation);
 
     // Run
 
     let run_clip = Clip::from_frames(spritesheet.row(3));
 
-    let run_clip_id = library.register_clip(run_clip);
+    let run_animation = Animation::from_clip(run_clip);
 
-    let run_animation = Animation::from_clip(run_clip_id);
-
-    let run_animation_id = library.register_animation(run_animation);
-
-    library.name_animation(run_animation_id, "run").unwrap();
+    let run_animation_handle = animations.add(run_animation);
 
     // Shoot
 
     let shoot_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 5, 5));
 
-    let shoot_clip_id = library.register_clip(shoot_clip);
+    let shoot_animation = Animation::from_clip(shoot_clip);
 
-    let shoot_animation = Animation::from_clip(shoot_clip_id);
+    let shoot_animation_handle = animations.add(shoot_animation);
 
-    let shoot_animation_id = library.register_animation(shoot_animation);
-
-    library.name_animation(shoot_animation_id, "shoot").unwrap();
+    commands.insert_resource(MyAnimations {
+        idle: idle_animation_handle.clone(),
+        run: run_animation_handle.clone(),
+        shoot: shoot_animation_handle.clone(),
+    });
 
     // Spawn the character
 
@@ -79,20 +102,18 @@ fn spawn_character(
 
     commands.spawn((
         Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::from_id(idle_animation_id),
+        SpritesheetAnimation::new(idle_animation_handle),
     ));
 }
 
-// Component to check if a character is currently shooting
+// Component to mark that a character is currently shooting
 #[derive(Component)]
 struct Shooting;
 
 fn control_character(
-    mut commands: Commands,
     time: Res<Time>,
     keyboard: Res<ButtonInput<KeyCode>>,
-    library: Res<AnimationLibrary>,
-    mut messages: MessageReader<AnimationEvent>,
+    mut commands: Commands,
     mut characters: Query<(
         Entity,
         &mut Sprite,
@@ -100,6 +121,8 @@ fn control_character(
         &mut Transform,
         Option<&Shooting>,
     )>,
+    my_animations: Res<MyAnimations>,
+    mut messages: MessageReader<AnimationEvent>,
 ) {
     // Control the character with the keyboard
 
@@ -116,52 +139,38 @@ fn control_character(
         if keyboard.pressed(KeyCode::Space) {
             // Set the animation
 
-            if let Some(shoot_animation_id) = library.animation_with_name("shoot") {
-                animation.switch(shoot_animation_id);
-            }
+            animation.switch(my_animations.shoot.clone());
 
             // Add a Shooting component
 
             commands.entity(entity).insert(Shooting);
         }
-        // Move left
-        else if keyboard.pressed(KeyCode::ArrowLeft) {
+        // Move left or right
+        else if keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::ArrowRight) {
             // Set the animation
 
-            if let Some(run_animation_id) = library.animation_with_name("run")
-                && animation.animation_id != run_animation_id
-            {
-                animation.switch(run_animation_id);
+            if animation.animation != my_animations.run {
+                animation.switch(my_animations.run.clone());
             }
 
             // Move
 
-            transform.translation -= Vec3::X * time.delta_secs() * CHARACTER_SPEED;
-            sprite.flip_x = true;
-        }
-        // Move right
-        else if keyboard.pressed(KeyCode::ArrowRight) {
-            // Set the animation
+            let translation = Vec3::X * time.delta_secs() * CHARACTER_SPEED;
 
-            if let Some(run_animation_id) = library.animation_with_name("run")
-                && animation.animation_id != run_animation_id
-            {
-                animation.switch(run_animation_id);
+            if keyboard.pressed(KeyCode::ArrowLeft) {
+                transform.translation -= translation;
+                sprite.flip_x = true;
+            } else {
+                transform.translation += translation;
+                sprite.flip_x = false;
             }
-
-            // Move
-
-            transform.translation += Vec3::X * time.delta_secs() * CHARACTER_SPEED;
-            sprite.flip_x = false;
         }
         // Idle
         else {
             // Set the animation
 
-            if let Some(idle_animation_id) = library.animation_with_name("idle")
-                && animation.animation_id != idle_animation_id
-            {
-                animation.switch(idle_animation_id);
+            if animation.animation != my_animations.idle {
+                animation.switch(my_animations.idle.clone());
             }
         }
     }
@@ -173,11 +182,9 @@ fn control_character(
 
     for event in messages.read() {
         if let AnimationEvent::AnimationRepetitionEnd {
-            entity,
-            animation_id,
-            ..
+            entity, animation, ..
         } = event
-            && library.is_animation_name(*animation_id, "shoot")
+            && animation == &my_animations.shoot
         {
             commands.entity(*entity).remove::<Shooting>();
         }

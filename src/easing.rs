@@ -23,18 +23,15 @@ pub enum EasingVariety {
 ///
 /// ```
 /// # use bevy_spritesheet_animation::prelude::*;
-/// # let mut library = AnimationLibrary::default();
 /// // Apply easing on a clip
 ///
 /// let clip = Clip::from_frames([7, 8, 9])
 ///     .with_easing(Easing::In(EasingVariety::Quadratic));
 ///
-/// let clip_id = library.register_clip(clip);
-///
 /// // Apply easing on the whole animation
 /// // (will combine with the clip's own easing)
 ///
-/// let animation = Animation::from_clip(clip_id)
+/// let animation = Animation::from_clip(clip)
 ///     .with_easing(Easing::InOut(EasingVariety::Cubic));
 /// ```
 ///

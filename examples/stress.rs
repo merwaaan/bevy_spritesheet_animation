@@ -50,11 +50,11 @@ fn main() {
 }
 
 fn spawn_sprites(
-    mut commands: Commands,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     cli: Res<Cli>,
+    mut commands: Commands,
     assets: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut animations: ResMut<Assets<Animation>>,
 ) {
     // Spawn a camera
 
@@ -81,10 +81,7 @@ fn spawn_sprites(
         spritesheet.row(7),
     ];
 
-    let clip_ids = clip_frames.map(|frames| {
-        let clip = Clip::from_frames(frames);
-        library.register_clip(clip)
-    });
+    let clips = clip_frames.map(|frames| Clip::from_frames(frames));
 
     // Create 100 animations from those clips, each with random parameters
 
@@ -96,15 +93,15 @@ fn spawn_sprites(
         AnimationDirection::PingPong,
     ];
 
-    let animation_ids: Vec<AnimationId> = (0..100)
+    let animation_handles: Vec<Handle<Animation>> = (0..100)
         .map(|_| {
-            let clip_id = *clip_ids.choose(&mut rng).unwrap();
+            let clip = clips.choose(&mut rng).unwrap().clone();
 
-            let animation = Animation::from_clip(clip_id)
+            let animation = Animation::from_clip(clip)
                 .with_duration(AnimationDuration::PerFrame(rng.random_range(100..1000)))
                 .with_direction(*animation_directions.choose(&mut rng).unwrap());
 
-            library.register_animation(animation)
+            animations.add(animation)
         })
         .collect();
 
@@ -118,19 +115,19 @@ fn spawn_sprites(
     };
 
     for _ in 0..cli.sprites {
-        let animation = animation_ids.choose(&mut rng).unwrap();
+        let animation_handle = animation_handles.choose(&mut rng).unwrap();
 
         let transform = Transform::from_translation(random_position());
 
         match cli.mode {
             Mode::TwoD => commands.spawn((
                 Sprite::from_atlas_image(image.clone(), atlas.clone()),
-                SpritesheetAnimation::from_id(*animation),
+                SpritesheetAnimation::new(animation_handle.clone()),
                 transform,
             )),
             Mode::ThreeD => commands.spawn((
                 Sprite3d::from_atlas_image(image.clone(), atlas.clone()),
-                SpritesheetAnimation::from_id(*animation),
+                SpritesheetAnimation::new(animation_handle.clone()),
                 transform,
             )),
         };

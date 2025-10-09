@@ -20,11 +20,11 @@ fn main() {
 }
 
 fn create_cursor(
-    mut commands: Commands,
     window: Single<Entity, With<Window>>,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut commands: Commands,
     assets: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut animations: ResMut<Assets<Animation>>,
 ) {
     commands.spawn(Camera2d);
 
@@ -33,10 +33,10 @@ fn create_cursor(
     let spritesheet = Spritesheet::new(8, 8);
 
     let clip = Clip::from_frames(spritesheet.row(3));
-    let clip_id = library.register_clip(clip);
 
-    let animation = Animation::from_clip(clip_id);
-    let animation_id = library.register_animation(animation);
+    let animation = Animation::from_clip(clip);
+
+    let animation_handle = animations.add(animation);
 
     // Create a custom cursor using that animation
 
@@ -53,6 +53,6 @@ fn create_cursor(
             texture_atlas: Some(atlas),
             ..default()
         })),
-        SpritesheetAnimation::from_id(animation_id),
+        SpritesheetAnimation::new(animation_handle),
     ));
 }
