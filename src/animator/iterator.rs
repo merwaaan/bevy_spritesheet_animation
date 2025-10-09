@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use bevy::{log::warn, reflect::prelude::*};
+use bevy::prelude::*;
 
 use crate::{
     CRATE_NAME,
@@ -8,7 +8,7 @@ use crate::{
     animator::cache::{AnimationCache, AnimationCacheEvent, CacheFrame},
     clip::ClipId,
     components::spritesheet_animation::AnimationProgress,
-    events::AnimationMarkerId,
+    events::Marker,
 };
 
 /// Same as [CacheFrame] but with `animation_repetition`
@@ -30,7 +30,7 @@ pub(crate) struct IteratorFrame {
 #[reflect(Debug, PartialEq, Hash)]
 pub(crate) enum AnimationIteratorEvent {
     MarkerHit {
-        marker_id: AnimationMarkerId,
+        marker: Marker,
         animation_repetition: usize,
         clip_id: ClipId,
         clip_repetition: usize,
@@ -47,11 +47,11 @@ pub(crate) enum AnimationIteratorEvent {
     },
 }
 
-#[derive(Debug, Reflect)]
-#[reflect(Debug)]
 /// An iterator that advances an animation frame by frame.
 ///
 /// `next()` will produce frames until the end of the animation.
+#[derive(Debug, Reflect)]
+#[reflect(Debug)]
 pub(crate) struct AnimationIterator {
     /// Reference to the animation cache that contains all the frames for one repetition of the animation
     cache: Arc<AnimationCache>,
@@ -80,7 +80,7 @@ impl AnimationIterator {
         // Validate the target progress
 
         if progress.frame >= self.cache.frames.len() {
-            warn!(
+            error!(
                 "{CRATE_NAME}: invalid frame {} in {}-frame animation, cannot update progress",
                 progress.frame,
                 self.cache.frames.len().saturating_sub(1)
@@ -92,7 +92,7 @@ impl AnimationIterator {
             .repetitions
             .filter(|repetitions| progress.repetition >= *repetitions)
         {
-            warn!(
+            error!(
                 "{CRATE_NAME}: invalid repetition {} in {}-repetition animation, cannot update progress",
                 progress.frame,
                 repetitions.saturating_sub(1)
@@ -118,11 +118,11 @@ impl AnimationIterator {
             .iter()
             .map(|event| match event {
                 AnimationCacheEvent::MarkerHit {
-                    marker_id,
+                    marker,
                     clip_id,
                     clip_repetition,
                 } => AnimationIteratorEvent::MarkerHit {
-                    marker_id: *marker_id,
+                    marker: *marker,
                     animation_repetition,
                     clip_id: *clip_id,
                     clip_repetition: *clip_repetition,

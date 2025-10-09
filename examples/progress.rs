@@ -1,10 +1,7 @@
-// This example shows how to control the progress of an animation.
-
-#[path = "./common/mod.rs"]
-pub mod common;
+// This example shows how to query and control the progress of an animation.
 
 use bevy::prelude::*;
-use bevy_spritesheet_animation::prelude::*;
+use bevy_spritesheet_animation::{animation::Animation, prelude::*};
 
 fn main() {
     App::new()
@@ -13,110 +10,98 @@ fn main() {
             SpritesheetAnimationPlugin,
         ))
         .add_systems(Startup, spawn_character)
-        .add_systems(Update, control_animation)
+        .add_systems(Update, (control_animation, update_current_frame_text))
         .run();
 }
 
 #[derive(Component)]
-struct AllAnimations {
-    animation1_id: AnimationId,
-    animation2_id: AnimationId,
-}
+struct CurrentFrameText;
 
 fn spawn_character(
     mut commands: Commands,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
+    mut animations: ResMut<Assets<Animation>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     commands.spawn(Camera2d);
 
-    // Create two animations
-
-    let spritesheet = Spritesheet::new(8, 8);
-
-    let mut create_animation = |frames| {
-        let clip = Clip::from_frames(frames).with_duration(AnimationDuration::PerFrame(2000));
-        let clip_id = library.register_clip(clip);
-
-        let animation = Animation::from_clip(clip_id);
-        library.register_animation(animation)
-    };
-
-    let animation1_id = create_animation(spritesheet.row(3));
-    let animation2_id = create_animation(spritesheet.horizontal_strip(0, 5, 5));
-
-    // Spawn an animated sprite
+    // Create an animation
 
     let image = assets.load("character.png");
 
-    let atlas = TextureAtlas {
-        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
-        ..default()
-    };
+    let spritesheet = Spritesheet::new(&image, 8, 8);
 
-    commands.spawn((
-        Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::from_id(animation1_id),
-        // Store the two animation IDs in a component for convenience
-        AllAnimations {
-            animation1_id,
-            animation2_id,
-        },
-    ));
+    let animation = spritesheet
+        .create_animation()
+        .add_row(3)
+        .set_duration(AnimationDuration::PerFrame(1000))
+        .build();
 
-    // Help text
+    let animation_handle = animations.add(animation);
 
-    commands.spawn((Text(
-        "P: play/pause\nR: reset animation\n0/1/2/3/4/5: switch to frame x\nS: switch animation".to_owned()),
-        TextFont::from_font_size(30.0)
-    ));
+    // Spawn an animated sprite
+
+    let sprite = spritesheet
+        .with_size_hint(768, 768)
+        .sprite(&mut atlas_layouts);
+
+    commands.spawn((sprite, SpritesheetAnimation::new(animation_handle)));
+
+    // Text
+
+    commands
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            ..default()
+        })
+        .with_children(|parent| {
+            parent                    .spawn(Text::new(
+        "P: play/pause\nR: reset animation\n0/1/2/3/4/5: switch to frame x\nS: switch animation\n"));
+
+
+            parent.spawn((CurrentFrameText,Text::new("")));
+        });
 }
 
 fn control_animation(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut sprites: Query<(&mut SpritesheetAnimation, &AllAnimations)>,
+    mut sprite: Single<&mut SpritesheetAnimation>,
 ) {
-    for (mut sprite, all_animations) in &mut sprites {
-        // Pause the current animation
+    // Play/Pause the animation
 
-        if keyboard.just_pressed(KeyCode::KeyP) {
-            sprite.playing = !sprite.playing;
-        }
+    if keyboard.just_pressed(KeyCode::KeyP) {
+        sprite.playing = !sprite.playing;
+    }
 
-        // Reset the current animation
+    // Reset the animation
 
-        if keyboard.just_pressed(KeyCode::KeyR) {
-            sprite.reset();
-        }
+    if keyboard.just_pressed(KeyCode::KeyR) {
+        sprite.reset();
+    }
 
-        // Go to a specific frame of the current animation
+    // Go to a specific frame of the animation
 
-        let keys = [
-            KeyCode::Numpad0,
-            KeyCode::Numpad1,
-            KeyCode::Numpad2,
-            KeyCode::Numpad3,
-            KeyCode::Numpad4,
-            KeyCode::Numpad5,
-        ];
+    let keys = [
+        KeyCode::Numpad0,
+        KeyCode::Numpad1,
+        KeyCode::Numpad2,
+        KeyCode::Numpad3,
+        KeyCode::Numpad4,
+        KeyCode::Numpad5,
+    ];
 
-        for (frame, key) in keys.iter().enumerate() {
-            if keyboard.just_pressed(*key) {
-                sprite.progress.frame = frame;
-            }
-        }
-
-        // Switch to the other animation
-
-        if keyboard.just_pressed(KeyCode::KeyS) {
-            let next_animation = if sprite.animation_id == all_animations.animation1_id {
-                all_animations.animation2_id
-            } else {
-                all_animations.animation1_id
-            };
-
-            sprite.switch(next_animation);
+    for (frame, key) in keys.iter().enumerate() {
+        if keyboard.just_pressed(*key) {
+            sprite.progress.frame = frame;
         }
     }
+}
+
+fn update_current_frame_text(
+    sprite: Single<&SpritesheetAnimation>,
+    mut text: Single<&mut Text, With<CurrentFrameText>>,
+) {
+    text.0 = format!("Current frame: {}", sprite.progress.frame);
 }

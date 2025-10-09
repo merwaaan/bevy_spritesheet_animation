@@ -1,18 +1,12 @@
 // This example shows how to create 3D sprites.
 
-#[path = "./common/mod.rs"]
-pub mod common;
-
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_spritesheet_animation::prelude::*;
 use rand::{Rng, seq::IndexedRandom as _};
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins.set(ImagePlugin::default_nearest()),
-            SpritesheetAnimationPlugin,
-        ))
+        .add_plugins((DefaultPlugins, SpritesheetAnimationPlugin))
         .add_systems(Startup, spawn_sprites)
         .add_systems(Update, (update_on_keypress, orbit, draw_gizmos))
         .run();
@@ -20,9 +14,9 @@ fn main() {
 
 fn spawn_sprites(
     mut commands: Commands,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     assets: Res<AssetServer>,
+    mut animations: ResMut<Assets<Animation>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     // 3D sprites require a 3D camera
 
@@ -33,24 +27,19 @@ fn spawn_sprites(
 
     // Create an animation as usual
 
-    let spritesheet = Spritesheet::new(8, 8);
-
-    let clip = Clip::from_frames(spritesheet.row(3));
-
-    let clip_id = library.register_clip(clip);
-
-    let animation = Animation::from_clip(clip_id);
-
-    let animation_id = library.register_animation(animation);
-
-    // Create an image and a texture atlas like you would for any Bevy sprite
-
     let image = assets.load("character.png");
 
-    let atlas = TextureAtlas {
-        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
-        ..default()
-    };
+    let spritesheet = Spritesheet::new(&image, 8, 8);
+
+    let animation = spritesheet.create_animation().add_row(3).build();
+
+    let animation_handle = animations.add(animation);
+
+    // Create an image and a texture atlas like you would for 2D sprites
+
+    let atlas = spritesheet
+        .with_size_hint(768, 768)
+        .atlas(&mut atlas_layouts);
 
     // Spawn 3D sprites
 
@@ -79,7 +68,7 @@ fn spawn_sprites(
     for (i, sprite) in sprites.into_iter().enumerate() {
         commands.spawn((
             sprite,
-            SpritesheetAnimation::from_id(animation_id),
+            SpritesheetAnimation::new(animation_handle.clone()),
             Orbit {
                 start_angle: i as f32 * std::f32::consts::TAU / sprite_count as f32,
             },
@@ -95,9 +84,8 @@ fn spawn_sprites(
 
     // Help text
 
-    commands.spawn((Text(
-        "C: random colors\nX: flip on X\nY: flip on Y\nA: random anchors\nS: random sizes\nR: reset".to_owned()),
-        TextFont::from_font_size(30.0)
+    commands.spawn(Text::new(
+        "C: random colors\nX: flip on X\nY: flip on Y\nA: random anchors\nS: random sizes\nR: reset"
     ));
 }
 
@@ -166,9 +154,11 @@ struct Orbit {
 }
 
 fn orbit(time: Res<Time>, mut query: Query<(&Orbit, &mut Transform)>) {
+    let secs_elapsed = time.elapsed_secs();
+
     for (orbit, mut transform) in &mut query {
-        transform.translation.x = (orbit.start_angle + time.elapsed_secs()).cos() * 1500.0;
-        transform.translation.z = (orbit.start_angle + time.elapsed_secs()).sin() * 1500.0;
+        transform.translation.x = (orbit.start_angle + secs_elapsed).cos() * 1500.0;
+        transform.translation.z = (orbit.start_angle + secs_elapsed).sin() * 1500.0;
     }
 }
 

@@ -1,14 +1,13 @@
 use std::time::Duration;
 
-use bevy::{log::warn, reflect::prelude::*};
+use bevy::prelude::*;
 
 use crate::{
     CRATE_NAME,
-    animation::{AnimationDirection, AnimationDuration, AnimationId, AnimationRepeat},
+    animation::{Animation, AnimationDirection, AnimationDuration, AnimationRepeat},
     clip::{Clip, ClipId},
     easing::Easing,
-    events::AnimationMarkerId,
-    library::AnimationLibrary,
+    events::Marker,
 };
 
 /// A pre-computed frame of animation, ready to be played back.
@@ -34,7 +33,7 @@ pub(crate) struct CacheFrame {
 #[reflect(Debug, PartialEq, Hash)]
 pub(crate) enum AnimationCacheEvent {
     MarkerHit {
-        marker_id: AnimationMarkerId,
+        marker: Marker,
         clip_id: ClipId,
         clip_repetition: usize,
     },
@@ -47,13 +46,13 @@ pub(crate) enum AnimationCacheEvent {
     },
 }
 
-#[derive(Debug, Reflect)]
-#[reflect(Debug)]
 /// The [AnimationCache] contains pre-computed frames for an animation.
 ///
 /// The idea is to cache for each frame its atlas index, duration and emitted events
 /// so that playing an animation becomes just a matter of iterating over this cache
 /// without re-evaluating all the animation  parameters.
+#[derive(Debug, Reflect)]
+#[reflect(Debug)]
 pub(crate) struct AnimationCache {
     /// All the frames
     pub frames: Vec<CacheFrame>,
@@ -63,7 +62,7 @@ pub(crate) struct AnimationCache {
     pub frames_pong: Option<Vec<CacheFrame>>,
 
     /// The total number of repetitions to play.
-    /// None if looping indefinitely.
+    /// None if looping forever.
     pub repetitions: Option<usize>,
 
     /// The direction of the animation to handle the PingPong case
@@ -81,9 +80,7 @@ impl AnimationCache {
         }
     }
 
-    pub fn new(animation_id: AnimationId, library: &AnimationLibrary) -> AnimationCache {
-        let animation = library.get_animation(animation_id);
-
+    pub fn from_animation(animation: &Animation) -> AnimationCache {
         // If the animation repeats 0 times, just create an empty cache that will play no frames
         // TODO should use the first frame only instead?
 
@@ -96,14 +93,14 @@ impl AnimationCache {
         // Gather data for all the clips
 
         let clips_data = animation
-            .clip_ids()
+            .clips()
             .iter()
-            .map(|clip_id| ClipData::new(*clip_id, library))
+            .map(ClipData::new)
             // Filter out clips with 0 frames / 0 repetitions / durations of 0
             //
             // Doing so at this point will simplify what follows as well as the playback code as we won't have to handle those special cases
             .filter(|data| {
-                !data.clip.frames().is_empty()
+                !data.clip.atlas_indices().is_empty()
                     && data.repetitions > 0
                     && data.duration_with_repetitions_ms > 0
             });
@@ -155,7 +152,7 @@ impl AnimationCache {
                 let clip_frame_corrected_duration_ms = match clip_corrected_duration {
                     AnimationDuration::PerFrame(frame_duration_ms) => frame_duration_ms,
                     AnimationDuration::PerRepetition(cycle_duration_ms) => {
-                        cycle_duration_ms / clip_data.clip.frames().len() as u32
+                        cycle_duration_ms / clip_data.clip.atlas_indices().len() as u32
                     }
                 };
 
@@ -191,7 +188,6 @@ impl AnimationCache {
 
 #[derive(Clone)]
 struct ClipData {
-    id: ClipId,
     clip: Clip,
     duration: AnimationDuration,
     repetitions: usize,
@@ -201,9 +197,7 @@ struct ClipData {
 }
 
 impl ClipData {
-    fn new(clip_id: ClipId, library: &AnimationLibrary) -> Self {
-        let clip = library.get_clip(clip_id).clone();
-
+    fn new(clip: &Clip) -> Self {
         let duration = clip.duration().unwrap_or_default();
         let repetitions = clip.repetitions().unwrap_or(1);
         let direction = clip.direction().unwrap_or_default();
@@ -213,10 +207,10 @@ impl ClipData {
 
         let frame_count_with_repetitions = match direction {
             AnimationDirection::Forwards | AnimationDirection::Backwards => {
-                clip.frames().len() as u32 * repetitions as u32
+                clip.atlas_indices().len() as u32 * repetitions as u32
             }
             AnimationDirection::PingPong => {
-                clip.frames().len().saturating_sub(1) as u32 * repetitions as u32 + 1
+                clip.atlas_indices().len().saturating_sub(1) as u32 * repetitions as u32 + 1
             }
         };
 
@@ -228,8 +222,7 @@ impl ClipData {
         };
 
         Self {
-            id: clip_id,
-            clip,
+            clip: clip.clone(),
             duration,
             repetitions,
             direction,
@@ -245,7 +238,7 @@ impl ClipData {
 struct Frame {
     atlas_index: usize,
     duration: Duration,
-    markers: Vec<AnimationMarkerId>,
+    markers: Vec<Marker>,
 }
 
 #[derive(Clone)]
@@ -258,7 +251,7 @@ impl ClipRepetitionFrames {
         Self {
             frames: clip_data
                 .clip
-                .frames()
+                .atlas_indices()
                 .iter()
                 .enumerate()
                 .map(move |(frame_index, frame_atlas_index)| {
@@ -407,7 +400,7 @@ impl AnimationFrames {
         let merge = |mut frames: AnimationFrames| {
             let mut all_frames = Vec::new();
 
-            let mut previous_clip = None;
+            let mut previous_clip_id = None;
             let mut previous_clip_repetition = None;
 
             for clip in &mut frames.clips {
@@ -432,15 +425,15 @@ impl AnimationFrames {
                         .map(|frame| CacheFrame {
                             atlas_index: frame.atlas_index,
                             duration: frame.duration,
-                            clip_id: clip.data.id,
+                            clip_id: clip.data.clip.id(),
                             clip_repetition: repetition_index,
                             // Convert the markers to events
                             events: frame
                                 .markers
                                 .iter()
                                 .map(|marker| AnimationCacheEvent::MarkerHit {
-                                    marker_id: *marker,
-                                    clip_id: clip.data.id,
+                                    marker: *marker,
+                                    clip_id: clip.data.clip.id(),
                                     clip_repetition: repetition_index,
                                 })
                                 .collect(),
@@ -461,7 +454,7 @@ impl AnimationFrames {
                             });
                     }
 
-                    previous_clip_repetition = Some((clip.data.id, repetition_index));
+                    previous_clip_repetition = Some((clip.data.clip.id(), repetition_index));
 
                     // Merge with the full clip
 
@@ -473,7 +466,7 @@ impl AnimationFrames {
                 // Because we'll return None at the end of the animation, the Animator will be
                 // responsible for generating ClipRepetitionEnd/ClipEnd for the last animation cycle
 
-                if let Some(previous_clip_id) = previous_clip {
+                if let Some(previous_clip_id) = previous_clip_id {
                     all_clip_frames[0]
                         .events
                         .push(AnimationCacheEvent::ClipEnd {
@@ -481,7 +474,7 @@ impl AnimationFrames {
                         });
                 }
 
-                previous_clip = Some(clip.data.id);
+                previous_clip_id = Some(clip.data.clip.id());
 
                 // Merge with the full animation
 
@@ -516,7 +509,7 @@ fn apply_easing(frame_durations: Vec<&mut Duration>, easing: Easing) {
     let total_duration_ms: u32 = frame_durations.iter().map(|d| d.as_millis() as u32).sum();
 
     if total_duration_ms == 0 {
-        warn!("{CRATE_NAME}: zero duration, cannot apply easing");
+        error!("{CRATE_NAME}: zero duration, cannot apply easing");
 
         return;
     }

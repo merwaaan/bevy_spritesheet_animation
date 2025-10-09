@@ -7,13 +7,14 @@ use context::*;
 fn clip_duration_per_frame() {
     let mut ctx = Context::new();
 
-    let clip = Clip::from_frames([5, 1, 7]).with_duration(AnimationDuration::PerFrame(1000));
-    let clip_id = ctx.library().register_clip(clip);
+    let mut clip_id = ClipId::dummy();
 
-    let animation = Animation::from_clip(clip_id);
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    ctx.attach_animation(|builder| {
+        builder
+            .add_indices([5, 1, 7])
+            .set_clip_duration(AnimationDuration::PerFrame(1000))
+            .get_current_clip_id(&mut clip_id)
+    });
 
     ctx.run(400);
     ctx.check(5, []);
@@ -32,13 +33,14 @@ fn clip_duration_per_frame() {
 fn clip_duration_per_cycle() {
     let mut ctx = Context::new();
 
-    let clip = Clip::from_frames([4, 5, 6]).with_duration(AnimationDuration::PerRepetition(3000));
-    let clip_id = ctx.library().register_clip(clip);
+    let mut clip_id = ClipId::dummy();
 
-    let animation = Animation::from_clip(clip_id);
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    ctx.attach_animation(|builder| {
+        builder
+            .add_indices([4, 5, 6])
+            .set_clip_duration(AnimationDuration::PerRepetition(3000))
+            .get_current_clip_id(&mut clip_id)
+    });
 
     ctx.run(500);
     ctx.check(4, []);
@@ -54,13 +56,14 @@ fn clip_duration_per_cycle() {
 fn clip_with_zero_duration() {
     let mut ctx = Context::new();
 
-    let clip = Clip::from_frames([4, 5, 6]).with_duration(AnimationDuration::PerFrame(0));
-    let clip_id = ctx.library().register_clip(clip);
+    let mut clip_id = ClipId::dummy();
 
-    let animation = Animation::from_clip(clip_id);
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    ctx.attach_animation(|builder| {
+        builder
+            .add_indices([4, 5, 6])
+            .set_clip_duration(AnimationDuration::PerFrame(0))
+            .get_current_clip_id(&mut clip_id)
+    });
 
     for _ in 0..100 {
         ctx.run(100);
@@ -72,19 +75,23 @@ fn clip_with_zero_duration() {
 fn animation_duration_per_frame() {
     let mut ctx = Context::new();
 
-    let clip1 = Clip::from_frames([0, 1]).with_duration(AnimationDuration::PerFrame(123456)); // should be ignored
-    let clip1_id = ctx.library().register_clip(clip1);
+    let mut clip1_id = ClipId::dummy();
+    let mut clip2_id = ClipId::dummy();
 
-    let clip2 = Clip::from_frames([0, 1])
-        .with_duration(AnimationDuration::PerFrame(9999999)) // should be ignored
-        .with_repetitions(2);
-    let clip2_id = ctx.library().register_clip(clip2);
-
-    let animation =
-        Animation::from_clips([clip1_id, clip2_id]).with_duration(AnimationDuration::PerFrame(500));
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    let animation = ctx.attach_animation(|builder| {
+        builder
+            .set_duration(AnimationDuration::PerFrame(500))
+            // Clip 1
+            .add_indices([0, 1])
+            .set_clip_duration(AnimationDuration::PerFrame(123456))
+            .get_current_clip_id(&mut clip1_id)
+            // Clip 2
+            .start_clip()
+            .add_indices([0, 1])
+            .set_clip_duration(AnimationDuration::PerFrame(9999999)) // should be ignored
+            .set_clip_repetitions(2)
+            .get_current_clip_id(&mut clip2_id)
+    });
 
     ctx.run(400);
     ctx.check(0, []);
@@ -96,8 +103,8 @@ fn animation_duration_per_frame() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(animation_id, clip1_id, 0),
-            ctx.clip_end(animation_id, clip1_id),
+            ctx.clip_rep_end(&animation, clip1_id, 0),
+            ctx.clip_end(&animation, clip1_id),
         ],
     );
 
@@ -105,7 +112,7 @@ fn animation_duration_per_frame() {
     ctx.check(1, []);
 
     ctx.run(600); // 2200
-    ctx.check(0, [ctx.clip_rep_end(animation_id, clip2_id, 0)]);
+    ctx.check(0, [ctx.clip_rep_end(&animation, clip2_id, 0)]);
 
     ctx.run(400); // 2600
     ctx.check(1, []);
@@ -115,19 +122,23 @@ fn animation_duration_per_frame() {
 fn animation_duration_per_cycle() {
     let mut ctx = Context::new();
 
-    let clip1 = Clip::from_frames([0, 1]).with_duration(AnimationDuration::PerRepetition(1000));
-    let clip1_id = ctx.library().register_clip(clip1);
+    let mut clip1_id = ClipId::dummy();
+    let mut clip2_id = ClipId::dummy();
 
-    let clip2 = Clip::from_frames([0, 1])
-        .with_duration(AnimationDuration::PerFrame(2000))
-        .with_repetitions(2);
-    let clip2_id = ctx.library().register_clip(clip2);
-
-    let animation = Animation::from_clips([clip1_id, clip2_id])
-        .with_duration(AnimationDuration::PerRepetition(10_000));
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    let animation = ctx.attach_animation(|builder| {
+        builder
+            .set_duration(AnimationDuration::PerRepetition(10_000))
+            // Clip 1
+            .add_indices([0, 1])
+            .set_clip_duration(AnimationDuration::PerRepetition(1000))
+            .get_current_clip_id(&mut clip1_id)
+            // Clip 2
+            .start_clip()
+            .add_indices([0, 1])
+            .set_clip_duration(AnimationDuration::PerFrame(2000))
+            .set_clip_repetitions(2)
+            .get_current_clip_id(&mut clip2_id)
+    });
 
     // Animation duration = 10 000 per cycle
     //
@@ -159,8 +170,8 @@ fn animation_duration_per_cycle() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(animation_id, clip1_id, 0),
-            ctx.clip_end(animation_id, clip1_id),
+            ctx.clip_rep_end(&animation, clip1_id, 0),
+            ctx.clip_end(&animation, clip1_id),
         ],
     );
 
@@ -178,7 +189,7 @@ fn animation_duration_per_cycle() {
     // clip 2, frame 0 (repeated): 5555 to 7777
 
     ctx.run(20); // 5570
-    ctx.check(0, [ctx.clip_rep_end(animation_id, clip2_id, 0)]);
+    ctx.check(0, [ctx.clip_rep_end(&animation, clip2_id, 0)]);
 
     ctx.run(2200); // 7770
     ctx.check(0, []);
@@ -197,9 +208,9 @@ fn animation_duration_per_cycle() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(animation_id, clip2_id, 1),
-            ctx.clip_end(animation_id, clip2_id),
-            ctx.anim_rep_end(animation_id, 0),
+            ctx.clip_rep_end(&animation, clip2_id, 1),
+            ctx.clip_end(&animation, clip2_id),
+            ctx.anim_rep_end(&animation, 0),
         ],
     );
 }
@@ -208,14 +219,14 @@ fn animation_duration_per_cycle() {
 fn animation_with_zero_duration() {
     let mut ctx = Context::new();
 
-    let clip = Clip::from_frames([4, 5, 6]);
-    let clip_id = ctx.library().register_clip(clip);
+    let mut clip_id = ClipId::dummy();
 
-    let animation =
-        Animation::from_clip(clip_id).with_duration(AnimationDuration::PerRepetition(0));
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    ctx.attach_animation(|builder| {
+        builder
+            .add_indices([4, 5, 6])
+            .set_clip_duration(AnimationDuration::PerRepetition(0))
+            .get_current_clip_id(&mut clip_id)
+    });
 
     for _ in 0..100 {
         ctx.run(100);
@@ -227,13 +238,14 @@ fn animation_with_zero_duration() {
 fn pause_resume() {
     let mut ctx = Context::new();
 
-    let clip = Clip::from_frames([4, 5, 6, 7]).with_duration(AnimationDuration::PerFrame(100));
-    let clip_id = ctx.library().register_clip(clip);
+    let mut clip_id = ClipId::dummy();
 
-    let animation = Animation::from_clip(clip_id);
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    let animation = ctx.attach_animation(|builder| {
+        builder
+            .add_indices([4, 5, 6, 7])
+            .set_clip_duration(AnimationDuration::PerFrame(100))
+            .get_current_clip_id(&mut clip_id)
+    });
 
     ctx.run(50);
     ctx.check(4, []);
@@ -249,8 +261,8 @@ fn pause_resume() {
 
     // Pause
 
-    ctx.update_sprite_animation(|anim| {
-        anim.playing = false;
+    ctx.get_sprite(|sprite| {
+        sprite.playing = false;
     });
 
     for _ in 0..100 {
@@ -260,8 +272,8 @@ fn pause_resume() {
 
     // Resume
 
-    ctx.update_sprite_animation(|anim| {
-        anim.playing = true;
+    ctx.get_sprite(|sprite| {
+        sprite.playing = true;
     });
 
     // wrap
@@ -270,9 +282,9 @@ fn pause_resume() {
     ctx.check(
         4,
         [
-            ctx.clip_rep_end(animation_id, clip_id, 0),
-            ctx.clip_end(animation_id, clip_id),
-            ctx.anim_rep_end(animation_id, 0),
+            ctx.clip_rep_end(&animation, clip_id, 0),
+            ctx.clip_end(&animation, clip_id),
+            ctx.anim_rep_end(&animation, 0),
         ],
     );
 }
@@ -281,19 +293,19 @@ fn pause_resume() {
 fn speed_factor() {
     let mut ctx = Context::new();
 
-    let clip =
-        Clip::from_frames([1, 2, 3, 4, 5, 6, 7]).with_duration(AnimationDuration::PerFrame(100));
-    let clip_id = ctx.library().register_clip(clip);
+    let mut clip_id = ClipId::dummy();
 
-    let animation = Animation::from_clip(clip_id);
-    let animation_id = ctx.library().register_animation(animation);
-
-    ctx.add_animation_to_sprite(animation_id);
+    ctx.attach_animation(|builder| {
+        builder
+            .add_indices([1, 2, 3, 4, 5, 6, 7])
+            .set_clip_duration(AnimationDuration::PerFrame(100))
+            .get_current_clip_id(&mut clip_id)
+    });
 
     // x2
 
-    ctx.update_sprite_animation(|anim| {
-        anim.speed_factor = 2.0;
+    ctx.get_sprite(|sprite| {
+        sprite.speed_factor = 2.0;
     });
 
     ctx.run(60); // +60*2 = 120
@@ -304,8 +316,8 @@ fn speed_factor() {
 
     // x0.1
 
-    ctx.update_sprite_animation(|anim| {
-        anim.speed_factor = 0.1;
+    ctx.get_sprite(|sprite| {
+        sprite.speed_factor = 0.1;
     });
 
     ctx.run(600); // +600*0.1 = 280
@@ -316,8 +328,8 @@ fn speed_factor() {
 
     // x1
 
-    ctx.update_sprite_animation(|anim| {
-        anim.speed_factor = 1.0;
+    ctx.get_sprite(|sprite| {
+        sprite.speed_factor = 1.0;
     });
 
     ctx.run(100); // 520

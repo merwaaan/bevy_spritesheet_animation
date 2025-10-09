@@ -1,58 +1,72 @@
-// This example shows how to create a animated cursor.
+// This example shows how to animate a cursor.
 //
-// The 'custom_cursor' feature must be enabled for custom cursors to be animated (enabled by default).
+// The 'custom_cursor' feature must be enabled for cursors to be animated (enabled by default).
 
-#[path = "./common/mod.rs"]
-pub mod common;
+#![cfg(feature = "custom_cursor")]
 
-use bevy::{
-    prelude::*,
-    window::{CursorIcon, CustomCursor, CustomCursorImage},
-};
+use bevy::prelude::*;
 use bevy_spritesheet_animation::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(SpritesheetAnimationPlugin)
         .add_systems(Startup, create_cursor)
+        .add_systems(Update, trigger_clicks)
         .run();
 }
 
 fn create_cursor(
-    mut commands: Commands,
     window: Single<Entity, With<Window>>,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut commands: Commands,
     assets: Res<AssetServer>,
+    mut animations: ResMut<Assets<Animation>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     commands.spawn(Camera2d);
 
     // Create an animation
 
-    let spritesheet = Spritesheet::new(8, 8);
+    let image = assets.load("cursor.png");
 
-    let clip = Clip::from_frames(spritesheet.row(3));
-    let clip_id = library.register_clip(clip);
+    let spritesheet = Spritesheet::new(&image, 4, 1);
 
-    let animation = Animation::from_clip(clip_id);
-    let animation_id = library.register_animation(animation);
+    let animation = spritesheet
+        .create_animation()
+        .add_row(0)
+        // Repeat the animation once
+        .set_repetitions(AnimationRepeat::Times(1))
+        .build();
+
+    let animation_handle = animations.add(animation);
 
     // Create a custom cursor using that animation
 
-    let image = assets.load("character.png");
-
-    let atlas = TextureAtlas {
-        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
-        ..default()
-    };
+    let cursor_icon = spritesheet
+        .with_size_hint(32 * 4, 32)
+        .cursor_icon(&mut atlas_layouts);
 
     commands.entity(*window).insert((
-        CursorIcon::Custom(CustomCursor::Image(CustomCursorImage {
-            handle: image,
-            texture_atlas: Some(atlas),
-            ..default()
-        })),
-        SpritesheetAnimation::from_id(animation_id),
+        cursor_icon,
+        SpritesheetAnimation::new(animation_handle)
+            // Pause the animation on the last frame (idle frame)
+            .with_playing(false)
+            .with_progress(AnimationProgress::with_frame(3)),
     ));
+
+    // Help text
+
+    commands.spawn((Text::new("Click to animate the cursor"),));
+}
+
+fn trigger_clicks(
+    buttons: Res<ButtonInput<MouseButton>>,
+    mut sprite: Single<&mut SpritesheetAnimation>,
+) {
+    // Reset the click animation
+
+    if buttons.just_pressed(MouseButton::Left) {
+        sprite.reset();
+        sprite.play();
+    }
 }

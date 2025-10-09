@@ -1,6 +1,6 @@
-// A stress test with thousands of animated 3D sprites
+// A stress test with an unreasonable amount of animated 3D sprites
 //
-// CLI:
+// CLI options:
 //
 // Pass "2d" for 2D sprites (default)
 // Pass "3d" for 3D sprites
@@ -9,13 +9,9 @@
 //
 // Best executed in --release mode!
 
-#[path = "./common/mod.rs"]
-pub mod common;
-
-use bevy::{dev_tools::fps_overlay::FpsOverlayPlugin, prelude::*};
+use bevy::{dev_tools::fps_overlay::FpsOverlayPlugin, prelude::*, window::PrimaryWindow};
 use bevy_spritesheet_animation::prelude::*;
 use clap::{Parser, ValueEnum};
-use common::random_position;
 use rand::{Rng, seq::IndexedRandom as _};
 
 #[derive(ValueEnum, Clone)]
@@ -50,11 +46,12 @@ fn main() {
 }
 
 fn spawn_sprites(
-    mut commands: Commands,
-    mut library: ResMut<AnimationLibrary>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     cli: Res<Cli>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    mut commands: Commands,
     assets: Res<AssetServer>,
+    mut animations: ResMut<Assets<Animation>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     // Spawn a camera
 
@@ -66,27 +63,24 @@ fn spawn_sprites(
         )),
     };
 
-    // Create clips from a spritesheet
+    // Create base animations from the rows of a spritesheet
 
-    let spritesheet = Spritesheet::new(8, 8);
+    let image = assets.load("character.png");
 
-    let clip_frames = [
-        spritesheet.row_partial(0, ..5),
-        spritesheet.row_partial(1, ..5),
-        spritesheet.row(2),
-        spritesheet.row(3),
-        spritesheet.row_partial(4, ..5),
-        spritesheet.row_partial(5, ..5),
-        spritesheet.row(6),
-        spritesheet.row(7),
+    let spritesheet = Spritesheet::new(&image, 8, 8);
+
+    let base_animations = [
+        spritesheet.create_animation().add_partial_row(0, ..5),
+        spritesheet.create_animation().add_partial_row(1, ..5),
+        spritesheet.create_animation().add_row(2),
+        spritesheet.create_animation().add_row(3),
+        spritesheet.create_animation().add_partial_row(4, ..5),
+        spritesheet.create_animation().add_partial_row(5, ..5),
+        spritesheet.create_animation().add_row(6),
+        spritesheet.create_animation().add_row(7),
     ];
 
-    let clip_ids = clip_frames.map(|frames| {
-        let clip = Clip::from_frames(frames);
-        library.register_clip(clip)
-    });
-
-    // Create 100 animations from those clips, each with random parameters
+    // Create 100 derived animations, each with random parameters
 
     let mut rng = rand::rng();
 
@@ -96,43 +90,50 @@ fn spawn_sprites(
         AnimationDirection::PingPong,
     ];
 
-    let animation_ids: Vec<AnimationId> = (0..100)
+    let animation_handles: Vec<Handle<Animation>> = (0..100)
         .map(|_| {
-            let clip_id = *clip_ids.choose(&mut rng).unwrap();
+            let base_animation = base_animations.choose(&mut rng).unwrap();
 
-            let animation = Animation::from_clip(clip_id)
-                .with_duration(AnimationDuration::PerFrame(rng.random_range(100..1000)))
-                .with_direction(*animation_directions.choose(&mut rng).unwrap());
+            let animation = base_animation
+                .clone()
+                .set_duration(AnimationDuration::PerFrame(rng.random_range(100..1000)))
+                .set_direction(*animation_directions.choose(&mut rng).unwrap())
+                .build();
 
-            library.register_animation(animation)
+            animations.add(animation)
         })
         .collect();
 
-    // Spawn a lot of sprites, each with a random animation assigned
+    // Spawn A LOT of sprites, each with a random animation assigned
 
-    let image = assets.load("character.png");
-
-    let atlas = TextureAtlas {
-        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
-        ..default()
-    };
+    let component_generator = spritesheet.with_size_hint(768, 768);
 
     for _ in 0..cli.sprites {
-        let animation = animation_ids.choose(&mut rng).unwrap();
+        let animation_handle = animation_handles.choose(&mut rng).unwrap();
 
-        let transform = Transform::from_translation(random_position());
+        let transform = Transform::from_translation(random_position(&window));
 
         match cli.mode {
             Mode::TwoD => commands.spawn((
-                Sprite::from_atlas_image(image.clone(), atlas.clone()),
-                SpritesheetAnimation::from_id(*animation),
+                component_generator.sprite(&mut atlas_layouts),
+                SpritesheetAnimation::new(animation_handle.clone()),
                 transform,
             )),
             Mode::ThreeD => commands.spawn((
-                Sprite3d::from_atlas_image(image.clone(), atlas.clone()),
-                SpritesheetAnimation::from_id(*animation),
+                component_generator.sprite3d(&mut atlas_layouts),
+                SpritesheetAnimation::new(animation_handle.clone()),
                 transform,
             )),
         };
     }
+}
+
+pub fn random_position(window: &Window) -> Vec3 {
+    let mut rng = rand::rng();
+
+    Vec3::new(
+        rng.random_range(-window.width() / 2.0..window.width() / 2.0),
+        rng.random_range(-window.height() / 2.0..window.height() / 2.0),
+        0.0,
+    )
 }
