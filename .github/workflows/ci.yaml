@@ -30,7 +30,7 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  # Run Clippy lints
+  # Check code
 
   clippy:
     name: Clippy

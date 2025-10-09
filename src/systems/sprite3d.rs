@@ -137,12 +137,11 @@ pub fn setup_rendering(
         for (entity, sprite, maybe_mesh, maybe_material) in &sprites {
             // Add a mesh to the entity if it does not have one yet
 
-            if maybe_mesh.is_none() {
-                if let Some(mesh_handle) =
+            if maybe_mesh.is_none()
+                && let Some(mesh_handle) =
                     try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache)
-                {
-                    commands.entity(entity).insert(Mesh3d(mesh_handle));
-                }
+            {
+                commands.entity(entity).insert(Mesh3d(mesh_handle));
             }
 
             // Add a material to the entity if it does not have one yet
@@ -184,10 +183,9 @@ pub fn sync_when_sprites_change(
 
             if let Some(mesh_handle) =
                 try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache)
+                && mesh.0 != mesh_handle
             {
-                if mesh.0 != mesh_handle {
-                    commands.entity(entity).insert(Mesh3d(mesh_handle));
-                }
+                commands.entity(entity).insert(Mesh3d(mesh_handle));
             }
 
             // Update the material if it changed
@@ -217,10 +215,9 @@ pub fn sync_when_atlases_change(
         for (entity, sprite, mesh) in &sprites {
             if let Some(mesh_handle) =
                 try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache)
+                && mesh.0 != mesh_handle
             {
-                if mesh.0 != mesh_handle {
-                    commands.entity(entity).insert(Mesh3d(mesh_handle));
-                }
+                commands.entity(entity).insert(Mesh3d(mesh_handle));
             }
         }
     }
