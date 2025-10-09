@@ -22,7 +22,7 @@ pub struct AnimationProgress {
 
 /// A Bevy component that enables spritesheet animations.
 ///
-/// It references an [Animation](crate::prelude::Animation) and contains a few playback-related attributes.
+/// It references an [Animation] and contains a few playback-related attributes.
 ///
 /// # Note
 ///

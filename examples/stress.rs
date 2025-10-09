@@ -81,7 +81,7 @@ fn spawn_sprites(
         spritesheet.row(7),
     ];
 
-    let clips = clip_frames.map(|frames| Clip::from_frames(frames));
+    let clips = clip_frames.map(Clip::from_frames);
 
     // Create 100 animations from those clips, each with random parameters
 

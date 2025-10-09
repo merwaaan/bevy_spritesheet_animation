@@ -60,10 +60,10 @@ impl Default for AnimationDirection {
 
 /// A playable animation to assign to a [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) component.
 ///
-/// An animation is composed of one or several [Clip](crate::prelude::Clip)s.
+/// An animation is composed of one or several [Clip]s.
 ///
 /// Parameters like duration, repetitions, direction and easing can be specified.
-/// If specified, they will be combined with the parameters of the underlying [Clip](crate::prelude::Clip)s.
+/// If specified, they will be combined with the parameters of the underlying [Clip]s.
 ///
 /// # Example
 ///
@@ -83,7 +83,7 @@ impl Default for AnimationDirection {
 #[derive(Asset, TypePath, Debug, Clone)]
 //TODOmerwan#[reflect(Debug)]
 pub struct Animation {
-    /// The [Clip](crate::prelude::Clip)s that compose this animation
+    /// The [Clip]s that compose this animation
     clips: Vec<Clip>,
 
     /// The optional duration of this animation
