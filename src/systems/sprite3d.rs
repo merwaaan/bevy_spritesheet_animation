@@ -18,15 +18,11 @@ use crate::prelude::Sprite3d;
 /// Cached data for the 3D sprites
 #[derive(Resource, Debug, Default, Reflect)]
 #[reflect(Resource, Debug, Default)]
-pub struct Cache {
-    /// Materials used by 3D sprites.
-    ///
-    /// Shared when the image and color are the same.
+pub(crate) struct Cache {
+    /// Materials used by 3D sprites
     materials: HashMap<MaterialId, Handle<StandardMaterial>>,
 
-    /// Meshes used by the 3D sprites.
-    ///
-    /// Shared when the size, flips and atlas are the same.
+    /// Meshes used by the 3D sprites
     meshes: HashMap<MeshId, Handle<Mesh>>,
 }
 
@@ -48,9 +44,9 @@ impl Hash for HashableAlphaMode {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self.0 {
             AlphaMode::Opaque => 0.hash(state),
-            AlphaMode::Mask(f) => {
+            AlphaMode::Mask(cutoff) => {
                 1.hash(state);
-                f.to_bits().hash(state);
+                cutoff.to_bits().hash(state);
             }
             AlphaMode::Blend => 2.hash(state),
             AlphaMode::Premultiplied => 3.hash(state),
@@ -61,23 +57,12 @@ impl Hash for HashableAlphaMode {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Reflect)]
-struct HashableLinearRgba([u8; 4]);
+#[derive(Debug, Hash, Eq, PartialEq, Reflect)]
+struct HashableLinearRgba(u32);
 
 impl HashableLinearRgba {
-    fn new(c: LinearRgba) -> Self {
-        Self([
-            (c.red * 255.) as u8,
-            (c.green * 255.) as u8,
-            (c.blue * 255.) as u8,
-            (c.alpha * 255.) as u8,
-        ])
-    }
-}
-
-impl Hash for HashableLinearRgba {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state)
+    fn new(color: LinearRgba) -> Self {
+        Self(color.as_u32())
     }
 }
 
@@ -94,6 +79,9 @@ impl MaterialId {
 }
 
 /// Uniquely identifies a sprite mesh
+///
+/// We use separate meshes with different UVs for each animation frame.
+/// Because this is cached, the animation frames using the same attributes share the same mesh.
 #[derive(Debug, Hash, PartialEq, Eq, Reflect)]
 #[reflect(Debug, Hash, PartialEq)]
 struct MeshId {
@@ -125,7 +113,7 @@ impl MeshId {
     }
 }
 
-/// Setups 3D sprites for rendering by attaching the 3D geometry and materials to display them.
+/// Setups 3D sprites for rendering by attaching meshes and materials to render them.
 pub fn setup_rendering(
     mut commands: Commands,
     atlas_layouts: Option<Res<Assets<TextureAtlasLayout>>>,
@@ -150,29 +138,17 @@ pub fn setup_rendering(
             // Add a mesh to the entity if it does not have one yet
 
             if maybe_mesh.is_none() {
-                try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache)
-                    .inspect(|mesh_handle| {
-                        commands.entity(entity).insert(Mesh3d(mesh_handle.clone()));
-                    });
+                if let Some(mesh_handle) =
+                    try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache)
+                {
+                    commands.entity(entity).insert(Mesh3d(mesh_handle));
+                }
             }
 
             // Add a material to the entity if it does not have one yet
 
             if maybe_material.is_none() {
-                let material_handle = materials.add(StandardMaterial {
-                    base_color_texture: Some(sprite.image.clone()),
-                    base_color: sprite.color,
-                    cull_mode: Some(Face::Back),
-                    unlit: sprite.unlit,
-                    alpha_mode: sprite.alpha_mode,
-                    emissive: sprite.emissive,
-                    // TODO
-                    // these are sensible values for 3d rendering,
-                    // but could be extended to public API
-                    perceptual_roughness: 0.5,
-                    reflectance: 0.15,
-                    ..default()
-                });
+                let material_handle = get_or_create_material(sprite, materials, &mut cache);
 
                 commands
                     .entity(entity)
@@ -206,29 +182,22 @@ pub fn sync_when_sprites_change(
         for (entity, sprite, mesh, material) in &sprites {
             // Update the mesh if it changed
 
-            try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache).inspect(
-                |new_mesh_handle| {
-                    if mesh.0 != *new_mesh_handle {
-                        commands.entity(entity).remove::<Mesh3d>();
+            if let Some(mesh_handle) =
+                try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache)
+            {
+                if mesh.0 != mesh_handle {
+                    commands.entity(entity).insert(Mesh3d(mesh_handle));
+                }
+            }
 
-                        commands
-                            .entity(entity)
-                            .insert(Mesh3d(new_mesh_handle.clone()));
-                    }
-                },
-            );
             // Update the material if it changed
 
-            let new_material_handle = get_or_create_material(sprite, materials, &mut cache);
+            let material_handle = get_or_create_material(sprite, materials, &mut cache);
 
-            if material.0 != new_material_handle {
+            if material.0 != material_handle {
                 commands
                     .entity(entity)
-                    .remove::<MeshMaterial3d<StandardMaterial>>();
-
-                commands
-                    .entity(entity)
-                    .insert(MeshMaterial3d(new_material_handle));
+                    .insert(MeshMaterial3d(material_handle));
             }
         }
     }
@@ -246,21 +215,18 @@ pub fn sync_when_atlases_change(
     if let (Some(images), Some(atlas_layouts), Some(meshes)) = (images, atlas_layouts, &mut meshes)
     {
         for (entity, sprite, mesh) in &sprites {
-            try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache).inspect(
-                |new_mesh_handle| {
-                    if mesh.0 != *new_mesh_handle {
-                        commands.entity(entity).remove::<Mesh3d>();
-                        commands
-                            .entity(entity)
-                            .insert(Mesh3d(new_mesh_handle.clone()));
-                    }
-                },
-            );
+            if let Some(mesh_handle) =
+                try_get_or_create_mesh(sprite, &images, &atlas_layouts, meshes, &mut cache)
+            {
+                if mesh.0 != mesh_handle {
+                    commands.entity(entity).insert(Mesh3d(mesh_handle));
+                }
+            }
         }
     }
 }
 
-// Retrieves a material from the cache or create a new one
+// Retrieves a material from the cache or creates a new one
 fn get_or_create_material(
     sprite: &Sprite3d,
     materials: &mut ResMut<Assets<StandardMaterial>>,
@@ -273,7 +239,7 @@ fn get_or_create_material(
         .get(&material_id)
         .cloned()
         .unwrap_or_else(|| {
-            let material_handle: Handle<StandardMaterial> = materials.add(StandardMaterial {
+            let material_handle = materials.add(StandardMaterial {
                 base_color_texture: Some(sprite.image.clone()),
                 base_color: sprite.color,
                 cull_mode: Some(Face::Back),
@@ -294,7 +260,9 @@ fn get_or_create_material(
         })
 }
 
-// Retrieves a mesh from the cache or create a new one
+// Retrieves a mesh from the cache or creates a new one
+//
+// We need the image to be loaded to access its dimensions so this returns None if the image is not ready yet
 fn try_get_or_create_mesh(
     sprite: &Sprite3d,
     images: &Res<Assets<Image>>,
@@ -302,8 +270,6 @@ fn try_get_or_create_mesh(
     meshes: &mut ResMut<Assets<Mesh>>,
     cache: &mut Cache,
 ) -> Option<Handle<Mesh>> {
-    // We have to wait for the image to be loaded to access its dimensions
-
     images.get(&sprite.image).map(|sprite_image| {
         sprite.texture_atlas.as_ref().map(|sprite_atlas| {
             let atlas_layout = atlas_layouts
@@ -451,17 +417,4 @@ fn try_get_or_create_mesh(
             })
         })
     })?
-}
-
-pub(crate) fn remove_dropped_standard_materials(
-    mut cache: ResMut<Cache>,
-    mut standard_material_events: Option<MessageReader<AssetEvent<StandardMaterial>>>,
-) {
-    if let Some(standard_material_events) = &mut standard_material_events {
-        for event in standard_material_events.read() {
-            if let AssetEvent::Removed { id } = event {
-                cache.materials.retain(|_, handle| handle.id() != *id);
-            }
-        }
-    }
 }
