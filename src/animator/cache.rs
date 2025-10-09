@@ -14,7 +14,7 @@ use crate::{
 /// A pre-computed frame of animation, ready to be played back.
 #[derive(Debug, Clone, Reflect)]
 #[reflect(Debug)]
-pub struct CacheFrame {
+pub(crate) struct CacheFrame {
     pub atlas_index: usize,
     pub duration: Duration,
     pub clip_id: ClipId,
@@ -32,7 +32,7 @@ pub struct CacheFrame {
 ///  - AnimationEnd after the last frame
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect)]
 #[reflect(Debug, PartialEq, Hash)]
-pub enum AnimationCacheEvent {
+pub(crate) enum AnimationCacheEvent {
     MarkerHit {
         marker_id: AnimationMarkerId,
         clip_id: ClipId,
@@ -54,7 +54,7 @@ pub enum AnimationCacheEvent {
 /// The idea is to cache for each frame its atlas index, duration and emitted events
 /// so that playing an animation becomes just a matter of iterating over this cache
 /// without re-evaluating all the animation  parameters.
-pub struct AnimationCache {
+pub(crate) struct AnimationCache {
     /// All the frames
     pub frames: Vec<CacheFrame>,
 

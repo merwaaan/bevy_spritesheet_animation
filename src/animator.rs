@@ -1,4 +1,4 @@
-pub mod cache;
+pub(crate) mod cache;
 mod iterator;
 
 use std::{collections::HashMap, time::Duration};
@@ -45,7 +45,7 @@ struct AnimationInstance {
 /// The animator is responsible for playing animations as time advances.
 #[derive(Resource, Debug, Default, Reflect)]
 #[reflect(Resource, Debug, Default)]
-pub struct Animator {
+pub(crate) struct Animator {
     /// Instances of animations currently being played.
     /// Each animation instance is associated to an entity with a [SpritesheetAnimation] component.
     animation_instances: HashMap<Entity, AnimationInstance>,
@@ -54,7 +54,7 @@ pub struct Animator {
 /// A query data type for the [`Animator::update`] system.
 #[derive(QueryData)]
 #[query_data(mutable, derive(Debug))]
-pub struct SpritesheetAnimationQuery {
+pub(crate) struct SpritesheetAnimationQuery {
     entity: Entity,
     spritesheet_animation: &'static mut SpritesheetAnimation,
     sprite: Option<&'static mut Sprite>,

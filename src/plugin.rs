@@ -12,11 +12,11 @@ use crate::{
     systems::{sprite3d, spritesheet_animation},
 };
 
-/// Set for systems that update the animation state.
+/// Set for systems that update animations
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
 pub struct AnimationSystemSet;
 
-/// Set for systems that update the sprite state.
+/// Set for systems that manage 3D sprites
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
 pub struct Sprite3dSystemSet;
 
