@@ -1,6 +1,6 @@
-// A stress test with thousands of animated 3D sprites
+// A stress test with an unreasonable amount of animated 3D sprites
 //
-// CLI:
+// CLI options:
 //
 // Pass "2d" for 2D sprites (default)
 // Pass "3d" for 3D sprites
@@ -110,7 +110,7 @@ fn spawn_sprites(
     let image = assets.load("character.png");
 
     let atlas = TextureAtlas {
-        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
         ..default()
     };
 

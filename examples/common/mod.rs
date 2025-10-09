@@ -5,6 +5,7 @@ use rand::Rng;
 const DEFAULT_WINDOW_WIDTH: f32 = 1280.0;
 const DEFAULT_WINDOW_HEIGHT: f32 = 720.0;
 
+// TODO move to single example using it
 /// Returns the screen-space position of the nth item in a grid
 pub fn grid_position(columns: u32, rows: u32, n: usize) -> Vec3 {
     const MARGIN: f32 = 100.0;
@@ -25,6 +26,7 @@ pub fn grid_position(columns: u32, rows: u32, n: usize) -> Vec3 {
     )
 }
 
+// TODO move to single example using it
 /// Returns a random screen-space position
 pub fn random_position() -> Vec3 {
     let mut rng = rand::rng();

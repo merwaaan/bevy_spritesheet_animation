@@ -1,4 +1,4 @@
-// This example shows how to control the progress of an animation.
+// This example shows how to query and control the progress of an animation.
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -41,7 +41,7 @@ fn spawn_character(
     let image = assets.load("character.png");
 
     let atlas = TextureAtlas {
-        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
         ..default()
     };
 
@@ -63,19 +63,19 @@ fn control_animation(
     mut sprites: Query<&mut SpritesheetAnimation>,
 ) {
     for mut sprite in &mut sprites {
-        // Pause the current animation
+        // Play/Pause the animation
 
         if keyboard.just_pressed(KeyCode::KeyP) {
             sprite.playing = !sprite.playing;
         }
 
-        // Reset the current animation
+        // Reset the animation
 
         if keyboard.just_pressed(KeyCode::KeyR) {
             sprite.reset();
         }
 
-        // Go to a specific frame of the current animation
+        // Go to a specific frame of the animation
 
         let keys = [
             KeyCode::Numpad0,
@@ -93,3 +93,5 @@ fn control_animation(
         }
     }
 }
+
+// TODO print frame index

@@ -1,7 +1,7 @@
-// This example shows how to create controllable character with multiple animations.
+// This example shows how to create a controllable character with multiple animations.
 //
-// - We'll create a few animations for our character (idle, run, shoot) in a setup system
-// - We'll move the character with the keyboard and switch between animations in another system
+// - We create a few animations for our character (idle, run, shoot) in a Startup system
+// - We move the character with the keyboard and switch between animations in an Update system
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -20,34 +20,11 @@ fn main() {
         .run();
 }
 
-#[derive(Resource)]
-struct MyAnimations {
-    idle: Handle<Animation>,
-    run: Handle<Animation>,
-    shoot: Handle<Animation>,
-}
-
-// macro_rules! declare_animation_set_field_type {
-//     ($x:ident) => {
-//         Handle<Animation>
-//     };
-
-//     ($x:ident ?) => {
-//         Option<Handle<u8>>
-//     };
-// }
-
-// macro_rules! declare_animation_set {
-//     ($name:ident [ $($field:ident $(?)?),* ]) => {
-//         #[derive(Resource, Default)]
-//         pub struct $name {
-//             $(
-//                 pub $field: declare_animation_set_field_type!($field),
-//             )*
-//         }
-//     };
-// }
-// declare_animation_set!(MyAnimations [ idle, run, shoot? ]);
+animation_set!(MyAnimations [
+    anim idle,
+    anim run,
+    anim shoot
+]);
 
 fn spawn_character(
     mut commands: Commands,
@@ -85,6 +62,8 @@ fn spawn_character(
 
     let shoot_animation_handle = animations.add(shoot_animation);
 
+    // Store the animation set as a resource
+
     commands.insert_resource(MyAnimations {
         idle: idle_animation_handle.clone(),
         run: run_animation_handle.clone(),
@@ -96,7 +75,7 @@ fn spawn_character(
     let image = assets.load("character.png");
 
     let atlas = TextureAtlas {
-        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
         ..default()
     };
 
@@ -129,13 +108,13 @@ fn control_character(
     const CHARACTER_SPEED: f32 = 150.0;
 
     for (entity, mut sprite, mut animation, mut transform, shooting) in &mut characters {
-        // Except if they're shooting, in which case we wait for the animation to end
+        // If they're shooting, do nothing and wait for the animation to end
 
         if shooting.is_some() {
             continue;
         }
 
-        // Shoot
+        // Shoot with the spacebar
         if keyboard.pressed(KeyCode::Space) {
             // Set the animation
 
@@ -145,15 +124,17 @@ fn control_character(
 
             commands.entity(entity).insert(Shooting);
         }
-        // Move left or right
+        // Run with the arrows
         else if keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::ArrowRight) {
             // Set the animation
+            //
+            // Only if not already running as we don't want to reset the animation in that case
 
             if animation.animation != my_animations.run {
                 animation.switch(my_animations.run.clone());
             }
 
-            // Move
+            // Move the entity and flip it horizontally depending on the direction
 
             let translation = Vec3::X * time.delta_secs() * CHARACTER_SPEED;
 
@@ -168,6 +149,8 @@ fn control_character(
         // Idle
         else {
             // Set the animation
+            //
+            // Only if not already idle as we don't want to reset the animation in that case
 
             if animation.animation != my_animations.idle {
                 animation.switch(my_animations.idle.clone());

@@ -1,4 +1,4 @@
-// This example shows the effect of each animation parameter.
+// This example shows the effect of different animation parameters.
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -28,7 +28,7 @@ fn spawn_animations(
 ) {
     commands.spawn(Camera2d);
 
-    // Create a clip
+    // Create a clip that we'll reuse for each animation
 
     let spritesheet = Spritesheet::new(1, 30);
 
@@ -73,6 +73,7 @@ fn spawn_animations(
     ];
 
     // Easing
+
     for variety in [
         EasingVariety::Quadratic,
         EasingVariety::Cubic,

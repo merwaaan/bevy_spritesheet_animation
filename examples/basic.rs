@@ -12,6 +12,7 @@ fn main() {
         // Add the plugin to enable animations.
         // This makes the Assets<Animation> resource available to your systems.
         .add_plugins(SpritesheetAnimationPlugin)
+        // For that example's sake, we split the setup in two separate systems to show how to retrieve animations with animation sets
         .add_systems(
             Startup,
             (create_animation, spawn_sprite.after(create_animation)),
@@ -19,10 +20,13 @@ fn main() {
         .run();
 }
 
-#[derive(Resource)]
-struct MyAnimation {
-    handle: Handle<Animation>,
-}
+// Define an animation set to refer to our animation across systems.
+//
+// This is not mandatory at all.
+// However it is convenient for accessing
+animation_set!(MyAnimation [
+  anim run
+]);
 
 fn create_animation(mut commands: Commands, mut animations: ResMut<Assets<Animation>>) {
     commands.spawn(Camera2d);
@@ -42,16 +46,14 @@ fn create_animation(mut commands: Commands, mut animations: ResMut<Assets<Animat
 
     let animation = Animation::from_clip(clip);
 
-    // Name the animation to retrieve it from other systems
-
     let animation_handle = animations.add(animation);
 
+    // Store the animation to retrieve it from other systems
+
     commands.insert_resource(MyAnimation {
-        handle: animation_handle,
+        run: animation_handle,
     });
 }
-
-// We split the setup in two separate systems to show how to retrieve animations from their name
 
 fn spawn_sprite(
     mut commands: Commands,
@@ -59,16 +61,14 @@ fn spawn_sprite(
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     my_animation: Res<MyAnimation>,
 ) {
-    // Retrieve our animation from the library
-
     // Create an image and a texture atlas like you would for any Bevy sprite
     //
-    // However, here we use the Spritesheet helper to easily generate the atlas.
+    // Here we use the Spritesheet helper to easily generate the atlas.
     // This is optional and you may prefer to build the atlas manually.
 
     let image = assets.load("character.png");
 
-    let spritesheet = Spritesheet::new(8, 8);
+    let spritesheet = Spritesheet::new(8, 8); // TODO weird to have to recreate it
 
     let atlas = TextureAtlas {
         layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
@@ -79,6 +79,6 @@ fn spawn_sprite(
 
     commands.spawn((
         Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::new(my_animation.handle.clone()),
+        SpritesheetAnimation::new(my_animation.run.clone()),
     ));
 }

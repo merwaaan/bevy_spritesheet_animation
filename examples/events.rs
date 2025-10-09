@@ -44,12 +44,11 @@ fn main() {
         .run();
 }
 
-#[derive(Resource)]
-struct MyAnimations {
-    left_foot_touches_ground_marker: MarkerId,
-    right_foot_touches_ground_marker: MarkerId,
-    bullet_out_marker: MarkerId,
-}
+animation_set!(MyMarkers [
+  marker left_foot_touches_ground_marker,
+  marker right_foot_touches_ground_marker,
+  marker bullet_out_marker
+]);
 
 fn spawn_character(
     mut commands: Commands,
@@ -89,7 +88,7 @@ fn spawn_character(
 
     // TODO doc
 
-    commands.insert_resource(MyAnimations {
+    commands.insert_resource(MyMarkers {
         left_foot_touches_ground_marker,
         right_foot_touches_ground_marker,
         bullet_out_marker,
@@ -100,7 +99,7 @@ fn spawn_character(
     let image = assets.load("character.png");
 
     let atlas = TextureAtlas {
-        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
         ..default()
     };
 
@@ -221,7 +220,7 @@ fn spawn_visual_effects(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut messages: MessageReader<AnimationEvent>,
-    my_animations: Res<MyAnimations>,
+    my_animations: Res<MyMarkers>,
 ) {
     for event in messages.read() {
         if let AnimationEvent::MarkerHit { marker_id, .. } = event {

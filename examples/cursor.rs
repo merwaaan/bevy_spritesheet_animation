@@ -1,4 +1,4 @@
-// This example shows how to create a animated cursor.
+// This example shows how to create an animated cursor.
 //
 // The 'custom_cursor' feature must be enabled for custom cursors to be animated (enabled by default).
 

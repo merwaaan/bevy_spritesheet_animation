@@ -31,7 +31,7 @@ fn spawn_animation(mut commands: Commands, mut animations: ResMut<Assets<Animati
 
     // Spawn an entity with a SpritesheetAnimation component that references our animation
     //
-    // We dont even need a Sprite since we aren't rendering anything
+    // We don't even need a Sprite since we aren't rendering anything
 
     commands.spawn(SpritesheetAnimation::new(animation_handle));
 }

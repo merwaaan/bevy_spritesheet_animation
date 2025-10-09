@@ -41,7 +41,7 @@ fn spawn_sprites(
 
     let animation_handle = animations.add(animation);
 
-    // Create an image and a texture atlas like you would for any Bevy sprite
+    // Create an image and a texture atlas like you would for 2D sprites
 
     let image = assets.load("character.png");
 
@@ -164,9 +164,11 @@ struct Orbit {
 }
 
 fn orbit(time: Res<Time>, mut query: Query<(&Orbit, &mut Transform)>) {
+    let secs_elapsed = time.elapsed_secs();
+
     for (orbit, mut transform) in &mut query {
-        transform.translation.x = (orbit.start_angle + time.elapsed_secs()).cos() * 1500.0;
-        transform.translation.z = (orbit.start_angle + time.elapsed_secs()).sin() * 1500.0;
+        transform.translation.x = (orbit.start_angle + secs_elapsed).cos() * 1500.0;
+        transform.translation.z = (orbit.start_angle + secs_elapsed).sin() * 1500.0;
     }
 }
 

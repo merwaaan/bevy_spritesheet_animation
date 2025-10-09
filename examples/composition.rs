@@ -1,4 +1,4 @@
-// This example shows how to create more sophisticated animations made of multiple clips.
+// This example shows how to create composite animations made of multiple clips.
 
 #[path = "./common/mod.rs"]
 pub mod common;
@@ -30,7 +30,7 @@ fn spawn_character(
     // - run 5 times
     // - shoot once
     //
-    // The whole animation will repeat 5 times
+    // The whole animation will repeat 2 times
 
     let spritesheet = Spritesheet::new(8, 8);
 
@@ -47,8 +47,7 @@ fn spawn_character(
         .with_repetitions(1);
 
     let animation = Animation::from_clips([idle_clip, run_clip, shoot_clip])
-        // Let's repeat it a few times and then stop
-        .with_repetitions(AnimationRepeat::Times(5));
+        .with_repetitions(AnimationRepeat::Times(2));
 
     let animation_handle = animations.add(animation);
 
@@ -57,7 +56,7 @@ fn spawn_character(
     let image = assets.load("character.png");
 
     let atlas = TextureAtlas {
-        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
+        layout: atlas_layouts.add(spritesheet.atlas_layout(96, 96)),
         ..default()
     };
 

@@ -84,8 +84,9 @@ pub mod plugin;
 pub mod spritesheet;
 
 pub mod prelude {
-    pub use super::{
+    pub use crate::{
         animation::{Animation, AnimationDirection, AnimationDuration, AnimationRepeat},
+        animation_set,
         clip::{Clip, ClipId, MarkerId},
         components::{sprite3d::Sprite3d, spritesheet_animation::SpritesheetAnimation},
         easing::{Easing, EasingVariety},
@@ -96,6 +97,7 @@ pub mod prelude {
 }
 
 mod animator;
+mod macros;
 mod systems;
 
 const CRATE_NAME: &str = "bevy_spritesheet_animation";
