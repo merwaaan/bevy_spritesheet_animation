@@ -1,6 +1,6 @@
 [![Crates.io](https://img.shields.io/crates/v/bevy_spritesheet_animation)](https://crates.io/crates/bevy_spritesheet_animation)
 [![Docs](https://docs.rs/bevy_spritesheet_animation/badge.svg)](https://docs.rs/bevy_spritesheet_animation)
-[![Build](https://github.com/merwaaan/bevy_spritesheet_animation/actions/workflows/build.yml/badge.svg)](https://github.com/merwaaan/bevy_spritesheet_animation/actions)
+[![Build](https://github.com/merwaaan/bevy_spritesheet_animation/actions/workflows/ci.yaml/badge.svg)](https://github.com/merwaaan/bevy_spritesheet_animation/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 bevy_spritesheet_animation is a [Bevy](https://bevyengine.org/) plugin for easily animating 2D and 3D sprites.
