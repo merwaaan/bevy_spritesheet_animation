@@ -1,9 +1,6 @@
-// This example shows how to use this plugin in a bevy app without bevy_render.
+// This example shows how to use this plugin in a headless bevy app without bevy_render.
 //
-// For example for a headless server with MinimalPlugins, while still using the animations events.
-
-#[path = "./common/mod.rs"]
-pub mod common;
+// For example this could run on a game server with MinimalPlugins, while still using the animations events.
 
 use bevy::prelude::*;
 use bevy_spritesheet_animation::prelude::*;
@@ -16,32 +13,27 @@ fn main() {
         .run();
 }
 
-fn spawn_animation(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
-    commands.spawn(Camera2d);
+fn spawn_animation(mut commands: Commands, mut animations: ResMut<Assets<Animation>>) {
+    // Create an animation
+    //
+    // We can pass a dummy image as we aren't rendering anything
 
-    // Create a clip that references some frames from a spritesheet
+    let dummy_image = Handle::default();
 
-    let spritesheet = Spritesheet::new(8, 8);
+    let spritesheet = Spritesheet::new(&dummy_image, 8, 8);
 
-    let clip = Clip::from_frames(spritesheet.row(3));
+    let animation = spritesheet
+        .create_animation()
+        .add_indices([0, 1, 2])
+        .build();
 
-    let clip_id = library.register_clip(clip);
-
-    // Create an animation that uses the clip
-
-    let animation = Animation::from_clip(clip_id);
-
-    let animation_id = library.register_animation(animation);
-
-    // Name the animation to retrieve it from other systems
-
-    library.name_animation(animation_id, "walk").unwrap();
+    let animation_handle = animations.add(animation);
 
     // Spawn an entity with a SpritesheetAnimation component that references our animation
     //
-    // We dont even need a Sprite since its only used for bevy_render (and we aren't rendering anything)
+    // We don't even need a Sprite component as we aren't rendering anything
 
-    commands.spawn(SpritesheetAnimation::from_id(animation_id));
+    commands.spawn(SpritesheetAnimation::new(animation_handle));
 }
 
 fn log_animations_events(mut events: MessageReader<AnimationEvent>) {

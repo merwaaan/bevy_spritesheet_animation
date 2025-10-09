@@ -1,30 +1,39 @@
 pub(crate) mod cache;
 mod iterator;
 
-use std::{collections::HashMap, time::Duration};
+use std::{sync::Arc, time::Duration};
+
+use bevy::prelude::*;
 
 #[cfg(feature = "custom_cursor")]
 use bevy::window::{CursorIcon, CustomCursor, CustomCursorImage};
 use bevy::{
+    asset::{AssetId, Assets, Handle},
     ecs::{
-        entity::Entity, message::MessageWriter, query::QueryData, reflect::*, resource::Resource,
-        system::Query,
+        entity::Entity,
+        message::MessageWriter,
+        query::QueryData,
+        resource::Resource,
+        system::{Query, ResMut},
     },
-    reflect::prelude::*,
+    platform::collections::HashMap,
+    reflect::Reflect,
     sprite::Sprite,
     time::Time,
     ui::widget::ImageNode,
 };
 
 use crate::{
-    animation::AnimationId,
-    animator::iterator::{AnimationIterator, IteratorFrame},
+    animation::Animation,
+    animator::{
+        cache::AnimationCache,
+        iterator::{AnimationIterator, IteratorFrame},
+    },
     components::{
         sprite3d::Sprite3d,
         spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
     },
     events::AnimationEvent,
-    library::AnimationLibrary,
 };
 use iterator::AnimationIteratorEvent;
 
@@ -32,7 +41,7 @@ use iterator::AnimationIteratorEvent;
 #[reflect(Debug)]
 /// An instance of an animation that is currently being played
 struct AnimationInstance {
-    animation_id: AnimationId,
+    animation: Handle<Animation>,
     iterator: AnimationIterator,
 
     /// Current frame
@@ -46,7 +55,13 @@ struct AnimationInstance {
 #[derive(Resource, Debug, Default, Reflect)]
 #[reflect(Resource, Debug, Default)]
 pub(crate) struct Animator {
-    /// Instances of animations currently being played.
+    /// Animation caches, one for each animation
+    ///
+    /// They contain all the data required to play an animation.
+    animation_caches: HashMap<AssetId<Animation>, Arc<AnimationCache>>,
+
+    /// Instances of animations currently being played
+    ///
     /// Each animation instance is associated to an entity with a [SpritesheetAnimation] component.
     animation_instances: HashMap<Entity, AnimationInstance>,
 }
@@ -69,9 +84,9 @@ impl Animator {
     pub fn update(
         &mut self,
         time: &Time,
-        library: &AnimationLibrary,
         message_writer: &mut MessageWriter<AnimationEvent>,
         query: &mut Query<SpritesheetAnimationQuery>,
+        animations: &mut ResMut<Assets<Animation>>,
     ) {
         // Clear outdated animation instances associated to entities that do not have the component anymore
 
@@ -81,11 +96,23 @@ impl Animator {
         // Run animations for all the entities
 
         for mut item in query.iter_mut() {
+            // Create a cache for the current animation if there are none yet
+
+            let cache = self
+                .animation_caches
+                .entry(item.spritesheet_animation.animation.id())
+                .or_insert_with(|| {
+                    let animation = animations
+                        .get(item.spritesheet_animation.animation.id())
+                        .unwrap();
+                    Arc::new(AnimationCache::from_animation(animation))
+                });
+
             // Create a new animation instance if:
             let needs_new_animation_instance = match self.animation_instances.get(&item.entity) {
                 // The entity has an animation instance already but it switched animation
                 Some(instance) => {
-                    instance.animation_id != item.spritesheet_animation.animation_id
+                    instance.animation != item.spritesheet_animation.animation
                         || instance.current_frame.is_none()
                             && item.spritesheet_animation.progress.frame == 0
                 }
@@ -95,8 +122,6 @@ impl Animator {
 
             if needs_new_animation_instance {
                 // Create a new iterator for this animation
-
-                let cache = library.get_animation_cache(item.spritesheet_animation.animation_id);
 
                 let mut iterator = AnimationIterator::new(cache.clone());
 
@@ -116,7 +141,7 @@ impl Animator {
                 self.animation_instances.insert(
                     item.entity,
                     AnimationInstance {
-                        animation_id: item.spritesheet_animation.animation_id,
+                        animation: item.spritesheet_animation.animation.clone(),
                         iterator,
                         current_frame: first_frame,
                         accumulated_time: Duration::ZERO,
@@ -187,26 +212,26 @@ impl Animator {
 
                             message_writer.write(AnimationEvent::ClipRepetitionEnd {
                                 entity: item.entity,
-                                animation_id: animation_instance.animation_id,
                                 clip_id: current_frame.0.clip_id,
                                 clip_repetition: current_frame.0.clip_repetition,
+                                animation: animation_instance.animation.clone(),
                             });
 
                             message_writer.write(AnimationEvent::ClipEnd {
                                 entity: item.entity,
-                                animation_id: animation_instance.animation_id,
                                 clip_id: current_frame.0.clip_id,
+                                animation: animation_instance.animation.clone(),
                             });
 
                             message_writer.write(AnimationEvent::AnimationRepetitionEnd {
                                 entity: item.entity,
-                                animation_id: animation_instance.animation_id,
+                                animation: animation_instance.animation.clone(),
                                 animation_repetition: current_frame.0.animation_repetition,
                             });
 
                             message_writer.write(AnimationEvent::AnimationEnd {
                                 entity: item.entity,
-                                animation_id: animation_instance.animation_id,
+                                animation: animation_instance.animation.clone(),
                             });
 
                             None
@@ -246,7 +271,7 @@ impl Animator {
                 atlas.index = frame.atlas_index;
             }
 
-            // Images
+            // UI images
 
             if let Some(atlas) = item
                 .image_node
@@ -286,7 +311,7 @@ impl Animator {
 
             Animator::emit_events(
                 &frame.events,
-                item.spritesheet_animation.animation_id,
+                &item.spritesheet_animation.animation,
                 &item.entity,
                 message_writer,
             );
@@ -297,7 +322,7 @@ impl Animator {
 
     fn emit_events(
         animation_events: &[AnimationIteratorEvent],
-        animation_id: AnimationId,
+        animation: &Handle<Animation>,
         entity: &Entity,
         message_writer: &mut MessageWriter<AnimationEvent>,
     ) {
@@ -306,37 +331,37 @@ impl Animator {
                 // Promote AnimationIteratorEvents to regular AnimationEvents
                 match event {
                     AnimationIteratorEvent::MarkerHit {
-                        marker_id,
-                        animation_repetition,
+                        marker,
                         clip_id,
                         clip_repetition,
+                        animation_repetition,
                     } => AnimationEvent::MarkerHit {
                         entity: *entity,
-                        marker_id: *marker_id,
-                        animation_id,
-                        animation_repetition: *animation_repetition,
+                        marker: *marker,
                         clip_id: *clip_id,
                         clip_repetition: *clip_repetition,
+                        animation: animation.clone(),
+                        animation_repetition: *animation_repetition,
                     },
                     AnimationIteratorEvent::ClipRepetitionEnd {
                         clip_id,
                         clip_repetition,
                     } => AnimationEvent::ClipRepetitionEnd {
                         entity: *entity,
-                        animation_id,
                         clip_id: *clip_id,
                         clip_repetition: *clip_repetition,
+                        animation: animation.clone(),
                     },
                     AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
                         entity: *entity,
-                        animation_id,
                         clip_id: *clip_id,
+                        animation: animation.clone(),
                     },
                     AnimationIteratorEvent::AnimationRepetitionEnd {
                         animation_repetition,
                     } => AnimationEvent::AnimationRepetitionEnd {
                         entity: *entity,
-                        animation_id,
+                        animation: animation.clone(),
                         animation_repetition: *animation_repetition,
                     },
                 },

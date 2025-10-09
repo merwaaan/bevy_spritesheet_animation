@@ -1,7 +1,4 @@
-// This example shows how to create more sophisticated animations made of multiple clips.
-
-#[path = "./common/mod.rs"]
-pub mod common;
+// This example shows how to create composite animations made of multiple clips.
 
 use bevy::prelude::*;
 use bevy_spritesheet_animation::prelude::*;
@@ -12,63 +9,56 @@ fn main() {
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             SpritesheetAnimationPlugin,
         ))
-        .add_systems(Startup, spawn_character)
+        .add_systems(Startup, create_animated_sprite)
         .run();
 }
 
-fn spawn_character(
+fn create_animated_sprite(
     mut commands: Commands,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut library: ResMut<AnimationLibrary>,
     assets: Res<AssetServer>,
+    mut animations: ResMut<Assets<Animation>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     commands.spawn(Camera2d);
 
-    // Compose an animation from multiple clips
+    // Compose an animation with multiple clips
     //
     // - idle 3 times
     // - run 5 times
     // - shoot once
     //
-    // The whole animation will repeat 5 times
-
-    let spritesheet = Spritesheet::new(8, 8);
-
-    let idle_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 0, 5))
-        .with_duration(AnimationDuration::PerRepetition(700))
-        .with_repetitions(3);
-
-    let idle_clip_id = library.register_clip(idle_clip);
-
-    let run_clip = Clip::from_frames(spritesheet.row(3))
-        .with_duration(AnimationDuration::PerRepetition(600))
-        .with_repetitions(5);
-
-    let run_clip_id = library.register_clip(run_clip);
-
-    let shoot_clip = Clip::from_frames(spritesheet.horizontal_strip(0, 5, 5))
-        .with_duration(AnimationDuration::PerRepetition(600))
-        .with_repetitions(1);
-
-    let shoot_clip_id = library.register_clip(shoot_clip);
-
-    let animation = Animation::from_clips([idle_clip_id, run_clip_id, shoot_clip_id])
-        // Let's repeat it a few times and then stop
-        .with_repetitions(AnimationRepeat::Times(5));
-
-    let animation_id = library.register_animation(animation);
-
-    // Spawn a sprite that uses the animation
+    // The whole animation will repeat 2 times
 
     let image = assets.load("character.png");
 
-    let atlas = TextureAtlas {
-        layout: atlas_layouts.add(Spritesheet::new(8, 8).atlas_layout(96, 96)),
-        ..default()
-    };
+    let spritesheet = Spritesheet::new(&image, 8, 8);
 
-    commands.spawn((
-        Sprite::from_atlas_image(image, atlas),
-        SpritesheetAnimation::from_id(animation_id),
-    ));
+    let animation = spritesheet
+        .create_animation()
+        .set_repetitions(AnimationRepeat::Times(2))
+        // Clip 1
+        .add_horizontal_strip(0, 0, 5)
+        .set_clip_duration(AnimationDuration::PerRepetition(700))
+        .set_clip_repetitions(3)
+        // Clip 2
+        .start_clip()
+        .add_row(3)
+        .set_clip_duration(AnimationDuration::PerRepetition(600))
+        .set_clip_repetitions(5)
+        // Clip 3
+        .start_clip()
+        .add_horizontal_strip(0, 5, 5)
+        .set_clip_duration(AnimationDuration::PerRepetition(600))
+        .set_clip_repetitions(1)
+        .build();
+
+    let animation_handle = animations.add(animation);
+
+    // Spawn a sprite that uses the animation
+
+    let sprite = spritesheet
+        .with_size_hint(768, 768)
+        .sprite(&mut atlas_layouts);
+
+    commands.spawn((sprite, SpritesheetAnimation::new(animation_handle)));
 }

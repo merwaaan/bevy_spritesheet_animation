@@ -1,5 +1,36 @@
 # Changelog
 
+## 5.0.0 - 2025-??-??
+
+This release comes with a significant rework of the high-level API that tightens up the relationships between spritesheets, clips and animations.
+
+It also removes the `AnimationLibrary` resource in favor of registering animations in `Assets<Animation>` like other Bevy assets.
+
+As a consequence of the `AnimationLibrary` removal, it's no longer possible to name clips, animations or markers to retrieve them by name across systems.
+An alternative (and safer!) way to retrieve animation data is to save it in custom resources, as demonstrated in the examples (eg. `examples/character.rs`).
+If you still prefer to use names, you may want to define such a custom resource as -- for instance -- a `HashMap<String, Handle<Animation>>`.
+
+Migrating to this new version should be pretty straightforward. Please check out the updated examples and documentation!
+
+### Added
+
+- `Spritesheet` can now create animation-ready sprites, 3D sprites, UI images, cursors and texture atlases to reduce boilerplate when creating animated entities
+- Add an example showcasing animated UI images
+
+### Changed
+
+- Animations are now exclusively created with `Spritesheet::create_animation()` which returns an `AnimationBuilder`
+- Clips are now exclusively created with `AnimationBuilder::start_clip()`/`AnimationBuilder::copy_clip()`
+- Rename `AnimationMarkerId` to `Marker`
+
+### Removed
+
+- Remove the `AnimationLibrary` resource (you can now register animations in `Assets<Animation>`)
+
+### Fixed
+
+- Fix a few panics when selecting out-of-bounds cells in spritesheets
+
 ## 4.0.1 - 2025-10-09
 
 No actual changes. Had to bump the version to republish the crate and fix docs.rs failing to build the documentation.
@@ -9,7 +40,7 @@ No actual changes. Had to bump the version to republish the crate and fix docs.r
 ### Added
 
 - Add support for Bevy 0.17
-- Add an example showing how to setup an animated cursor
+- Add an example showcasing animated cursors
 
 ### Changed
 
@@ -157,7 +188,7 @@ To create a variant of a clip, just clone and reconfigure it before registering 
 
 ### Fixed
 
-- Switch `new_clip`/`new_animatio`n closures to FnMut to allow mutations
+- Switch `new_clip`/`new_animation` closures to FnMut to allow mutations
 
 ## 0.1.0 - 2024-04-10
 
