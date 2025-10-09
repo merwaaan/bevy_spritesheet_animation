@@ -266,16 +266,22 @@ fn spawn_character(mut commands: Commands, mut library: ResMut<AnimationLibrary>
 You can also animate custom cursor icons by adding a `SpritesheetAnimation` component.
 
 ```rust
-fn spawn_cursor_icon(mut commands: Commands, mut library: ResMut<AnimationLibrary>) {
-    // ...
+fn create_animated_cursor(
+    mut commands: Commands,
+    mut library: ResMut<AnimationLibrary>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    window: Single<Entity, With<Window>>
+) {
+    // ... omitted: create the animation ...
 
     let animation_id = library.register_animation(animation);
 
-    commands.spawn((
+    commands.entity(*window).insert((
         CursorIcon::Custom(CustomCursor::Image(CustomCursorImage {
-            // ...
+            handle: image,
+            texture_atlas: Some(atlas),
+            ..default()
         })),
-
         SpritesheetAnimation::from_id(animation_id),
     ));
 }
@@ -296,6 +302,7 @@ For more examples, browse the [examples/](examples) directory.
 | [events](examples/events.rs)           | Shows how to react to animations reaching points of interest with events |
 | [headless](examples/headless.rs)       | Shows how to run animations in a headless Bevy app without rendering     |
 | [stress](examples/stress.rs)           | Stress test with thousands of animated sprites (either 2D or 3D)         |
+| [cursor](examples/cursor.rs)           | Shows how to create a custom animated cursor                             |
 
 # Compatibility
 

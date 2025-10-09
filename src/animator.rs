@@ -4,7 +4,7 @@ mod iterator;
 use std::{collections::HashMap, time::Duration};
 
 #[cfg(feature = "custom_cursor")]
-use bevy::winit::cursor::{CursorIcon, CustomCursor};
+use bevy::window::{CursorIcon, CustomCursor, CustomCursorImage};
 use bevy::{
     ecs::{
         entity::Entity, message::MessageWriter, query::QueryData, reflect::*, resource::Resource,
@@ -235,7 +235,8 @@ impl Animator {
                 atlas.index = frame.atlas_index;
             }
 
-            #[cfg(feature = "3d")]
+            // 3D sprites
+
             if let Some(atlas) = item
                 .sprite3d
                 .as_deref_mut()
@@ -244,6 +245,8 @@ impl Animator {
             {
                 atlas.index = frame.atlas_index;
             }
+
+            // Images
 
             if let Some(atlas) = item
                 .image_node
@@ -254,17 +257,17 @@ impl Animator {
                 atlas.index = frame.atlas_index;
             }
 
+            // Cursors
+
             #[cfg(feature = "custom_cursor")]
             if let Some(atlas) = item
                 .cursor_icon
                 .as_deref_mut()
                 .and_then(|cursor_icon| {
-                    if let CursorIcon::Custom(CustomCursor::Image(
-                        bevy::winit::cursor::CustomCursorImage {
-                            ref mut texture_atlas,
-                            ..
-                        },
-                    )) = *cursor_icon
+                    if let CursorIcon::Custom(CustomCursor::Image(CustomCursorImage {
+                        ref mut texture_atlas,
+                        ..
+                    })) = *cursor_icon
                     {
                         Some(texture_atlas)
                     } else {
