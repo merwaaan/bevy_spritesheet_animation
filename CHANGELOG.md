@@ -1,14 +1,20 @@
 # Changelog
 
-## 5.0.0 - 2025-??-??
+## 5.0.0 - 2025-11-04
 
 This release comes with a significant rework of the high-level API that tightens up the relationships between spritesheets, clips and animations.
 
 It also removes the `AnimationLibrary` resource in favor of registering animations in `Assets<Animation>` like other Bevy assets.
 
 As a consequence of the `AnimationLibrary` removal, it's no longer possible to name clips, animations or markers to retrieve them by name across systems.
-An alternative (and safer!) way to retrieve animation data is to save it in custom resources, as demonstrated in the examples (eg. `examples/character.rs`).
-If you still prefer to use names, you may want to define such a custom resource as -- for instance -- a `HashMap<String, Handle<Animation>>`.
+An alternative (and safer!) way to retrieve animation data is to save it in custom resources, as demonstrated in the examples (eg. `examples/character.rs`, `examples/events.rs`).
+
+If you still prefer to use names, you can update your code by replacing the removed `AnimationLibrary` with a custom resource that wraps some name-based lookup, such as:
+
+```rust
+#[derive(Resource)]
+struct MyAnimations(HashMap<String, Handle<Animation>>);
+```
 
 Migrating to this new version should be pretty straightforward. Please check out the updated examples and documentation!
 
