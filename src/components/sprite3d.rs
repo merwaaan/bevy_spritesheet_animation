@@ -8,7 +8,7 @@ use bevy::{prelude::*, sprite::Anchor};
 ///
 /// Use the [Spritesheet's sprite3d()](crate::prelude::ComponentGenerator::sprite3d) to create an animation-ready 3D sprite.
 ///
-/// Additionally, insert a [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) component to animate the 3D sprite.
+/// Optionally insert a [SpritesheetAnimation](crate::prelude::SpritesheetAnimation) component to animate the 3D sprite.
 ///
 /// ```
 /// # use bevy::prelude::*;
@@ -22,7 +22,7 @@ use bevy::{prelude::*, sprite::Anchor};
 /// ) {
 ///     // ...omitted: create a spritesheet and an animation
 ///     //
-///     // The animation is optional, you might just need a static 3D sprite
+///     // The animation is optional, static 3D sprite are supported too
 ///
 ///     let sprite3d = spritesheet
 ///         .with_size_hint(600, 400)
@@ -66,7 +66,7 @@ pub struct Sprite3d {
 
     /// The size of the sprite (default = `None`).
     ///
-    /// If undefined, the dimensions of the sprite's image will be used.
+    /// If not specified, the dimensions of the sprite's image will be used.
     pub custom_size: Option<Vec2>,
 
     /// The position of the sprite's origin (default = `Anchor::CENTER`).
@@ -79,7 +79,7 @@ pub struct Sprite3d {
     pub alpha_mode: AlphaMode,
 
     /// Whether the sprite should be unlit (default = `true`).
-    pub unlit: bool,
+    pub unlit: bool, // TODO change to lit?
 
     /// An emissive color, if the sprite emits light (default = `Color::BLACK`).
     pub emissive: LinearRgba,

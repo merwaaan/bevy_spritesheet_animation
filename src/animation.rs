@@ -25,7 +25,7 @@ pub enum AnimationRepeat {
     /// Loops forever (default).
     #[default]
     Loop,
-    /// Repeats a fixed number of times.
+    /// Repeats n times.
     Times(usize),
 }
 

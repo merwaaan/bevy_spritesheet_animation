@@ -76,13 +76,13 @@ pub struct SpritesheetAnimation {
 
     /// The current progress of the animation
     ///
-    /// This can be both read from and written to to control the animation.
+    /// This can be both read from and written to in order to control the animation.
     pub progress: AnimationProgress,
 
     /// Is the animation currently playing?
     ///
     /// Alternatively, the animation can be stopped by removing the [SpritesheetAnimation] component from its entity entirely.
-    /// However, re-inserting the component at a later time will restart it from scratch whereas pausing/resuming the animation with `playing` keeps its progress.
+    /// However, re-inserting the component at a later time will restart the animation from scratch whereas pausing/resuming it with `playing` keeps its progress.
     pub playing: bool,
 
     /// A speed multiplier for the animation (default = `1`)

@@ -9,7 +9,7 @@ keywords = ["bevy", "sprite", "animation"]
 categories = ["game-development"]
 edition = "2024"
 resolver = "3"
-exclude = ["assets/example.gif", "assets/example3d.gif"]
+exclude = ["assets/example.gif", "assets/example_3d.gif", "assets/example_cursor.gif", "assets/example_ui.gif"]
 
 [features]
 default = [

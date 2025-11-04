@@ -28,7 +28,7 @@ use crate::{animation::Animation, clip::ClipId};
 ///     mut commands: Commands,
 ///     # animation_handle: Handle<Animation>
 /// ) {
-///     // ... omitted: create an animation
+///     // ... omitted: create an animated sprite
 ///
 ///     // To use this animation from another system, you might want to keep it around.
 ///     // For example, you could store it in a resource.
@@ -88,7 +88,7 @@ use crate::{animation::Animation, clip::ClipId};
 ///
 ///     commands.insert_resource(ShootMarker(bullet_goes_out_marker));
 ///
-///     // ...
+///     // ... omitted: create an animated sprite
 /// }
 ///
 /// #[derive(Resource)]
@@ -129,12 +129,14 @@ pub enum AnimationEvent {
         clip_id: ClipId,
         clip_repetition: usize,
         animation: Handle<Animation>,
+        // TODO add animation_repetition
     },
     /// A clip has ended
     ClipEnd {
         entity: Entity,
         clip_id: ClipId,
         animation: Handle<Animation>,
+        // TODO add animation_repetition
     },
     /// A repetition of an animation has ended
     AnimationRepetitionEnd {

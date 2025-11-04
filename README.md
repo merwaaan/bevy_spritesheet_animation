@@ -146,7 +146,7 @@ let animation = Spritesheet::new(&image, 8, 8)
     //
     // Here the second clip uses the same frames but will play faster and repeat a few times
     .start_clip()
-    .add_row(4)
+    .add_row(2)
     .set_clip_duration(AnimationDuration::PerRepetition(1000))
     .set_clip_repetitions(5)
 
@@ -183,7 +183,7 @@ fn create_animated_sprite(
 
 > [!WARNING]
 > An animation should be created only once and then assigned to as many sprites as you need.
-> Creating identical animations gives more work to the plugin and may degrade performance!
+> Creating identical animations gives more work to the plugin and may degrade performance.
 
 ## Interaction with Bevy's built-in components
 
@@ -194,11 +194,11 @@ To animate an entity, you just have to give it:
 
 This crate provides a few helpers to make the creation of such entities more concise.
 
-In the simplest case, you can use `Spritesheet::sprite()` to get an animation-ready sprite with the correct image and texture atlas:
+In the simplest case, you can use `sprite()` to get an animation-ready sprite with the correct image and texture atlas:
 
 ```rust
 commands.spawn((
-    spritesheet.sprite(&mut atlas_layouts),
+    spritesheet.with_size_hint(600, 400).sprite(&mut atlas_layouts),
     SpritesheetAnimation::new(animation_handle),
 ));
 ```
@@ -219,9 +219,62 @@ commands.spawn((
 ));
 ```
 
+## Accessing your animations across systems
+
+If you need to access your animations from different systems, store their handles in custom resources.
+
+```rust
+#[derive(Resource)]
+struct MyAnimations {
+    idle: Handle<Animation>,
+    shoot: Handle<Animation>,
+}
+
+fn spawn_animated_character(
+    mut commands: Commands,
+    mut animations: ResMut<Assets<Animation>>
+) {
+    // ... omitted: create the animations
+
+    let idle_animation_handle = animations.add(idle_animation);
+    let shoot_animation_handle = animations.add(shoot_animation);
+
+    // Spawn the character
+
+    commands.spawn((
+        sprite,
+        SpritesheetAnimation::new(idle_animation_handle.clone()))
+    );
+
+    // Store the animations as a resource
+
+    commands.insert_resource(MyAnimations {
+        idle: idle_animation_handle,
+        shoot: shoot_animation_handle,
+    });
+}
+
+fn switch_animation(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    character: Single<&mut SpritesheetAnimation>,
+    my_animations: Res<MyAnimations>,
+) {
+    let mut animation = character.into_inner();
+
+    if keyboard.pressed(KeyCode::KeyA) {
+        animation.switch(my_animations.shoot.clone());
+    }
+    else if keyboard.pressed(KeyCode::KeyB) {
+        animation.switch(my_animations.idle.clone());
+    }
+}
+```
+
+This method is showcased in the [character](examples/character.rs) and [events](examples/events.rs) examples.
+
 ## 3D sprites
 
-![A dozen of 3D sprites moving in 3D space](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example3d.gif)
+![A dozen of 3D sprites moving in 3D space](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example_3d.gif)
 
 This crate also makes it easy to integrate 3D sprites into your games, which is not supported by Bevy out of the box.
 
@@ -242,7 +295,12 @@ commands.spawn((
 ));
 ```
 
+> [!TIP]
+> Static 3D sprites can also be spawned by omitting the `SpritesheetAnimation` component.
+
 ## UI images
+
+![Three animated hearts filling with colors to represent health](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example_ui.gif)
 
 This crate also animates UI images with the same workflow.
 
@@ -258,7 +316,7 @@ fn create_animated_ui_image(
     // ... omitted: create a spritesheet and an animation
 
     let image_node = spritesheet
-        .with_loaded_image(&images)
+        .with_size_hint(300, 300)
         .expect("the image is not loaded")
         .image_node(&mut atlas_layouts);
 
@@ -270,6 +328,8 @@ fn create_animated_ui_image(
 ```
 
 ## Cursors
+
+![An animated cursor clicking randomly](https://github.com/merwaaan/bevy_spritesheet_animation/raw/main/assets/example_cursor.gif)
 
 This crate also animates cursors with the same workflow.
 
@@ -286,7 +346,7 @@ fn create_animated_cursor(
     // ... omitted: create a spritesheet and an animation
 
     let cursor_icon = spritesheet
-        .with_loaded_image(&images)
+        .with_size_hint(500, 100)
         .expect("the image is not loaded")
         .cursor_icon(&mut atlas_layouts);
 

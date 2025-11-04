@@ -1,4 +1,4 @@
-// This example shows how animate UI images.
+// This example shows how to animate UI images.
 
 use bevy::prelude::*;
 use bevy_spritesheet_animation::prelude::*;
@@ -19,7 +19,7 @@ fn create_ui(
 ) {
     commands.spawn(Camera2d);
 
-    // Create an animation
+    // Create some animations
 
     let image = assets.load("hearts.png");
 
@@ -36,7 +36,7 @@ fn create_ui(
         animations.add(animation)
     });
 
-    // Create a custom cursor using that animation
+    // Create a few UI images using those animations
 
     commands
         .spawn(Node {

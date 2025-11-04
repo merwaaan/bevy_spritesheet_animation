@@ -131,7 +131,7 @@ impl Spritesheet {
 
     /// Creates a component generator if the spritesheet's image has been loaded and is ready to use.
     ///
-    /// If the image is not loaded, this returns None.
+    /// If the image is not loaded, this returns `None`.
     ///
     /// If you don't want to wait for the image to load, you might prefer using [Spritesheet::with_size_hint].
     ///

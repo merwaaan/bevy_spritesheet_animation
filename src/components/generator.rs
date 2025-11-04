@@ -12,6 +12,10 @@ use bevy::{
 use crate::{components::sprite3d::Sprite3d, spritesheet::Spritesheet};
 
 /// A helper to generate animation-ready components such as sprites, texture atlases, UI images and cursors.
+///
+/// Create a component generator with:
+/// - [Spritesheet::with_loaded_image()](Spritesheet::with_loaded_image) if the sprite's image has already been loaded
+/// - [Spritesheet::with_size_hint()](Spritesheet::with_size_hint) with an explicit size if you don't want to deal with the sprite's image loading asynchronously
 pub struct ComponentGenerator {
     spritesheet: Spritesheet,
     image_width: u32,
@@ -72,7 +76,7 @@ impl ComponentGenerator {
     /// # Example
     ///
     /// ```
-    /// # use bevy::prelude::*;
+    /// # use bevy::{prelude::*, sprite::Anchor};
     /// # use bevy_spritesheet_animation::prelude::*;
     /// fn create_animated_3d_sprite(
     ///     mut commands: Commands,
@@ -87,8 +91,11 @@ impl ComponentGenerator {
     ///     let sprite = spritesheet
     ///         .with_loaded_image(&images)
     ///         .expect("the image is not loaded")
-    ///         .sprite3d(&mut atlas_layouts);
-    ///
+    ///         .sprite3d(&mut atlas_layouts)
+    ///         // Configure the sprite if needed
+    ///         .with_anchor(Anchor::BOTTOM_CENTER)
+    ///         .with_flip(true, false);
+    ///     
     ///     commands.spawn((
     ///         sprite,
     ///         SpritesheetAnimation::new(animation),
@@ -125,10 +132,19 @@ impl ComponentGenerator {
     ///         .expect("the image is not loaded")
     ///         .image_node(&mut atlas_layouts);
     ///
-    ///     commands.spawn((
-    ///         image_node,
-    ///         SpritesheetAnimation::new(animation),
-    ///     ));
+    ///      commands
+    ///         .spawn(Node {
+    ///             width: Val::Percent(100.0),
+    ///             height: Val::Percent(100.0),
+    ///             justify_content: JustifyContent::Center,
+    ///             align_items: AlignItems::Center,
+    ///             ..default()
+    ///         })
+    ///         .with_child((
+    ///             image_node,
+    ///             SpritesheetAnimation::new(animation),
+    ///             UiTransform::from_scale(Vec2::splat(10.0)),
+    ///         ));
     /// }
     /// ```
     pub fn image_node(&self, atlas_layouts: &mut Assets<TextureAtlasLayout>) -> ImageNode {

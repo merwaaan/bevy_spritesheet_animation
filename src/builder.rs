@@ -61,7 +61,7 @@ impl AnimationBuilder {
 
     /// Creates a new clip in the animation.
     ///
-    /// All the clip-related calls ([get_current_clip_id()](AnimationBuilder::get_current_clip_id), [set_clip_duration()](AnimationBuilder::set_clip_duration), ...) will apply to this new clip until another one is created.
+    /// All the clip-related functions ([get_current_clip_id()](AnimationBuilder::get_current_clip_id), [set_clip_duration()](AnimationBuilder::set_clip_duration), ...) will apply to this new clip until another one is created.
     ///
     /// # Example
     ///
@@ -89,7 +89,7 @@ impl AnimationBuilder {
 
     /// Copies a clip that is already part of the the animation.
     ///
-    /// Life after [start_clip()](AnimationBuilder::start_clip), all the clip-related calls will apply to this clip until another one is created/copied.
+    /// Like after [start_clip()](AnimationBuilder::start_clip), all the clip-related functions will apply to this clip until another one is created/copied.
     ///
     /// # Arguments
     ///
@@ -144,7 +144,7 @@ impl AnimationBuilder {
     ///
     /// Clip IDs are useful in a few cases:
     /// - You want to [copy a clip](AnimationBuilder::copy_clip()).
-    /// - You want to check if some triggered [animation events](crate::prelude::AnimationEvent) are associated with a specific clip.
+    /// - You want to check if an [animation event](crate::prelude::AnimationEvent) is associated with a specific clip.
     ///
     /// # Arguments
     ///
