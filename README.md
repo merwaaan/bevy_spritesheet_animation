@@ -228,6 +228,8 @@ If you need to access your animations from different systems, store their handle
 struct MyAnimations {
     idle: Handle<Animation>,
     shoot: Handle<Animation>,
+
+    // Could also contain clip IDs, markers, spritesheets...
 }
 
 fn spawn_animated_character(
