@@ -5,7 +5,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use bevy::prelude::*;
+use bevy::{ecs::system::SystemParam, prelude::*};
 
 use crate::{animation::Animation, clip::ClipId};
 
@@ -114,43 +114,59 @@ use crate::{animation::Animation, clip::ClipId};
 ///     }
 /// }
 /// ```
-#[derive(Message, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum AnimationEvent {
-    /// An animation marker has been hit
-    MarkerHit {
-        entity: Entity,
-        marker: Marker,
-        clip_id: ClipId,
-        clip_repetition: usize,
-        animation: Handle<Animation>,
-        animation_repetition: usize,
-    },
-    /// A repetition of a clip has ended
-    ClipRepetitionEnd {
-        entity: Entity,
-        clip_id: ClipId,
-        clip_repetition: usize,
-        animation: Handle<Animation>,
-        // TODO add animation_repetition
-    },
-    /// A clip has ended
-    ClipEnd {
-        entity: Entity,
-        clip_id: ClipId,
-        animation: Handle<Animation>,
-        // TODO add animation_repetition
-    },
-    /// A repetition of an animation has ended
-    AnimationRepetitionEnd {
-        entity: Entity,
-        animation: Handle<Animation>,
-        animation_repetition: usize,
-    },
-    /// An animation has ended
-    AnimationEnd {
-        entity: Entity,
-        animation: Handle<Animation>,
-    },
+
+/// An animation marker has been hit
+#[derive(EntityEvent, Message, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MarkerHit {
+    pub entity: Entity,
+    pub marker: Marker,
+    pub clip_id: ClipId,
+    pub clip_repetition: usize,
+    pub animation: Handle<Animation>,
+    pub animation_repetition: usize,
+}
+
+/// A repetition of a clip has ended
+#[derive(EntityEvent, Message, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ClipRepetitionEnd {
+    pub entity: Entity,
+    pub clip_id: ClipId,
+    pub clip_repetition: usize,
+    pub animation: Handle<Animation>,
+    // TODO add animation_repetition
+}
+
+/// A clip has ended
+#[derive(EntityEvent, Message, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ClipEnd {
+    pub entity: Entity,
+    pub clip_id: ClipId,
+    pub animation: Handle<Animation>,
+    // TODO add animation_repetition
+}
+
+/// A repetition of an animation has ended
+#[derive(EntityEvent, Message, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AnimationRepetitionEnd {
+    pub entity: Entity,
+    pub animation: Handle<Animation>,
+    pub animation_repetition: usize,
+}
+
+/// An animation has ended
+#[derive(EntityEvent, Message, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AnimationEnd {
+    pub entity: Entity,
+    pub animation: Handle<Animation>,
+}
+
+#[derive(SystemParam)]
+pub struct AnimationEventWriters<'w> {
+    pub marker_hit_writer: MessageWriter<'w, MarkerHit>,
+    pub clip_repitition_end_writer: MessageWriter<'w, ClipRepetitionEnd>,
+    pub clip_end_writer: MessageWriter<'w, ClipEnd>,
+    pub animation_repitition_end_writer: MessageWriter<'w, AnimationRepetitionEnd>,
+    pub animation_end_writer: MessageWriter<'w, AnimationEnd>,
 }
 
 /// A marker that designates a point of interest in an animation.
@@ -179,5 +195,17 @@ impl Marker {
 impl fmt::Debug for Marker {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "marker{}", self.value)
+    }
+}
+
+pub struct AnimationEventsPlugin;
+
+impl Plugin for AnimationEventsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_message::<MarkerHit>()
+            .add_message::<ClipRepetitionEnd>()
+            .add_message::<ClipEnd>()
+            .add_message::<AnimationRepetitionEnd>()
+            .add_message::<AnimationEnd>();
     }
 }

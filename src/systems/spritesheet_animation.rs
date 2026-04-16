@@ -3,15 +3,22 @@ use bevy::prelude::*;
 use crate::{
     animation::Animation,
     animator::{Animator, SpritesheetAnimationQuery},
-    events::AnimationEvent,
+    events::AnimationEventWriters,
 };
 
 pub fn play_animations(
+    mut commands: Commands,
     time: Res<Time>,
     mut animator: ResMut<Animator>,
-    mut message_writer: MessageWriter<AnimationEvent>,
+    mut animation_event_writers: AnimationEventWriters,
     mut query: Query<SpritesheetAnimationQuery>,
     mut animations: ResMut<Assets<Animation>>,
 ) {
-    animator.update(&time, &mut message_writer, &mut query, &mut animations);
+    animator.update(
+        &mut commands,
+        &time,
+        &mut animation_event_writers,
+        &mut query,
+        &mut animations,
+    );
 }

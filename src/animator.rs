@@ -32,7 +32,10 @@ use crate::{
         iterator::{AnimationIterator, IteratorFrame},
     },
     components::spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
-    events::AnimationEvent,
+    events::{
+        AnimationEnd, AnimationEventWriters, AnimationRepetitionEnd, ClipEnd, ClipRepetitionEnd,
+        MarkerHit,
+    },
 };
 use iterator::AnimationIteratorEvent;
 
@@ -83,8 +86,9 @@ impl Animator {
     /// Plays the animations
     pub fn update(
         &mut self,
+        commands: &mut Commands,
         time: &Time,
-        message_writer: &mut MessageWriter<AnimationEvent>,
+        animation_message_writers: &mut AnimationEventWriters,
         query: &mut Query<SpritesheetAnimationQuery>,
         animations: &mut ResMut<Assets<Animation>>,
     ) {
@@ -136,7 +140,12 @@ impl Animator {
 
                 // Create the instance and immediately play the first frame
 
-                let first_frame = Self::play_frame(&mut iterator, &mut item, message_writer);
+                let first_frame = Self::play_frame(
+                    commands,
+                    &mut iterator,
+                    &mut item,
+                    animation_message_writers,
+                );
 
                 self.animation_instances.insert(
                     item.entity,
@@ -163,11 +172,16 @@ impl Animator {
                     .iterator
                     .to(item.spritesheet_animation.progress)
                 {
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, message_writer)
-                        .inspect(|new_frame| {
-                            animation_instance.current_frame = Some(new_frame.clone());
-                            animation_instance.accumulated_time = Duration::ZERO;
-                        });
+                    Self::play_frame(
+                        commands,
+                        &mut animation_instance.iterator,
+                        &mut item,
+                        animation_message_writers,
+                    )
+                    .inspect(|new_frame| {
+                        animation_instance.current_frame = Some(new_frame.clone());
+                        animation_instance.accumulated_time = Duration::ZERO;
+                    });
                 } else {
                     // Restore to the last valid progress if invalid
                     item.spritesheet_animation.progress = animation_instance
@@ -203,47 +217,75 @@ impl Animator {
 
                 // Fetch the next frame
 
-                animation_instance.current_frame =
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, message_writer)
-                        .or_else(|| {
-                            // The animation is over
-
-                            // Emit the end events if the animation just ended
-
-                            message_writer.write(AnimationEvent::ClipRepetitionEnd {
-                                entity: item.entity,
-                                clip_id: current_frame.0.clip_id,
-                                clip_repetition: current_frame.0.clip_repetition,
-                                animation: animation_instance.animation.clone(),
-                            });
-
-                            message_writer.write(AnimationEvent::ClipEnd {
-                                entity: item.entity,
-                                clip_id: current_frame.0.clip_id,
-                                animation: animation_instance.animation.clone(),
-                            });
-
-                            message_writer.write(AnimationEvent::AnimationRepetitionEnd {
-                                entity: item.entity,
-                                animation: animation_instance.animation.clone(),
-                                animation_repetition: current_frame.0.animation_repetition,
-                            });
-
-                            message_writer.write(AnimationEvent::AnimationEnd {
-                                entity: item.entity,
-                                animation: animation_instance.animation.clone(),
-                            });
-
-                            None
+                animation_instance.current_frame = Self::play_frame(
+                    commands,
+                    &mut animation_instance.iterator,
+                    &mut item,
+                    animation_message_writers,
+                )
+                .or_else(|| {
+                    // The animation is over
+                    // Write end messages
+                    animation_message_writers
+                        .clip_repitition_end_writer
+                        .write(ClipRepetitionEnd {
+                            entity: item.entity,
+                            clip_id: current_frame.0.clip_id,
+                            clip_repetition: current_frame.0.clip_repetition,
+                            animation: animation_instance.animation.clone(),
                         });
+                    animation_message_writers.clip_end_writer.write(ClipEnd {
+                        entity: item.entity,
+                        clip_id: current_frame.0.clip_id,
+                        animation: animation_instance.animation.clone(),
+                    });
+                    animation_message_writers
+                        .animation_repitition_end_writer
+                        .write(AnimationRepetitionEnd {
+                            entity: item.entity,
+                            animation: animation_instance.animation.clone(),
+                            animation_repetition: current_frame.0.animation_repetition,
+                        });
+                    animation_message_writers
+                        .animation_end_writer
+                        .write(AnimationEnd {
+                            entity: item.entity,
+                            animation: animation_instance.animation.clone(),
+                        });
+
+                    // Emit end events
+                    commands.trigger(ClipRepetitionEnd {
+                        entity: item.entity,
+                        clip_id: current_frame.0.clip_id,
+                        clip_repetition: current_frame.0.clip_repetition,
+                        animation: animation_instance.animation.clone(),
+                    });
+                    commands.trigger(ClipEnd {
+                        entity: item.entity,
+                        clip_id: current_frame.0.clip_id,
+                        animation: animation_instance.animation.clone(),
+                    });
+                    commands.trigger(AnimationRepetitionEnd {
+                        entity: item.entity,
+                        animation: animation_instance.animation.clone(),
+                        animation_repetition: current_frame.0.animation_repetition,
+                    });
+                    commands.trigger(AnimationEnd {
+                        entity: item.entity,
+                        animation: animation_instance.animation.clone(),
+                    });
+
+                    None
+                });
             }
         }
     }
 
     fn play_frame(
+        commands: &mut Commands,
         iterator: &mut AnimationIterator,
         item: &mut SpritesheetAnimationQueryItem<'_, '_>,
-        message_writer: &mut MessageWriter<AnimationEvent>,
+        animation_message_writers: &mut AnimationEventWriters,
     ) -> Option<(IteratorFrame, AnimationProgress)> {
         let maybe_frame = iterator.next();
 
@@ -311,10 +353,11 @@ impl Animator {
             // Emit events
 
             Animator::emit_events(
+                commands,
                 &frame.events,
                 &item.spritesheet_animation.animation,
                 &item.entity,
-                message_writer,
+                animation_message_writers,
             );
         }
 
@@ -322,51 +365,88 @@ impl Animator {
     }
 
     fn emit_events(
+        commands: &mut Commands,
         animation_events: &[AnimationIteratorEvent],
         animation: &Handle<Animation>,
         entity: &Entity,
-        message_writer: &mut MessageWriter<AnimationEvent>,
+        animation_message_writers: &mut AnimationEventWriters,
     ) {
         animation_events.iter().for_each(|event| {
-            message_writer.write(
-                // Promote AnimationIteratorEvents to regular AnimationEvents
-                match event {
-                    AnimationIteratorEvent::MarkerHit {
-                        marker,
-                        clip_id,
-                        clip_repetition,
-                        animation_repetition,
-                    } => AnimationEvent::MarkerHit {
+            // Promote AnimationIteratorEvents to regular AnimationEvents
+            match event {
+                AnimationIteratorEvent::MarkerHit {
+                    marker,
+                    clip_id,
+                    clip_repetition,
+                    animation_repetition,
+                } => {
+                    animation_message_writers
+                        .marker_hit_writer
+                        .write(MarkerHit {
+                            entity: *entity,
+                            marker: *marker,
+                            clip_id: *clip_id,
+                            clip_repetition: *clip_repetition,
+                            animation: animation.clone(),
+                            animation_repetition: *animation_repetition,
+                        });
+                    commands.trigger(MarkerHit {
                         entity: *entity,
                         marker: *marker,
                         clip_id: *clip_id,
                         clip_repetition: *clip_repetition,
                         animation: animation.clone(),
                         animation_repetition: *animation_repetition,
-                    },
-                    AnimationIteratorEvent::ClipRepetitionEnd {
-                        clip_id,
-                        clip_repetition,
-                    } => AnimationEvent::ClipRepetitionEnd {
+                    });
+                }
+                AnimationIteratorEvent::ClipRepetitionEnd {
+                    clip_id,
+                    clip_repetition,
+                } => {
+                    animation_message_writers
+                        .clip_repitition_end_writer
+                        .write(ClipRepetitionEnd {
+                            entity: *entity,
+                            clip_id: *clip_id,
+                            clip_repetition: *clip_repetition,
+                            animation: animation.clone(),
+                        });
+                    commands.trigger(ClipRepetitionEnd {
                         entity: *entity,
                         clip_id: *clip_id,
                         clip_repetition: *clip_repetition,
                         animation: animation.clone(),
-                    },
-                    AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
+                    });
+                }
+                AnimationIteratorEvent::ClipEnd { clip_id } => {
+                    animation_message_writers.clip_end_writer.write(ClipEnd {
                         entity: *entity,
                         clip_id: *clip_id,
                         animation: animation.clone(),
-                    },
-                    AnimationIteratorEvent::AnimationRepetitionEnd {
-                        animation_repetition,
-                    } => AnimationEvent::AnimationRepetitionEnd {
+                    });
+                    commands.trigger(ClipEnd {
+                        entity: *entity,
+                        clip_id: *clip_id,
+                        animation: animation.clone(),
+                    });
+                }
+                AnimationIteratorEvent::AnimationRepetitionEnd {
+                    animation_repetition,
+                } => {
+                    animation_message_writers
+                        .animation_repitition_end_writer
+                        .write(AnimationRepetitionEnd {
+                            entity: *entity,
+                            animation: animation.clone(),
+                            animation_repetition: *animation_repetition,
+                        });
+                    commands.trigger(AnimationRepetitionEnd {
                         entity: *entity,
                         animation: animation.clone(),
                         animation_repetition: *animation_repetition,
-                    },
-                },
-            );
+                    });
+                }
+            };
         });
     }
 }

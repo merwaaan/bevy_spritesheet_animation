@@ -96,7 +96,7 @@ fn control_character(
         Option<&Shooting>,
     )>,
     my_animations: Res<MyAnimations>,
-    mut messages: MessageReader<AnimationEvent>,
+    mut messages: MessageReader<AnimationRepetitionEnd>,
 ) {
     // Control the character with the keyboard
 
@@ -156,12 +156,11 @@ fn control_character(
     // We use animation events to detect when this happens.
     // Check out the `events` examples for more details.
 
-    for event in messages.read() {
-        if let AnimationEvent::AnimationRepetitionEnd {
-            entity, animation, ..
-        } = event
-            && animation == &my_animations.shoot
-        {
+    for AnimationRepetitionEnd {
+        entity, animation, ..
+    } in messages.read()
+    {
+        if animation == &my_animations.shoot {
             commands.entity(*entity).remove::<Shooting>();
         }
     }

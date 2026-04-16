@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
+use crate::events::AnimationEventsPlugin;
 use crate::{
     animation::Animation, animator::Animator,
-    components::spritesheet_animation::SpritesheetAnimation, events::AnimationEvent,
-    systems::spritesheet_animation,
+    components::spritesheet_animation::SpritesheetAnimation, systems::spritesheet_animation,
 };
 
 #[cfg(feature = "3d")]
@@ -72,7 +72,7 @@ impl Plugin for SpritesheetAnimationPlugin {
                 spritesheet_animation::play_animations.in_set(AnimationSystemSet),
             )
             // Animations events
-            .add_message::<AnimationEvent>();
+            .add_plugins(AnimationEventsPlugin);
 
         #[cfg(feature = "3d")]
         app

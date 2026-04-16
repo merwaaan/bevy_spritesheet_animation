@@ -40,8 +40,26 @@ fn spawn_animation(mut commands: Commands, mut animations: ResMut<Assets<Animati
     commands.spawn(SpritesheetAnimation::new(animation_handle));
 }
 
-fn log_animations_events(mut events: MessageReader<AnimationEvent>) {
-    for event in events.read() {
-        println!("{:?}", event);
+fn log_animations_events(
+    mut marker_hit_reader: MessageReader<MarkerHit>,
+    mut clip_repitition_end_reader: MessageReader<ClipRepetitionEnd>,
+    mut clip_end_reader: MessageReader<ClipEnd>,
+    mut animation_repitition_end_reader: MessageReader<AnimationRepetitionEnd>,
+    mut animation_end_reader: MessageReader<AnimationEnd>,
+) {
+    for marker_hit in marker_hit_reader.read() {
+        println!("{:?}", marker_hit);
+    }
+    for clip_repitition_end in clip_repitition_end_reader.read() {
+        println!("{:?}", clip_repitition_end);
+    }
+    for clip_end in clip_end_reader.read() {
+        println!("{:?}", clip_end);
+    }
+    for animation_repitition_end in animation_repitition_end_reader.read() {
+        println!("{:?}", animation_repitition_end);
+    }
+    for animation_end in animation_end_reader.read() {
+        println!("{:?}", animation_end);
     }
 }
