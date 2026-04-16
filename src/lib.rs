@@ -40,8 +40,9 @@ pub mod prelude {
             spritesheet_animation::{AnimationProgress, SpritesheetAnimation},
         },
         easing::{Easing, EasingVariety},
-        events::AnimationEvent,
-        events::Marker,
+        events::{
+            AnimationEnd, AnimationRepetitionEnd, ClipEnd, ClipRepetitionEnd, Marker, MarkerHit,
+        },
         plugin::SpritesheetAnimationPlugin,
         spritesheet::Spritesheet,
     };

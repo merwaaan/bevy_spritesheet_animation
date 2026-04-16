@@ -169,31 +169,31 @@ enum EventType {
 }
 
 fn show_triggered_events(
-    mut messages: MessageReader<AnimationEvent>,
+    mut marker_hit_messages: MessageReader<MarkerHit>,
+    mut clip_repitition_end_messages: MessageReader<ClipRepetitionEnd>,
+    mut clip_end_messages: MessageReader<ClipEnd>,
+    mut animation_repitition_end_messages: MessageReader<AnimationRepetitionEnd>,
+    mut animation_end_messages: MessageReader<AnimationEnd>,
     mut squares: Query<(&mut BackgroundColor, &EventType)>,
 ) {
     // Collect the events that were just received
 
     let mut triggered_events: HashSet<EventType> = HashSet::new();
 
-    for event in messages.read() {
-        match event {
-            AnimationEvent::MarkerHit { .. } => {
-                triggered_events.insert(EventType::MarkerHit);
-            }
-            AnimationEvent::ClipRepetitionEnd { .. } => {
-                triggered_events.insert(EventType::ClipRepetitionEnd);
-            }
-            AnimationEvent::ClipEnd { .. } => {
-                triggered_events.insert(EventType::ClipEnd);
-            }
-            AnimationEvent::AnimationRepetitionEnd { .. } => {
-                triggered_events.insert(EventType::RepetitionEnd);
-            }
-            AnimationEvent::AnimationEnd { .. } => {
-                triggered_events.insert(EventType::End);
-            }
-        }
+    for _ in marker_hit_messages.read() {
+        triggered_events.insert(EventType::MarkerHit);
+    }
+    for _ in clip_repitition_end_messages.read() {
+        triggered_events.insert(EventType::ClipRepetitionEnd);
+    }
+    for _ in clip_end_messages.read() {
+        triggered_events.insert(EventType::ClipEnd);
+    }
+    for _ in animation_repitition_end_messages.read() {
+        triggered_events.insert(EventType::RepetitionEnd);
+    }
+    for _ in animation_end_messages.read() {
+        triggered_events.insert(EventType::End);
     }
 
     // Set full alpha for the squares which events were just received
@@ -219,29 +219,27 @@ fn spawn_visual_effects(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut messages: MessageReader<AnimationEvent>,
+    mut messages: MessageReader<MarkerHit>,
     my_markers: Res<MyMarkers>,
 ) {
-    for event in messages.read() {
-        if let AnimationEvent::MarkerHit { marker, .. } = event {
-            // Spawn a shockwave at each footstep
-            if marker == &my_markers.foot_touches_ground {
-                commands.spawn((
-                    Mesh2d(meshes.add(Circle { radius: 1.0 })),
-                    MeshMaterial2d(materials.add(ColorMaterial::default())),
-                    Transform::from_xyz(0.0, -30.0, -1.0),
-                    Footstep,
-                ));
-            }
-            // Spawn a bullet when firing
-            else if marker == &my_markers.bullet_out {
-                commands.spawn((
-                    Mesh2d(meshes.add(Circle { radius: 3.0 })),
-                    MeshMaterial2d(materials.add(Color::from(color::palettes::css::YELLOW))),
-                    Transform::from_xyz(50.0, 15.0, 0.0),
-                    Bullet,
-                ));
-            }
+    for MarkerHit { marker, .. } in messages.read() {
+        // Spawn a shockwave at each footstep
+        if marker == &my_markers.foot_touches_ground {
+            commands.spawn((
+                Mesh2d(meshes.add(Circle { radius: 1.0 })),
+                MeshMaterial2d(materials.add(ColorMaterial::default())),
+                Transform::from_xyz(0.0, -30.0, -1.0),
+                Footstep,
+            ));
+        }
+        // Spawn a bullet when firing
+        else if marker == &my_markers.bullet_out {
+            commands.spawn((
+                Mesh2d(meshes.add(Circle { radius: 3.0 })),
+                MeshMaterial2d(materials.add(Color::from(color::palettes::css::YELLOW))),
+                Transform::from_xyz(50.0, 15.0, 0.0),
+                Bullet,
+            ));
         }
     }
 }

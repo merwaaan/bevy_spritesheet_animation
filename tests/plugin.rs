@@ -21,7 +21,31 @@ fn animation_events_available_as_a_resource() {
     assert!(
         ctx.app
             .world()
-            .get_resource::<Messages<AnimationEvent>>()
+            .get_resource::<Messages<MarkerHit>>()
+            .is_some()
+    );
+    assert!(
+        ctx.app
+            .world()
+            .get_resource::<Messages<ClipRepetitionEnd>>()
+            .is_some()
+    );
+    assert!(
+        ctx.app
+            .world()
+            .get_resource::<Messages<ClipEnd>>()
+            .is_some()
+    );
+    assert!(
+        ctx.app
+            .world()
+            .get_resource::<Messages<AnimationRepetitionEnd>>()
+            .is_some()
+    );
+    assert!(
+        ctx.app
+            .world()
+            .get_resource::<Messages<AnimationEnd>>()
             .is_some()
     );
 }
