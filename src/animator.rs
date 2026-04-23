@@ -16,6 +16,7 @@ use bevy::{
         resource::Resource,
         system::{Query, ResMut},
     },
+    image::TextureAtlas,
     platform::collections::HashMap,
     reflect::Reflect,
     sprite::Sprite,
@@ -26,6 +27,7 @@ use bevy::{
 #[cfg(feature = "3d")]
 use crate::components::sprite3d::Sprite3d;
 use crate::{
+    CRATE_NAME,
     animation::Animation,
     animator::{
         cache::AnimationCache,
@@ -65,7 +67,7 @@ pub(crate) struct Animator {
     animation_instances: HashMap<Entity, AnimationInstance>,
 }
 
-/// A query data type for the [`Animator::update`] system.
+/// A query data type for the [`Animator::animate`] system.
 #[derive(QueryData)]
 #[query_data(mutable, derive(Debug))]
 pub(crate) struct SpritesheetAnimationQuery {
@@ -80,8 +82,8 @@ pub(crate) struct SpritesheetAnimationQuery {
 }
 
 impl Animator {
-    /// Plays the animations
-    pub fn update(
+    /// Advances animations and updates their current frame.
+    pub fn animate(
         &mut self,
         time: &Time,
         message_writer: &mut MessageWriter<AnimationEvent>,
@@ -96,36 +98,11 @@ impl Animator {
         // Run animations for all the entities
 
         for mut item in query.iter_mut() {
-            self.ensure_instance(&mut item, animations, message_writer);
+            if !self.sync_instance(&mut item, animations, message_writer) {
+                continue;
+            }
 
             let animation_instance = self.animation_instances.get_mut(&item.entity).unwrap();
-
-            // Apply manual progress updates
-
-            if animation_instance
-                .current_frame
-                .as_ref()
-                .filter(|frame| item.spritesheet_animation.progress != frame.1)
-                .is_some()
-            {
-                if animation_instance
-                    .iterator
-                    .to(item.spritesheet_animation.progress)
-                {
-                    Self::play_frame(&mut animation_instance.iterator, &mut item, message_writer)
-                        .inspect(|new_frame| {
-                            animation_instance.current_frame = Some(new_frame.clone());
-                            animation_instance.accumulated_time = Duration::ZERO;
-                        });
-                } else {
-                    // Restore to the last valid progress if invalid
-                    item.spritesheet_animation.progress = animation_instance
-                        .current_frame
-                        .as_ref()
-                        .map(|(_, progress)| *progress)
-                        .unwrap_or_default()
-                }
-            }
 
             // Skip the update if the animation is paused
             //
@@ -189,70 +166,65 @@ impl Animator {
         }
     }
 
-    /// Syncs animation changes applied later in the frame.
-    pub fn sync_changes(
+    /// Reconciles animation component changes applied later in the frame.
+    pub fn sync(
         &mut self,
         message_writer: &mut MessageWriter<AnimationEvent>,
-        query: &mut Query<SpritesheetAnimationQuery, Changed<SpritesheetAnimation>>,
+        query: &mut Query<SpritesheetAnimationQuery>,
         animations: &mut ResMut<Assets<Animation>>,
     ) {
         for mut item in query.iter_mut() {
-            self.ensure_instance(&mut item, animations, message_writer);
+            self.sync_instance(&mut item, animations, message_writer);
         }
     }
 
-    fn ensure_instance(
+    fn sync_instance(
         &mut self,
         item: &mut SpritesheetAnimationQueryItem<'_, '_>,
         animations: &mut ResMut<Assets<Animation>>,
         message_writer: &mut MessageWriter<AnimationEvent>,
-    ) {
-        // Create a cache for the current animation if there are none yet
+    ) -> bool {
+        let animation = item.spritesheet_animation.animation.clone();
+        let animation_id = animation.id();
+        let cache = if let Some(cache) = self.animation_caches.get(&animation_id).cloned() {
+            cache
+        } else if let Some(animation_asset) = animations.get(animation_id) {
+            let cache = Arc::new(AnimationCache::from_animation(animation_asset));
+            self.animation_caches.insert(animation_id, cache.clone());
+            cache
+        } else {
+            error!(
+                "{CRATE_NAME}: missing animation asset for entity {entity:?}, skipping update",
+                entity = item.entity,
+            );
+            self.animation_instances.remove(&item.entity);
+            return false;
+        };
 
-        let cache = self
-            .animation_caches
-            .entry(item.spritesheet_animation.animation.id())
-            .or_insert_with(|| {
-                let animation = animations
-                    .get(item.spritesheet_animation.animation.id())
-                    .unwrap();
-                Arc::new(AnimationCache::from_animation(animation))
-            });
-
-        // Create a new animation instance if:
         let needs_new_animation_instance = match self.animation_instances.get(&item.entity) {
-            // The entity has an animation instance already but it switched animation
+            None => true,
             Some(instance) => {
-                instance.animation != item.spritesheet_animation.animation
+                instance.animation != animation
                     || instance.current_frame.is_none()
                         && item.spritesheet_animation.progress.frame == 0
             }
-            // The entity has no animation instance yet
-            None => true,
         };
 
         if needs_new_animation_instance {
-            // Create a new iterator for this animation
-
             let mut iterator = AnimationIterator::new(cache.clone());
 
-            // Move to the starting progress if specified
-
             if item.spritesheet_animation.progress != AnimationProgress::default() {
-                // Start from the beginning if the progress is invalid
                 if !iterator.to(item.spritesheet_animation.progress) {
                     item.spritesheet_animation.progress = AnimationProgress::default();
                 }
             }
-
-            // Create the instance and immediately play the first frame
 
             let first_frame = Self::play_frame(&mut iterator, item, message_writer);
 
             self.animation_instances.insert(
                 item.entity,
                 AnimationInstance {
-                    animation: item.spritesheet_animation.animation.clone(),
+                    animation,
                     iterator,
                     current_frame: first_frame,
                     accumulated_time: Duration::ZERO,
@@ -260,15 +232,18 @@ impl Animator {
             );
         }
 
-        let animation_instance = self.animation_instances.get_mut(&item.entity).unwrap();
-
-        // Apply manual progress updates
+        let Some(animation_instance) = self.animation_instances.get_mut(&item.entity) else {
+            error!(
+                "{CRATE_NAME}: missing animation instance for entity {entity:?}, skipping update",
+                entity = item.entity,
+            );
+            return false;
+        };
 
         if animation_instance
             .current_frame
             .as_ref()
-            .filter(|frame| item.spritesheet_animation.progress != frame.1)
-            .is_some()
+            .is_some_and(|frame| item.spritesheet_animation.progress != frame.1)
         {
             if animation_instance
                 .iterator
@@ -281,7 +256,6 @@ impl Animator {
                     },
                 );
             } else {
-                // Restore to the last valid progress if invalid
                 item.spritesheet_animation.progress = animation_instance
                     .current_frame
                     .as_ref()
@@ -289,6 +263,8 @@ impl Animator {
                     .unwrap_or_default()
             }
         }
+
+        true
     }
 
     fn play_frame(
@@ -299,72 +275,48 @@ impl Animator {
         let maybe_frame = iterator.next();
 
         if let Some((frame, progress)) = &maybe_frame {
-            // Update the sprite
-            // (we compare the indices to prevent needless "Changed" events)
-
-            if let Some(atlas) = item
-                .sprite
-                .as_deref_mut()
-                .and_then(|sprite| sprite.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index
-            {
-                atlas.index = frame.atlas_index;
-            }
-
-            // 3D sprites
+            Self::sync_atlas(
+                item.sprite
+                    .as_deref_mut()
+                    .and_then(|sprite| sprite.texture_atlas.as_mut()),
+                frame.atlas_index,
+            );
 
             #[cfg(feature = "3d")]
-            if let Some(atlas) = item
-                .sprite3d
-                .as_deref_mut()
-                .and_then(|sprite| sprite.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index
-            {
-                atlas.index = frame.atlas_index;
-            }
+            Self::sync_atlas(
+                item.sprite3d
+                    .as_deref_mut()
+                    .and_then(|sprite| sprite.texture_atlas.as_mut()),
+                frame.atlas_index,
+            );
 
-            // UI images
-
-            if let Some(atlas) = item
-                .image_node
-                .as_deref_mut()
-                .and_then(|image| image.texture_atlas.as_mut())
-                && atlas.index != frame.atlas_index
-            {
-                atlas.index = frame.atlas_index;
-            }
-
-            // Cursors
+            Self::sync_atlas(
+                item.image_node
+                    .as_deref_mut()
+                    .and_then(|image| image.texture_atlas.as_mut()),
+                frame.atlas_index,
+            );
 
             #[cfg(feature = "custom_cursor")]
-            if let Some(atlas) = item
-                .cursor_icon
-                .as_deref_mut()
-                .and_then(|cursor_icon| {
-                    if let CursorIcon::Custom(CustomCursor::Image(CustomCursorImage {
-                        ref mut texture_atlas,
-                        ..
-                    })) = *cursor_icon
-                    {
-                        Some(texture_atlas)
-                    } else {
-                        None
-                    }
-                })
-                .and_then(|atlas| atlas.as_mut())
-                && atlas.index != frame.atlas_index
-            {
-                atlas.index = frame.atlas_index;
-            }
+            Self::sync_atlas(
+                item.cursor_icon
+                    .as_deref_mut()
+                    .and_then(|cursor_icon| match cursor_icon {
+                        CursorIcon::Custom(CustomCursor::Image(CustomCursorImage {
+                            texture_atlas,
+                            ..
+                        })) => texture_atlas.as_mut(),
+                        _ => None,
+                    }),
+                frame.atlas_index,
+            );
 
             item.spritesheet_animation.progress = *progress;
 
-            // Emit events
-
-            Animator::emit_events(
+            Self::emit_events(
                 &frame.events,
                 &item.spritesheet_animation.animation,
-                &item.entity,
+                item.entity,
                 message_writer,
             );
         }
@@ -372,52 +324,57 @@ impl Animator {
         maybe_frame
     }
 
+    fn sync_atlas(atlas: Option<&mut TextureAtlas>, atlas_index: usize) {
+        if let Some(atlas) = atlas
+            && atlas.index != atlas_index
+        {
+            atlas.index = atlas_index;
+        }
+    }
+
     fn emit_events(
         animation_events: &[AnimationIteratorEvent],
         animation: &Handle<Animation>,
-        entity: &Entity,
+        entity: Entity,
         message_writer: &mut MessageWriter<AnimationEvent>,
     ) {
-        animation_events.iter().for_each(|event| {
-            message_writer.write(
-                // Promote AnimationIteratorEvents to regular AnimationEvents
-                match event {
-                    AnimationIteratorEvent::MarkerHit {
-                        marker,
-                        clip_id,
-                        clip_repetition,
-                        animation_repetition,
-                    } => AnimationEvent::MarkerHit {
-                        entity: *entity,
-                        marker: *marker,
-                        clip_id: *clip_id,
-                        clip_repetition: *clip_repetition,
-                        animation: animation.clone(),
-                        animation_repetition: *animation_repetition,
-                    },
-                    AnimationIteratorEvent::ClipRepetitionEnd {
-                        clip_id,
-                        clip_repetition,
-                    } => AnimationEvent::ClipRepetitionEnd {
-                        entity: *entity,
-                        clip_id: *clip_id,
-                        clip_repetition: *clip_repetition,
-                        animation: animation.clone(),
-                    },
-                    AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
-                        entity: *entity,
-                        clip_id: *clip_id,
-                        animation: animation.clone(),
-                    },
-                    AnimationIteratorEvent::AnimationRepetitionEnd {
-                        animation_repetition,
-                    } => AnimationEvent::AnimationRepetitionEnd {
-                        entity: *entity,
-                        animation: animation.clone(),
-                        animation_repetition: *animation_repetition,
-                    },
+        for event in animation_events {
+            message_writer.write(match event {
+                AnimationIteratorEvent::MarkerHit {
+                    marker,
+                    clip_id,
+                    clip_repetition,
+                    animation_repetition,
+                } => AnimationEvent::MarkerHit {
+                    entity,
+                    marker: *marker,
+                    clip_id: *clip_id,
+                    clip_repetition: *clip_repetition,
+                    animation: animation.clone(),
+                    animation_repetition: *animation_repetition,
                 },
-            );
-        });
+                AnimationIteratorEvent::ClipRepetitionEnd {
+                    clip_id,
+                    clip_repetition,
+                } => AnimationEvent::ClipRepetitionEnd {
+                    entity,
+                    clip_id: *clip_id,
+                    clip_repetition: *clip_repetition,
+                    animation: animation.clone(),
+                },
+                AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
+                    entity,
+                    clip_id: *clip_id,
+                    animation: animation.clone(),
+                },
+                AnimationIteratorEvent::AnimationRepetitionEnd {
+                    animation_repetition,
+                } => AnimationEvent::AnimationRepetitionEnd {
+                    entity,
+                    animation: animation.clone(),
+                    animation_repetition: *animation_repetition,
+                },
+            });
+        }
     }
 }

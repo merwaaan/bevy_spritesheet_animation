@@ -67,15 +67,13 @@ impl Plugin for SpritesheetAnimationPlugin {
             // Main animation system
             .init_resource::<Animator>()
             .register_type::<Animator>()
-            // Advance animations before Update so user systems can react within the same frame.
             .add_systems(
                 PreUpdate,
-                spritesheet_animation::play_animations.in_set(AnimationSystemSet),
+                spritesheet_animation::animate.in_set(AnimationSystemSet),
             )
-            // Re-sync visuals after Update in case a user system swapped animations.
             .add_systems(
                 PostUpdate,
-                spritesheet_animation::sync_animation_changes.in_set(AnimationSystemSet),
+                spritesheet_animation::sync.in_set(AnimationSystemSet),
             )
             // Animations events
             .add_message::<AnimationEvent>();
