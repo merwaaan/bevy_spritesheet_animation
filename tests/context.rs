@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{
     collections::HashSet,
     time::{Duration, Instant},
@@ -6,7 +8,7 @@ use std::{
 use bevy::{
     log::LogPlugin,
     prelude::*,
-    render::{RenderPlugin, settings::WgpuSettings},
+    render::{settings::WgpuSettings, RenderPlugin},
     time::TimeUpdateStrategy,
     winit::WinitPlugin,
 };

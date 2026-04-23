@@ -213,10 +213,10 @@ impl Animator {
         if needs_new_animation_instance {
             let mut iterator = AnimationIterator::new(cache.clone());
 
-            if item.spritesheet_animation.progress != AnimationProgress::default() {
-                if !iterator.to(item.spritesheet_animation.progress) {
-                    item.spritesheet_animation.progress = AnimationProgress::default();
-                }
+            if item.spritesheet_animation.progress != AnimationProgress::default()
+                && !iterator.to(item.spritesheet_animation.progress)
+            {
+                item.spritesheet_animation.progress = AnimationProgress::default();
             }
 
             let first_frame = Self::play_frame(&mut iterator, item, message_writer);
