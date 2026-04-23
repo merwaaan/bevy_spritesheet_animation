@@ -96,58 +96,7 @@ impl Animator {
         // Run animations for all the entities
 
         for mut item in query.iter_mut() {
-            // Create a cache for the current animation if there are none yet
-
-            let cache = self
-                .animation_caches
-                .entry(item.spritesheet_animation.animation.id())
-                .or_insert_with(|| {
-                    let animation = animations
-                        .get(item.spritesheet_animation.animation.id())
-                        .unwrap();
-                    Arc::new(AnimationCache::from_animation(animation))
-                });
-
-            // Create a new animation instance if:
-            let needs_new_animation_instance = match self.animation_instances.get(&item.entity) {
-                // The entity has an animation instance already but it switched animation
-                Some(instance) => {
-                    instance.animation != item.spritesheet_animation.animation
-                        || instance.current_frame.is_none()
-                            && item.spritesheet_animation.progress.frame == 0
-                }
-                // The entity has no animation instance yet
-                None => true,
-            };
-
-            if needs_new_animation_instance {
-                // Create a new iterator for this animation
-
-                let mut iterator = AnimationIterator::new(cache.clone());
-
-                // Move to the starting progress if specified
-
-                if item.spritesheet_animation.progress != AnimationProgress::default() {
-                    // Start from the beginning if the progress is invalid
-                    if !iterator.to(item.spritesheet_animation.progress) {
-                        item.spritesheet_animation.progress = AnimationProgress::default();
-                    }
-                }
-
-                // Create the instance and immediately play the first frame
-
-                let first_frame = Self::play_frame(&mut iterator, &mut item, message_writer);
-
-                self.animation_instances.insert(
-                    item.entity,
-                    AnimationInstance {
-                        animation: item.spritesheet_animation.animation.clone(),
-                        iterator,
-                        current_frame: first_frame,
-                        accumulated_time: Duration::ZERO,
-                    },
-                );
-            }
+            self.ensure_instance(&mut item, animations, message_writer);
 
             let animation_instance = self.animation_instances.get_mut(&item.entity).unwrap();
 
@@ -236,6 +185,108 @@ impl Animator {
 
                             None
                         });
+            }
+        }
+    }
+
+    /// Syncs animation changes applied later in the frame.
+    pub fn sync_changes(
+        &mut self,
+        message_writer: &mut MessageWriter<AnimationEvent>,
+        query: &mut Query<SpritesheetAnimationQuery, Changed<SpritesheetAnimation>>,
+        animations: &mut ResMut<Assets<Animation>>,
+    ) {
+        for mut item in query.iter_mut() {
+            self.ensure_instance(&mut item, animations, message_writer);
+        }
+    }
+
+    fn ensure_instance(
+        &mut self,
+        item: &mut SpritesheetAnimationQueryItem<'_, '_>,
+        animations: &mut ResMut<Assets<Animation>>,
+        message_writer: &mut MessageWriter<AnimationEvent>,
+    ) {
+        // Create a cache for the current animation if there are none yet
+
+        let cache = self
+            .animation_caches
+            .entry(item.spritesheet_animation.animation.id())
+            .or_insert_with(|| {
+                let animation = animations
+                    .get(item.spritesheet_animation.animation.id())
+                    .unwrap();
+                Arc::new(AnimationCache::from_animation(animation))
+            });
+
+        // Create a new animation instance if:
+        let needs_new_animation_instance = match self.animation_instances.get(&item.entity) {
+            // The entity has an animation instance already but it switched animation
+            Some(instance) => {
+                instance.animation != item.spritesheet_animation.animation
+                    || instance.current_frame.is_none()
+                        && item.spritesheet_animation.progress.frame == 0
+            }
+            // The entity has no animation instance yet
+            None => true,
+        };
+
+        if needs_new_animation_instance {
+            // Create a new iterator for this animation
+
+            let mut iterator = AnimationIterator::new(cache.clone());
+
+            // Move to the starting progress if specified
+
+            if item.spritesheet_animation.progress != AnimationProgress::default() {
+                // Start from the beginning if the progress is invalid
+                if !iterator.to(item.spritesheet_animation.progress) {
+                    item.spritesheet_animation.progress = AnimationProgress::default();
+                }
+            }
+
+            // Create the instance and immediately play the first frame
+
+            let first_frame = Self::play_frame(&mut iterator, item, message_writer);
+
+            self.animation_instances.insert(
+                item.entity,
+                AnimationInstance {
+                    animation: item.spritesheet_animation.animation.clone(),
+                    iterator,
+                    current_frame: first_frame,
+                    accumulated_time: Duration::ZERO,
+                },
+            );
+        }
+
+        let animation_instance = self.animation_instances.get_mut(&item.entity).unwrap();
+
+        // Apply manual progress updates
+
+        if animation_instance
+            .current_frame
+            .as_ref()
+            .filter(|frame| item.spritesheet_animation.progress != frame.1)
+            .is_some()
+        {
+            if animation_instance
+                .iterator
+                .to(item.spritesheet_animation.progress)
+            {
+                Self::play_frame(&mut animation_instance.iterator, item, message_writer).inspect(
+                    |new_frame| {
+                        animation_instance.current_frame = Some(new_frame.clone());
+                        animation_instance.accumulated_time = Duration::ZERO;
+                    },
+                );
+            } else {
+                // Restore to the last valid progress if invalid
+                item.spritesheet_animation.progress = animation_instance
+                    .current_frame
+                    .as_ref()
+                    .map(|(_, progress)| *progress)
+                    .unwrap_or_default()
             }
         }
     }
