@@ -8,7 +8,7 @@ use std::{
 use bevy::{
     log::LogPlugin,
     prelude::*,
-    render::{settings::WgpuSettings, RenderPlugin},
+    render::{RenderPlugin, settings::WgpuSettings},
     time::TimeUpdateStrategy,
     winit::WinitPlugin,
 };
