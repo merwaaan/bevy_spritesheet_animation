@@ -68,8 +68,12 @@ impl Plugin for SpritesheetAnimationPlugin {
             .init_resource::<Animator>()
             .register_type::<Animator>()
             .add_systems(
+                PreUpdate,
+                spritesheet_animation::animate.in_set(AnimationSystemSet),
+            )
+            .add_systems(
                 PostUpdate,
-                spritesheet_animation::play_animations.in_set(AnimationSystemSet),
+                spritesheet_animation::sync.in_set(AnimationSystemSet),
             )
             // Animations events
             .add_message::<AnimationEvent>();
