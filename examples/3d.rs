@@ -2,7 +2,7 @@
 
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_spritesheet_animation::prelude::*;
-use rand::{Rng, seq::IndexedRandom as _};
+use rand::{RngExt, seq::IndexedRandom as _};
 
 fn main() {
     App::new()

@@ -290,10 +290,11 @@ fn animate_footsteps(
 
         // Fade away
 
-        if let Some(material) = materials.get_mut(material_handle) {
+        if let Some(mut material) = materials.get_mut(material_handle) {
+            let alpha = material.color.alpha();
             material
                 .color
-                .set_alpha(material.color.alpha() - time.delta_secs() * time_scale.0 * FADE_SPEED);
+                .set_alpha(alpha - time.delta_secs() * time_scale.0 * FADE_SPEED);
 
             // Despawn when transparent
 
