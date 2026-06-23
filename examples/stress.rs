@@ -12,7 +12,7 @@
 use bevy::{dev_tools::fps_overlay::FpsOverlayPlugin, prelude::*, window::PrimaryWindow};
 use bevy_spritesheet_animation::prelude::*;
 use clap::{Parser, ValueEnum};
-use rand::{Rng, seq::IndexedRandom as _};
+use rand::{RngExt, seq::IndexedRandom as _};
 
 #[derive(ValueEnum, Clone)]
 enum Mode {

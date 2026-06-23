@@ -1,6 +1,6 @@
 [package]
 name = "bevy_spritesheet_animation"
-version = "6.1.0"
+version = "7.0.0"
 description = "A Bevy plugin for animating sprites"
 repository = "https://github.com/merwaaan/bevy_spritesheet_animation"
 readme = "README.md"
@@ -9,7 +9,12 @@ keywords = ["bevy", "sprite", "animation"]
 categories = ["game-development"]
 edition = "2024"
 resolver = "3"
-exclude = ["assets/example.gif", "assets/example_3d.gif", "assets/example_cursor.gif", "assets/example_ui.gif"]
+exclude = [
+  "assets/example.gif",
+  "assets/example_3d.gif",
+  "assets/example_cursor.gif",
+  "assets/example_ui.gif",
+]
 
 [features]
 default = [
@@ -17,7 +22,7 @@ default = [
   # However, the Github Action's environment does not support winit, which is a transitive dependency of bevy/custom_cursor.
   # So hiding this behind a feature allows us to run tests with --no-default-features in that specific context and circumvent the issue.
   "custom_cursor",
-  "3d"
+  "3d",
 ]
 custom_cursor = ["bevy/custom_cursor"]
 3d = ["bevy/bevy_pbr"]
@@ -26,10 +31,10 @@ custom_cursor = ["bevy/custom_cursor"]
 serde = ["dep:serde"]
 
 [dependencies]
-bevy = { version = "0.18", default-features = false, features = [
+bevy = { version = "0.19.0-rc.1", default-features = false, features = [
   "bevy_log",
   "bevy_sprite",
-  "bevy_ui"
+  "bevy_ui",
 ] }
 serde = { version = "1.0.228", optional = true }
 
@@ -39,7 +44,7 @@ required-features = ["3d"]
 
 [[example]]
 name = "stress"
-# stress example uses both 2d and 3d depending on CLI args, 
+# stress example uses both 2d and 3d depending on CLI args,
 # but we need to guard the 3d code inside it.
 # Actually, it's easier to just require 3d feature to run it if we don't want to overcomplicate the code.
 # Or we can just guard the code.
@@ -50,12 +55,12 @@ required-features = ["custom_cursor"]
 
 [dev-dependencies]
 approx = "0.5.1"
-bevy = { version = "0.18", features = [
+bevy = { version = "0.19.0-rc.1", features = [
   # Needed for the "stress" example  as it uses Bevy's FPS overlay
-  "bevy_dev_tools"
+  "bevy_dev_tools",
 ] }
-clap = { version = "4.5.54", features = ["derive"] }
-rand = "0.9"
+clap = { version = "4.6", features = ["derive"] }
+rand = "0.10"
 
 [lints.clippy]
 # Bevy systems can have a lot of arguments
