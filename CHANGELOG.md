@@ -1,6 +1,10 @@
 # Changelog
 
-## 6.2.0 - ????-??-??
+## 7.0.0 - 2026-06-24
+
+### Added
+
+- Add support for Bevy 0.19 (by mgi388)
 
 ### Fixed
 
