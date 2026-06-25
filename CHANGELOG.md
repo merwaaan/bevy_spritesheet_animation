@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.0.1 - 2026-06-25
+
+### Fixed
+
+- Fix dependency on Bevy 0.19.0-rc.1 instead of 0.19.0 (by leomeinel).
+
 ## 7.0.0 - 2026-06-24
 
 ### Added
@@ -14,8 +20,8 @@
 
 ### Added
 
-- Added feature-flag `serde`.
-- Added serde support to `Animation` struct.
+- Added feature-flag `serde`
+- Added serde support to `Animation` struct
 
 ## 5.0.0 - 2026-01-21
 
