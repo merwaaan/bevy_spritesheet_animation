@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.1.0 - 2026-10-20
+
+### Added
+
+- Update Bevy version to 0.20
+
 ## 7.0.1 - 2026-06-25
 
 ### Fixed
