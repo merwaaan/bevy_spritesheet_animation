@@ -141,12 +141,14 @@ impl Animator {
                                 clip_id: current_frame.0.clip_id,
                                 clip_repetition: current_frame.0.clip_repetition,
                                 animation: animation_instance.animation.clone(),
+                                animation_repetition: current_frame.0.animation_repetition,
                             });
 
                             message_writer.write(AnimationEvent::ClipEnd {
                                 entity: item.entity,
                                 clip_id: current_frame.0.clip_id,
                                 animation: animation_instance.animation.clone(),
+                                animation_repetition: current_frame.0.animation_repetition,
                             });
 
                             message_writer.write(AnimationEvent::AnimationRepetitionEnd {
@@ -356,16 +358,22 @@ impl Animator {
                 AnimationIteratorEvent::ClipRepetitionEnd {
                     clip_id,
                     clip_repetition,
+                    animation_repetition,
                 } => AnimationEvent::ClipRepetitionEnd {
                     entity,
                     clip_id: *clip_id,
                     clip_repetition: *clip_repetition,
                     animation: animation.clone(),
+                    animation_repetition: *animation_repetition,
                 },
-                AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
+                AnimationIteratorEvent::ClipEnd {
+                    clip_id,
+                    animation_repetition,
+                } => AnimationEvent::ClipEnd {
                     entity,
                     clip_id: *clip_id,
                     animation: animation.clone(),
+                    animation_repetition: *animation_repetition,
                 },
                 AnimationIteratorEvent::AnimationRepetitionEnd {
                     animation_repetition,
@@ -374,6 +382,7 @@ impl Animator {
                     animation: animation.clone(),
                     animation_repetition: *animation_repetition,
                 },
+
             });
         }
     }

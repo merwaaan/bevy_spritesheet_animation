@@ -46,8 +46,8 @@ fn clip_once() {
     ctx.check(
         1,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 0),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
             ctx.anim_end(&animation),
         ],
@@ -70,26 +70,44 @@ fn clip_many() {
     let animation = ctx.attach_animation(|builder| {
         builder
             .set_duration(AnimationDuration::PerFrame(100))
-            .set_repetitions(AnimationRepeat::Times(1))
+            .set_repetitions(AnimationRepeat::Times(2))
             .add_indices([0, 1])
             .set_clip_repetitions(10)
             .get_current_clip_id(&mut clip_id)
     });
 
-    // 9 repetitions
-
     ctx.run(50);
     ctx.check(0, []);
+
+    // Animation repetition 0: 9 clip repetitions, then wrap into anim rep 1
+    for i in 0..9 {
+        ctx.run(100);
+        ctx.check(1, []);
+
+        ctx.run(100);
+        ctx.check(0, [ctx.clip_rep_end(&animation, 0, clip_id, i)]);
+    }
+
+    ctx.run(100);
+    ctx.check(1, []);
+
+    ctx.run(100);
+    ctx.check(
+        0,
+        [
+            ctx.clip_rep_end(&animation, 0, clip_id, 9),
+            ctx.clip_end(&animation, 0, clip_id),
+            ctx.anim_rep_end(&animation, 0),
+        ],
+    );
 
     for i in 0..9 {
         ctx.run(100);
         ctx.check(1, []);
 
         ctx.run(100);
-        ctx.check(0, [ctx.clip_rep_end(&animation, clip_id, i)]);
+        ctx.check(0, [ctx.clip_rep_end(&animation, 1, clip_id, i)]);
     }
-
-    // Last cycle
 
     ctx.run(100);
     ctx.check(1, []);
@@ -98,9 +116,9 @@ fn clip_many() {
     ctx.check(
         1,
         [
-            ctx.clip_rep_end(&animation, clip_id, 9),
-            ctx.clip_end(&animation, clip_id),
-            ctx.anim_rep_end(&animation, 0),
+            ctx.clip_rep_end(&animation, 1, clip_id, 9),
+            ctx.clip_end(&animation, 1, clip_id),
+            ctx.anim_rep_end(&animation, 1),
             ctx.anim_end(&animation),
         ],
     );
@@ -150,8 +168,8 @@ fn some_clips_repeated_zero_times() {
     ctx.check(
         9,
         [
-            ctx.clip_rep_end(&animation, ok_clip_id, 0),
-            ctx.clip_end(&animation, ok_clip_id),
+            ctx.clip_rep_end(&animation, 0, ok_clip_id, 0),
+            ctx.clip_end(&animation, 0, ok_clip_id),
         ],
     );
 
@@ -162,8 +180,8 @@ fn some_clips_repeated_zero_times() {
     ctx.check(
         8,
         [
-            ctx.clip_rep_end(&animation, ok_clip_id, 0),
-            ctx.clip_end(&animation, ok_clip_id),
+            ctx.clip_rep_end(&animation, 0, ok_clip_id, 0),
+            ctx.clip_end(&animation, 0, ok_clip_id),
             ctx.anim_rep_end(&animation, 0),
             ctx.anim_end(&animation),
         ],
@@ -211,8 +229,8 @@ fn animation_once() {
     ctx.check(
         1,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 0),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
             ctx.anim_end(&animation),
         ],
@@ -253,8 +271,8 @@ fn animation_many() {
         ctx.check(
             0,
             [
-                ctx.clip_rep_end(&animation, clip_id, 0),
-                ctx.clip_end(&animation, clip_id),
+                ctx.clip_rep_end(&animation, i, clip_id, 0),
+                ctx.clip_end(&animation, i, clip_id),
                 ctx.anim_rep_end(&animation, i),
             ],
         );
@@ -269,8 +287,8 @@ fn animation_many() {
     ctx.check(
         1,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 9, clip_id, 0),
+            ctx.clip_end(&animation, 9, clip_id),
             ctx.anim_rep_end(&animation, 9),
             ctx.anim_end(&animation),
         ],
@@ -309,8 +327,8 @@ fn animation_forever() {
         ctx.check(
             0,
             [
-                ctx.clip_rep_end(&animation, clip_id, 0),
-                ctx.clip_end(&animation, clip_id),
+                ctx.clip_rep_end(&animation, i, clip_id, 0),
+                ctx.clip_end(&animation, i, clip_id),
                 ctx.anim_rep_end(&animation, i),
             ],
         );

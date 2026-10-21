@@ -38,9 +38,11 @@ pub(crate) enum AnimationIteratorEvent {
     ClipRepetitionEnd {
         clip_id: ClipId,
         clip_repetition: usize,
+        animation_repetition: usize,
     },
     ClipEnd {
         clip_id: ClipId,
+        animation_repetition: usize,
     },
     AnimationRepetitionEnd {
         animation_repetition: usize,
@@ -133,10 +135,12 @@ impl AnimationIterator {
                 } => AnimationIteratorEvent::ClipRepetitionEnd {
                     clip_id: *clip_id,
                     clip_repetition: *clip_repetition,
+                    animation_repetition,
                 },
-                AnimationCacheEvent::ClipEnd { clip_id } => {
-                    AnimationIteratorEvent::ClipEnd { clip_id: *clip_id }
-                }
+                AnimationCacheEvent::ClipEnd { clip_id } => AnimationIteratorEvent::ClipEnd {
+                    clip_id: *clip_id,
+                    animation_repetition,
+                },
             })
             .collect()
     }
@@ -185,23 +189,26 @@ impl Iterator for AnimationIterator {
                 // Inject the missing end events in the returned frame
 
                 if let Some(previous_frame) = &self.repetition_just_ended {
+                    let ended_animation_repetition =
+                        current_frame_progress.repetition.saturating_sub(1);
+
                     frame
                         .events
                         .push(AnimationIteratorEvent::ClipRepetitionEnd {
                             clip_id: previous_frame.clip_id,
                             clip_repetition: previous_frame.clip_repetition,
+                            animation_repetition: ended_animation_repetition,
                         });
 
                     frame.events.push(AnimationIteratorEvent::ClipEnd {
                         clip_id: previous_frame.clip_id,
+                        animation_repetition: ended_animation_repetition,
                     });
 
                     frame
                         .events
                         .push(AnimationIteratorEvent::AnimationRepetitionEnd {
-                            animation_repetition: current_frame_progress
-                                .repetition
-                                .saturating_sub(1),
+                            animation_repetition: ended_animation_repetition,
                         });
 
                     self.repetition_just_ended = None;

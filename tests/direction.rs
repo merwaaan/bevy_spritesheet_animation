@@ -33,8 +33,8 @@ fn clip_backwards() {
     ctx.check(
         2,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 0),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
         ],
     );
@@ -74,8 +74,8 @@ fn animation_backwards() {
     ctx.check(
         2,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 0),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
         ],
     );
@@ -131,8 +131,8 @@ fn animation_backwards_clip_backwards() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(&animation, forward_clip_id, 0),
-            ctx.clip_end(&animation, forward_clip_id),
+            ctx.clip_rep_end(&animation, 0, forward_clip_id, 0),
+            ctx.clip_end(&animation, 0, forward_clip_id),
         ],
     );
 
@@ -148,8 +148,8 @@ fn animation_backwards_clip_backwards() {
     ctx.check(
         2,
         [
-            ctx.clip_rep_end(&animation, backward_clip_id, 0),
-            ctx.clip_end(&animation, backward_clip_id),
+            ctx.clip_rep_end(&animation, 0, backward_clip_id, 0),
+            ctx.clip_end(&animation, 0, backward_clip_id),
         ],
     );
 
@@ -165,9 +165,24 @@ fn animation_backwards_clip_backwards() {
     ctx.check(
         2,
         [
-            ctx.clip_rep_end(&animation, forward_clip_id, 0),
-            ctx.clip_end(&animation, forward_clip_id),
+            ctx.clip_rep_end(&animation, 0, forward_clip_id, 0),
+            ctx.clip_end(&animation, 0, forward_clip_id),
             ctx.anim_rep_end(&animation, 0),
+        ],
+    );
+
+    ctx.run(100);
+    ctx.check(1, []);
+
+    ctx.run(100);
+    ctx.check(0, []);
+
+    ctx.run(100);
+    ctx.check(
+        0,
+        [
+            ctx.clip_rep_end(&animation, 1, forward_clip_id, 0),
+            ctx.clip_end(&animation, 1, forward_clip_id),
         ],
     );
 }
@@ -204,7 +219,7 @@ fn clip_pingpong() {
     // Pong
 
     ctx.run(100);
-    ctx.check(1, [ctx.clip_rep_end(&animation, clip_id, 0)]);
+    ctx.check(1, [ctx.clip_rep_end(&animation, 0, clip_id, 0)]);
 
     ctx.run(100);
     ctx.check(0, []);
@@ -212,7 +227,7 @@ fn clip_pingpong() {
     // Ping again
 
     ctx.run(100);
-    ctx.check(1, [ctx.clip_rep_end(&animation, clip_id, 1)]);
+    ctx.check(1, [ctx.clip_rep_end(&animation, 0, clip_id, 1)]);
 
     ctx.run(100);
     ctx.check(2, []);
@@ -223,8 +238,8 @@ fn clip_pingpong() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(&animation, clip_id, 2),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 2),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
         ],
     );
@@ -262,8 +277,8 @@ fn animation_pingpong() {
     ctx.check(
         1,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 0),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
         ],
     );
@@ -277,8 +292,8 @@ fn animation_pingpong() {
     ctx.check(
         1,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 1, clip_id, 0),
+            ctx.clip_end(&animation, 1, clip_id),
             ctx.anim_rep_end(&animation, 1),
         ],
     );
@@ -335,8 +350,8 @@ fn animation_pingpong() {
 //     ctx.check(
 //         1,
 //         [
-//             ctx.clip_rep_end(&animation, clip, 0),
-//             ctx.clip_end(&animation, &clip),
+//             ctx.clip_rep_end(&animation, 0, clip, 0),
+//             ctx.clip_end(&animation, 0, &clip),
 //             ctx.anim_rep_end(&animation, 0),
 //         ],
 //     );
@@ -350,8 +365,8 @@ fn animation_pingpong() {
 //     ctx.check(
 //         1,
 //         [
-//             ctx.clip_rep_end(&animation, clip, 0),
-//             ctx.clip_end(&animation, &clip),
+//             ctx.clip_rep_end(&animation, 0, clip, 0),
+//             ctx.clip_end(&animation, 0, &clip),
 //             ctx.anim_rep_end(&animation, 0),
 //         ],
 //     );
@@ -393,8 +408,8 @@ fn animation_pingpong_clip_backwards() {
     ctx.check(
         1,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 0),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
         ],
     );
@@ -408,8 +423,8 @@ fn animation_pingpong_clip_backwards() {
     ctx.check(
         1,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 1, clip_id, 0),
+            ctx.clip_end(&animation, 1, clip_id),
             ctx.anim_rep_end(&animation, 1),
         ],
     );
@@ -446,7 +461,7 @@ fn animation_backwards_clip_pingpong() {
     // Ping
 
     ctx.run(100);
-    ctx.check(2, [ctx.clip_rep_end(&animation, clip_id, 0)]);
+    ctx.check(2, [ctx.clip_rep_end(&animation, 0, clip_id, 0)]);
 
     ctx.run(100);
     ctx.check(1, []);
@@ -460,8 +475,8 @@ fn animation_backwards_clip_pingpong() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(&animation, clip_id, 1),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 1),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
         ],
     );

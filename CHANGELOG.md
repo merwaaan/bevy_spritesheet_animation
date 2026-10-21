@@ -1,5 +1,11 @@
 # Changelog
 
+## 8.0.0 - 2026-10-21
+
+### Changed
+
+- Add `animation_repetition` to the `ClipRepetitionEnd` and `ClipEnd` events.
+
 ## 7.0.1 - 2026-06-25
 
 ### Fixed

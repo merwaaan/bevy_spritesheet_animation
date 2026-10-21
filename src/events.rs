@@ -131,14 +131,14 @@ pub enum AnimationEvent {
         clip_id: ClipId,
         clip_repetition: usize,
         animation: Handle<Animation>,
-        // TODO add animation_repetition
+        animation_repetition: usize,
     },
     /// A clip has ended
     ClipEnd {
         entity: Entity,
         clip_id: ClipId,
         animation: Handle<Animation>,
-        // TODO add animation_repetition
+        animation_repetition: usize,
     },
     /// A repetition of an animation has ended
     AnimationRepetitionEnd {
