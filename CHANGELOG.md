@@ -2,6 +2,10 @@
 
 ## 8.0.0 - 2026-10-21
 
+### Added
+
+- Add support for Bevy 0.20 (by tenarforex)
+
 ### Changed
 
 - Add `animation_repetition` to the `ClipRepetitionEnd` and `ClipEnd` events.
