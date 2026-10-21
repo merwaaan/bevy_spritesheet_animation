@@ -200,6 +200,8 @@ impl ComponentGenerator {
     ///
     /// This can be useful if you need lower-level access to the Bevy Sprite, for instance to set some attributes like its color.
     ///
+    /// All the atlases generated from the same [Spritesheet] (or its clones) with the same image size share a single layout.
+    ///
     /// # Arguments
     ///
     /// - `atlas_layouts` - the atlas layouts of the Bevy app
@@ -237,21 +239,11 @@ impl ComponentGenerator {
     /// }
     /// ```
     pub fn atlas(&self, atlas_layouts: &mut Assets<TextureAtlasLayout>) -> TextureAtlas {
-        let cell_width = self.image_width / (self.spritesheet.columns() as u32);
-        let cell_height = self.image_height / (self.spritesheet.rows() as u32);
-
-        let layout = TextureAtlasLayout::from_grid(
-            UVec2::new(cell_width, cell_height),
-            self.spritesheet.columns() as u32,
-            self.spritesheet.rows() as u32,
-            None,
-            None,
-        );
-
-        let layout_handle = atlas_layouts.add(layout);
-
         TextureAtlas {
-            layout: layout_handle,
+            layout: self.spritesheet.atlas_layout(
+                UVec2::new(self.image_width, self.image_height),
+                atlas_layouts,
+            ),
             ..default()
         }
     }

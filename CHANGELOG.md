@@ -1,5 +1,11 @@
 # Changelog
 
+## 8.0.1 - 2026-10-21
+
+### Changed
+
+- Optimized playback by sharing atlas layouts for the same spritesheet. Fixes a significant slowdown with Bevy 0.20, which can only share sprite materials between sprites with the same layout.
+
 ## 8.0.0 - 2026-10-21
 
 ### Added

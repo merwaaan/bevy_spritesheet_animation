@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use std::sync::{Arc, Mutex};
+
+use bevy::{platform::collections::HashMap, prelude::*};
 
 use crate::{builder::AnimationBuilder, components::generator::ComponentGenerator};
 
@@ -71,6 +73,11 @@ pub struct Spritesheet {
 
     /// The number of rows in the spritesheet
     rows: usize,
+
+    /// Atlas layouts created for this spritesheet, indexed by image size
+    ///
+    /// Shared between the clones of the spritesheet so that all the sprites created from it use the same layout.
+    atlas_layouts: Arc<Mutex<HashMap<UVec2, Handle<TextureAtlasLayout>>>>,
 }
 
 impl Spritesheet {
@@ -86,6 +93,7 @@ impl Spritesheet {
             image: image.clone(),
             columns,
             rows,
+            atlas_layouts: default(),
         }
     }
 
@@ -209,5 +217,47 @@ impl Spritesheet {
     /// ```
     pub fn with_size_hint(&self, image_width: u32, image_height: u32) -> ComponentGenerator {
         ComponentGenerator::new(self, image_width, image_height)
+    }
+
+    /// Returns the atlas layout matching this spritesheet for the given image size.
+    ///
+    /// The layout is created on the first call and reused afterwards.
+    ///
+    /// Sharing the layout matters for performance: Bevy only shares sprite materials between sprites with the same layout,
+    /// so one layout per sprite means one material per sprite, re-created every time the sprite changes frame.
+    pub(crate) fn atlas_layout(
+        &self,
+        image_size: UVec2,
+        atlas_layouts: &mut Assets<TextureAtlasLayout>,
+    ) -> Handle<TextureAtlasLayout> {
+        let mut cached_layouts = self
+            .atlas_layouts
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+        // Reuse the cached layout if it still exists in these assets
+
+        if let Some(handle) = cached_layouts.get(&image_size)
+            && atlas_layouts.contains(handle)
+        {
+            return handle.clone();
+        }
+
+        let columns = self.columns as u32;
+        let rows = self.rows as u32;
+
+        let layout = TextureAtlasLayout::from_grid(
+            image_size / UVec2::new(columns, rows),
+            columns,
+            rows,
+            None,
+            None,
+        );
+
+        let handle = atlas_layouts.add(layout);
+
+        cached_layouts.insert(image_size, handle.clone());
+
+        handle
     }
 }
