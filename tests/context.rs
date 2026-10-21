@@ -215,6 +215,7 @@ impl Context {
     pub fn clip_rep_end(
         &self,
         animation: &Handle<Animation>,
+        animation_repetition: usize,
         clip_id: ClipId,
         clip_repetition: usize,
     ) -> AnimationEvent {
@@ -223,14 +224,21 @@ impl Context {
             clip_id,
             clip_repetition,
             animation: animation.clone(),
+            animation_repetition,
         }
     }
 
-    pub fn clip_end(&self, animation: &Handle<Animation>, clip_id: ClipId) -> AnimationEvent {
+    pub fn clip_end(
+        &self,
+        animation: &Handle<Animation>,
+        animation_repetition: usize,
+        clip_id: ClipId,
+    ) -> AnimationEvent {
         AnimationEvent::ClipEnd {
             entity: self.sprite_entity,
             clip_id,
             animation: animation.clone(),
+            animation_repetition,
         }
     }
 

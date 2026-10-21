@@ -141,12 +141,14 @@ impl Animator {
                                 clip_id: current_frame.0.clip_id,
                                 clip_repetition: current_frame.0.clip_repetition,
                                 animation: animation_instance.animation.clone(),
+                                animation_repetition: current_frame.0.animation_repetition,
                             });
 
                             message_writer.write(AnimationEvent::ClipEnd {
                                 entity: item.entity,
                                 clip_id: current_frame.0.clip_id,
                                 animation: animation_instance.animation.clone(),
+                                animation_repetition: current_frame.0.animation_repetition,
                             });
 
                             message_writer.write(AnimationEvent::AnimationRepetitionEnd {
@@ -251,7 +253,7 @@ impl Animator {
             {
                 Self::play_frame(&mut animation_instance.iterator, item, message_writer).inspect(
                     |new_frame| {
-                        animation_instance.current_frame = Some(new_frame.clone());
+                        animation_instance.current_frame = Some(*new_frame);
                         animation_instance.accumulated_time = Duration::ZERO;
                     },
                 );
@@ -314,7 +316,7 @@ impl Animator {
             item.spritesheet_animation.progress = *progress;
 
             Self::emit_events(
-                &frame.events,
+                iterator.events(frame, *progress),
                 &item.spritesheet_animation.animation,
                 item.entity,
                 message_writer,
@@ -333,13 +335,13 @@ impl Animator {
     }
 
     fn emit_events(
-        animation_events: &[AnimationIteratorEvent],
+        animation_events: impl IntoIterator<Item = AnimationIteratorEvent>,
         animation: &Handle<Animation>,
         entity: Entity,
         message_writer: &mut MessageWriter<AnimationEvent>,
     ) {
         for event in animation_events {
-            message_writer.write(match event {
+            message_writer.write(match &event {
                 AnimationIteratorEvent::MarkerHit {
                     marker,
                     clip_id,
@@ -356,16 +358,22 @@ impl Animator {
                 AnimationIteratorEvent::ClipRepetitionEnd {
                     clip_id,
                     clip_repetition,
+                    animation_repetition,
                 } => AnimationEvent::ClipRepetitionEnd {
                     entity,
                     clip_id: *clip_id,
                     clip_repetition: *clip_repetition,
                     animation: animation.clone(),
+                    animation_repetition: *animation_repetition,
                 },
-                AnimationIteratorEvent::ClipEnd { clip_id } => AnimationEvent::ClipEnd {
+                AnimationIteratorEvent::ClipEnd {
+                    clip_id,
+                    animation_repetition,
+                } => AnimationEvent::ClipEnd {
                     entity,
                     clip_id: *clip_id,
                     animation: animation.clone(),
+                    animation_repetition: *animation_repetition,
                 },
                 AnimationIteratorEvent::AnimationRepetitionEnd {
                     animation_repetition,
@@ -374,6 +382,7 @@ impl Animator {
                     animation: animation.clone(),
                     animation_repetition: *animation_repetition,
                 },
+
             });
         }
     }

@@ -103,8 +103,8 @@ fn animation_duration_per_frame() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(&animation, clip1_id, 0),
-            ctx.clip_end(&animation, clip1_id),
+            ctx.clip_rep_end(&animation, 0, clip1_id, 0),
+            ctx.clip_end(&animation, 0, clip1_id),
         ],
     );
 
@@ -112,10 +112,32 @@ fn animation_duration_per_frame() {
     ctx.check(1, []);
 
     ctx.run(600); // 2200
-    ctx.check(0, [ctx.clip_rep_end(&animation, clip2_id, 0)]);
+    ctx.check(0, [ctx.clip_rep_end(&animation, 0, clip2_id, 0)]);
 
     ctx.run(400); // 2600
     ctx.check(1, []);
+
+    ctx.run(400); // 3000
+    ctx.check(
+        0,
+        [
+            ctx.clip_rep_end(&animation, 0, clip2_id, 1),
+            ctx.clip_end(&animation, 0, clip2_id),
+            ctx.anim_rep_end(&animation, 0),
+        ],
+    );
+
+    ctx.run(500); // 3500
+    ctx.check(1, []);
+
+    ctx.run(500); // 4000
+    ctx.check(
+        0,
+        [
+            ctx.clip_rep_end(&animation, 1, clip1_id, 0),
+            ctx.clip_end(&animation, 1, clip1_id),
+        ],
+    );
 }
 
 #[test]
@@ -170,8 +192,8 @@ fn animation_duration_per_cycle() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(&animation, clip1_id, 0),
-            ctx.clip_end(&animation, clip1_id),
+            ctx.clip_rep_end(&animation, 0, clip1_id, 0),
+            ctx.clip_end(&animation, 0, clip1_id),
         ],
     );
 
@@ -189,7 +211,7 @@ fn animation_duration_per_cycle() {
     // clip 2, frame 0 (repeated): 5555 to 7777
 
     ctx.run(20); // 5570
-    ctx.check(0, [ctx.clip_rep_end(&animation, clip2_id, 0)]);
+    ctx.check(0, [ctx.clip_rep_end(&animation, 0, clip2_id, 0)]);
 
     ctx.run(2200); // 7770
     ctx.check(0, []);
@@ -208,8 +230,8 @@ fn animation_duration_per_cycle() {
     ctx.check(
         0,
         [
-            ctx.clip_rep_end(&animation, clip2_id, 1),
-            ctx.clip_end(&animation, clip2_id),
+            ctx.clip_rep_end(&animation, 0, clip2_id, 1),
+            ctx.clip_end(&animation, 0, clip2_id),
             ctx.anim_rep_end(&animation, 0),
         ],
     );
@@ -282,8 +304,8 @@ fn pause_resume() {
     ctx.check(
         4,
         [
-            ctx.clip_rep_end(&animation, clip_id, 0),
-            ctx.clip_end(&animation, clip_id),
+            ctx.clip_rep_end(&animation, 0, clip_id, 0),
+            ctx.clip_end(&animation, 0, clip_id),
             ctx.anim_rep_end(&animation, 0),
         ],
     );

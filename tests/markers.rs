@@ -61,8 +61,8 @@ fn markers_emit_events() {
         7,
         [
             ctx.marker_hit(clip2_marker1, &animation, 0, clip2_id, 0),
-            ctx.clip_rep_end(&animation, clip1_id, 0),
-            ctx.clip_end(&animation, clip1_id),
+            ctx.clip_rep_end(&animation, 0, clip1_id, 0),
+            ctx.clip_end(&animation, 0, clip1_id),
         ],
     );
 
@@ -75,16 +75,41 @@ fn markers_emit_events() {
         [ctx.marker_hit(clip2_marker2, &animation, 0, clip2_id, 0)],
     );
 
-    // Loop
+    // Loop into animation repetition 1
 
     ctx.run(100); // 650
     ctx.check(
         0,
         [
             ctx.marker_hit(clip1_marker1, &animation, 1, clip1_id, 0),
-            ctx.clip_rep_end(&animation, clip2_id, 0),
-            ctx.clip_end(&animation, clip2_id),
+            ctx.clip_rep_end(&animation, 0, clip2_id, 0),
+            ctx.clip_end(&animation, 0, clip2_id),
             ctx.anim_rep_end(&animation, 0),
+        ],
+    );
+
+    ctx.run(100); // 750
+    ctx.check(
+        1,
+        [ctx.marker_hit(clip1_marker2, &animation, 1, clip1_id, 0)],
+    );
+
+    ctx.run(100); // 850
+    ctx.check(
+        2,
+        [
+            ctx.marker_hit(clip1_marker3, &animation, 1, clip1_id, 0),
+            ctx.marker_hit(clip1_marker4, &animation, 1, clip1_id, 0),
+        ],
+    );
+
+    ctx.run(100); // 950
+    ctx.check(
+        7,
+        [
+            ctx.marker_hit(clip2_marker1, &animation, 1, clip2_id, 0),
+            ctx.clip_rep_end(&animation, 1, clip1_id, 0),
+            ctx.clip_end(&animation, 1, clip1_id),
         ],
     );
 }

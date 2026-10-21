@@ -13,6 +13,7 @@ fn animation_with_some_empty_clips() {
     let animation = ctx.attach_animation(|builder| {
         builder
             .set_duration(AnimationDuration::PerFrame(110))
+            .set_repetitions(AnimationRepeat::Times(2))
             .get_current_clip_id(&mut empty_clip_id)
             .start_clip()
             .add_indices([9, 8])
@@ -35,13 +36,35 @@ fn animation_with_some_empty_clips() {
     ctx.check(
         9,
         [
-            ctx.clip_rep_end(&animation, ok_clip_id, 0),
-            ctx.clip_end(&animation, ok_clip_id),
+            ctx.clip_rep_end(&animation, 0, ok_clip_id, 0),
+            ctx.clip_end(&animation, 0, ok_clip_id),
         ],
     );
 
     ctx.run(100); // 0.4
     ctx.check(8, []);
+
+    ctx.run(100); // 0.5
+    ctx.check(
+        9,
+        [
+            ctx.clip_rep_end(&animation, 0, ok_clip_id, 0),
+            ctx.clip_end(&animation, 0, ok_clip_id),
+            ctx.anim_rep_end(&animation, 0),
+        ],
+    );
+
+    ctx.run(100); // 0.6
+    ctx.check(8, []);
+
+    ctx.run(100); // 0.7
+    ctx.check(
+        9,
+        [
+            ctx.clip_rep_end(&animation, 1, ok_clip_id, 0),
+            ctx.clip_end(&animation, 1, ok_clip_id),
+        ],
+    );
 }
 
 #[test]
