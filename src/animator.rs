@@ -382,7 +382,6 @@ impl Animator {
                     animation: animation.clone(),
                     animation_repetition: *animation_repetition,
                 },
-
             });
         }
     }
