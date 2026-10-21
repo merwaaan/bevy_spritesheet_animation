@@ -5,6 +5,7 @@
 ### Changed
 
 - Add `animation_repetition` to the `ClipRepetitionEnd` and `ClipEnd` events.
+- Optimized playback by avoiding allocations when collecting animation events.
 
 ## 7.0.1 - 2026-06-25
 
